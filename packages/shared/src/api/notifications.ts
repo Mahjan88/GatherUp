@@ -17,7 +17,7 @@ export async function getNotifications(limit = 50) {
     .limit(limit);
 
   if (error) throw error;
-  return data;
+  return data ?? [];
 }
 
 export async function markNotificationAsRead(id: string) {

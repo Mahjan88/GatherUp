@@ -1,20 +1,21 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack:/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
 } from '@gatherup/shared';
+import type { Notification } from '@gatherup/shared';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: notifications, isLoading } = useQuery({
+  const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ['notifications'],
-    queryFn: getNotifications,
+    queryFn: () => getNotifications(),
   });
 
   const markAsReadMutation = useMutation({
@@ -31,13 +32,21 @@ export default function NotificationsPage() {
     },
   });
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
 
-    if (notification.type.includes('event') && notification.data.event_id) {
-      router.push(`/event/${notification.data.event_id}`);
+    const data =
+      notification.data &&
+      typeof notification.data === 'object' &&
+      !Array.isArray(notification.data)
+        ? (notification.data as Record<string, unknown>)
+        : undefined;
+
+    const eventId = data?.event_id;
+    if (notification.type.includes('event') && typeof eventId === 'string') {
+      router.push(`/event/${eventId}`);
     }
   };
 
@@ -64,7 +73,7 @@ export default function NotificationsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
-        {notifications && notifications.length > 0 && (
+        {notifications.length > 0 && (
           <button
             onClick={() => markAllAsReadMutation.mutate()}
             disabled={markAllAsReadMutation.isPending}
@@ -79,39 +88,50 @@ export default function NotificationsPage() {
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
         </div>
-      ) : notifications && notifications.length > 0 ? (
+      ) : notifications.length > 0 ? (
         <div className="space-y-2">
-          {notifications.map((notification) => (
-            <button
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`w-full bg-white rounded-lg p-4 text-left hover:bg-gray-50 transition-colors ${
-                !notification.read ? 'border-l-4 border-primary-600' : ''
-              }`}
-            >
-              <div className="flex items-start">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-2xl ${
-                    !notification.read ? 'bg-primary-100' : 'bg-gray-100'
-                  }`}
-                >
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1 ml-3">
-                  <p
-                    className={`text-base ${
-                      !notification.read ? 'font-semibold' : 'font-normal'
+          {notifications.map((notification) => {
+            const data =
+              notification.data &&
+              typeof notification.data === 'object' &&
+              !Array.isArray(notification.data)
+                ? (notification.data as Record<string, unknown>)
+                : undefined;
+
+            return (
+              <button
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`w-full bg-white rounded-lg p-4 text-left hover:bg-gray-50 transition-colors ${
+                  !notification.read ? 'border-l-4 border-primary-600' : ''
+                }`}
+              >
+                <div className="flex items-start">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-2xl ${
+                      !notification.read ? 'bg-primary-100' : 'bg-gray-100'
                     }`}
                   >
-                    {notification.data.message || 'New notification'}
-                  </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    {new Date(notification.created_at).toLocaleString()}
-                  </p>
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 ml-3">
+                    <p
+                      className={`text-base ${
+                        !notification.read ? 'font-semibold' : 'font-normal'
+                      }`}
+                    >
+                      {typeof data?.message === 'string'
+                        ? data.message
+                        : 'New notification'}
+                    </p>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">

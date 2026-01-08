@@ -6,7 +6,13 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+/**
+ * Supabase client database typing.
+ *
+ * Note: Supabase's type helpers expect each table to include `Relationships`,
+ * even if empty. Omitting it can cause `.from(...)` to infer `never`.
+ */
+export type Database = {
   public: {
     Tables: {
       users: {
@@ -40,6 +46,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       events: {
         Row: {
@@ -90,6 +97,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       event_members: {
         Row: {
@@ -119,6 +127,7 @@ export interface Database {
           joined_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       event_messages: {
         Row: {
@@ -145,6 +154,7 @@ export interface Database {
           attachments?: Json | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       private_messages: {
         Row: {
@@ -171,6 +181,7 @@ export interface Database {
           read?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
       event_media: {
         Row: {
@@ -197,6 +208,7 @@ export interface Database {
           media_type?: 'image' | 'video';
           created_at?: string;
         };
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -223,10 +235,12 @@ export interface Database {
           read?: boolean;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: {};
     Functions: {};
     Enums: {};
+    CompositeTypes: {};
   };
-}
+};
