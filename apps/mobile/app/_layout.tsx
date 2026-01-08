@@ -1,23 +1,25 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initializeSupabase } from '@gatherup/shared';
-import Constants from 'expo-constants';
 import '../global.css';
 
 const queryClient = new QueryClient();
 
+// Initialize Supabase immediately when this module loads
+// Expo will load these from .env file automatically
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (supabaseUrl && supabaseAnonKey) {
+  initializeSupabase(supabaseUrl, supabaseAnonKey);
+} else {
+  console.error('Missing Supabase environment variables!', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+  });
+}
+
 export default function RootLayout() {
-  useEffect(() => {
-    // Initialize Supabase
-    const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
-    const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey;
-
-    if (supabaseUrl && supabaseAnonKey) {
-      initializeSupabase(supabaseUrl, supabaseAnonKey);
-    }
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <Stack>

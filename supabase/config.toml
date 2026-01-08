@@ -95,11 +95,6 @@ enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 
-# Use pre-defined map of claims
-[auth.jwt.claims]
-aud = "authenticated"
-exp = 3600
-
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false
