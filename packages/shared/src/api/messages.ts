@@ -36,10 +36,10 @@ export async function getEventMessages(eventId: string, limit = 50) {
     .limit(limit);
 
   if (error) throw error;
-  return data as EventMessageWithSender[];
+  return data as unknown as EventMessageWithSender[];
 }
 
-export async function subscribeToEventMessages(
+export function subscribeToEventMessages(
   eventId: string,
   callback: (message: EventMessage) => void
 ) {
@@ -102,7 +102,7 @@ export async function getPrivateMessages(otherUserId: string, limit = 50) {
     .limit(limit);
 
   if (error) throw error;
-  return data as PrivateMessageWithSender[];
+  return data as unknown as PrivateMessageWithSender[];
 }
 
 export async function getConversations() {
@@ -134,7 +134,7 @@ export async function getConversations() {
     const otherUserId =
       msg.sender_id === user.id ? msg.recipient_id : msg.sender_id;
     if (!conversationsMap.has(otherUserId)) {
-      conversationsMap.set(otherUserId, msg as PrivateMessageWithSender);
+      conversationsMap.set(otherUserId, msg as unknown as PrivateMessageWithSender);
     }
   });
 

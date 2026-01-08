@@ -51,19 +51,23 @@ export default function DirectMessageScreen() {
   });
 
   useEffect(() => {
-    const unsubscribe = subscribeToPrivateMessages((newMessage) => {
-      if (
-        newMessage.sender_id === userId ||
-        newMessage.recipient_id === userId
-      ) {
-        queryClient.invalidateQueries({ queryKey: ['private-messages', userId] });
-        queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      }
-    });
+    let unsubscribe: (() => void) | undefined;
 
-    return () => {
-      unsubscribe();
-    };
+    (async () => {
+      unsubscribe = await subscribeToPrivateMessages((newMessage) => {
+        if (
+          newMessage.sender_id === userId ||
+          newMessage.recipient_id === userId
+        ) {
+          queryClient.invalidateQueries({
+            queryKey: ['private-messages', userId],
+          });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }
+      });
+    })();
+
+    return () => unsubscribe?.();
   }, [userId, queryClient]);
 
   useEffect(() => {

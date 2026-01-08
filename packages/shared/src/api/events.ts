@@ -34,7 +34,7 @@ export async function getEvent(id: string) {
     .single();
 
   if (error) throw error;
-  return data as EventWithHost;
+  return data as unknown as EventWithHost;
 }
 
 export async function updateEvent(id: string, updates: EventUpdate) {
@@ -88,7 +88,7 @@ export async function getEvents(filters?: {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data as EventWithHost[];
+  return data as unknown as EventWithHost[];
 }
 
 export async function getMyHostedEvents() {
@@ -112,7 +112,7 @@ export async function getMyHostedEvents() {
     .order('start_time', { ascending: true });
 
   if (error) throw error;
-  return data as EventWithHost[];
+  return data as unknown as EventWithHost[];
 }
 
 export async function getMyInvitedEvents() {
@@ -139,7 +139,9 @@ export async function getMyInvitedEvents() {
     .in('status', ['invited', 'joined']);
 
   if (error) throw error;
-  return data.map((d) => d.event) as EventWithHost[];
+  return (data as unknown as Array<{ event: unknown }>).map(
+    (d) => d.event as EventWithHost
+  );
 }
 
 export async function inviteToEvent(eventId: string, userId: string) {
