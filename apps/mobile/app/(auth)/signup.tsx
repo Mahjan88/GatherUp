@@ -7,134 +7,98 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  StyleSheet,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { signUpWithEmail } from '@gatherup/shared';
 
-export default function SignUpScreen() {
+export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+  const handleSignup = async () => {
+    if (!fullName || !email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await signUpWithEmail(email, password, fullName);
-      Alert.alert(
-        'Success',
-        'Account created! Please check your email to verify your account.'
-      );
-      router.replace('/(auth)/login');
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
+    // TODO: Add actual signup logic
+    Alert.alert('Success', 'Account created!');
+    router.replace('/(auth)/login');
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      style={styles.container}
     >
-      <ScrollView className="flex-1" contentContainerClassName="px-6 py-8">
-        <Text className="text-3xl font-bold text-center mb-2">
-          Create Account
-        </Text>
-        <Text className="text-gray-600 text-center mb-8">
-          Join GatherUp and start connecting
-        </Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Join GatherUp today</Text>
 
-        <View className="space-y-4">
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChangeText={setFullName}
-            />
-          </View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Full Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your full name"
+            value={fullName}
+            onChangeText={setFullName}
+          />
 
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Email
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Password
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Create a password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
-
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Confirm Password
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-          </View>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Create a password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
           <TouchableOpacity
-            className="bg-primary-600 rounded-lg py-3 mt-4"
-            onPress={handleSignUp}
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleSignup}
             disabled={loading}
           >
-            <Text className="text-white text-center font-semibold text-base">
+            <Text style={styles.buttonText}>
               {loading ? 'Creating Account...' : 'Sign Up'}
             </Text>
           </TouchableOpacity>
 
-          <View className="flex-row justify-center mt-6">
-            <Text className="text-gray-600">Already have an account? </Text>
-            <Link href="/(auth)/login" className="text-primary-600 font-semibold">
+          <View style={styles.loginRow}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <Link href="/(auth)/login" style={styles.loginLink}>
               Sign In
             </Link>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: '#111827' },
+  subtitle: { fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 32 },
+  form: { gap: 16 },
+  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 4 },
+  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16 },
+  button: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 12, marginTop: 8 },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: 16 },
+  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  loginText: { color: '#6b7280' },
+  loginLink: { color: '#2563eb', fontWeight: '600' },
+});

@@ -7,9 +7,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { signInWithEmail, signInWithOAuth } from '@gatherup/shared';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -22,105 +22,52 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
-    setLoading(true);
-    try {
-      await signInWithEmail(email, password);
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOAuth = async (provider: 'google' | 'apple') => {
-    try {
-      await signInWithOAuth(provider);
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
-    }
+    // TODO: Add actual login logic
+    router.replace('/(tabs)');
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
+      style={styles.container}
     >
-      <View className="flex-1 justify-center px-6">
-        <Text className="text-4xl font-bold text-center mb-2">GatherUp</Text>
-        <Text className="text-gray-600 text-center mb-8">
-          Connect through events
-        </Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>GatherUp</Text>
+        <Text style={styles.subtitle}>Connect through events</Text>
 
-        <View className="space-y-4">
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Email
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
+        <View style={styles.form}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Password
-            </Text>
-            <TextInput
-              className="border border-gray-300 rounded-lg px-4 py-3"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
           <TouchableOpacity
-            className="bg-primary-600 rounded-lg py-3 mt-4"
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text className="text-white text-center font-semibold text-base">
+            <Text style={styles.buttonText}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
 
-          <View className="flex-row items-center my-6">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-4 text-gray-500">or</Text>
-            <View className="flex-1 h-px bg-gray-300" />
-          </View>
-
-          <TouchableOpacity
-            className="border border-gray-300 rounded-lg py-3 mb-2"
-            onPress={() => handleOAuth('google')}
-          >
-            <Text className="text-gray-700 text-center font-semibold">
-              Continue with Google
-            </Text>
-          </TouchableOpacity>
-
-          {Platform.OS === 'ios' && (
-            <TouchableOpacity
-              className="border border-gray-300 rounded-lg py-3"
-              onPress={() => handleOAuth('apple')}
-            >
-              <Text className="text-gray-700 text-center font-semibold">
-                Continue with Apple
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <View className="flex-row justify-center mt-6">
-            <Text className="text-gray-600">Don't have an account? </Text>
-            <Link href="/(auth)/signup" className="text-primary-600 font-semibold">
+          <View style={styles.signupRow}>
+            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Link href="/(auth)/signup" style={styles.signupLink}>
               Sign Up
             </Link>
           </View>
@@ -129,3 +76,19 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  content: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
+  title: { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: '#111827' },
+  subtitle: { fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 32 },
+  form: { gap: 16 },
+  label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 4 },
+  input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16 },
+  button: { backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 12, marginTop: 8 },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: 16 },
+  signupRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
+  signupText: { color: '#6b7280' },
+  signupLink: { color: '#2563eb', fontWeight: '600' },
+});

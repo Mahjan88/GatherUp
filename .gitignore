@@ -143,10 +143,24 @@ ios/Pods/
 # Expo
 apps/mobile/.expo/
 apps/mobile/.expo-shared/
+apps/mobile/web-build/
+
+# Mobile package-lock (using npm separately from pnpm workspace)
+apps/mobile/package-lock.json
+
+# Metro bundler
+.metro-health-check*
+
+# EAS
+.eas/
+eas.json.local
 
 # Generated files
 apps/mobile/ios/
 apps/mobile/android/
+
+# Expo static tmp files
+apps/mobile/.expo/static-tmp/
 
 # Editor directories and files
 .history/
