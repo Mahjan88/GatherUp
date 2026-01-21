@@ -162,7 +162,28 @@ apps/mobile/android/
 # Expo static tmp files
 apps/mobile/.expo/static-tmp/
 
+# React Native
+.react-native/
+*.hprof
+
+# Watchman
+.watchmanconfig
+
+# Metro cache
+.metro/
+metro-cache/
+
+# Babel cache
+.babel_cache/
+
+# Expo updates
+.expo-update/
+
 # Editor directories and files
 .history/
 *.sublime-workspace
 *.sublime-project
+
+# Cursor IDE
+.cursor/
+.cursorignore

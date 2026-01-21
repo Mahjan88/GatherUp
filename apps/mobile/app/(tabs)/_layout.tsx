@@ -5,9 +5,13 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#6b7280',
-        headerShown: true,
+        tabBarActiveTintColor: '#3b82f6',
+        tabBarInactiveTintColor: '#64748b',
+        tabBarStyle: {
+          backgroundColor: '#0f172a',
+          borderTopColor: '#1e293b',
+        },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -15,13 +19,6 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🏠</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="events"
-        options={{
-          title: 'Events',
-          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>📅</Text>,
         }}
       />
       <Tabs.Screen
