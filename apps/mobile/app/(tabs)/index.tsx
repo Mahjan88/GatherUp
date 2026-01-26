@@ -9,6 +9,7 @@ import {
   Dimensions 
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import HamburgerMenu, { HamburgerButton } from '../../components/HamburgerMenu';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH_PRIVATE = (width - 52) / 2; // 2 cards per row with gap
@@ -127,6 +128,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<TimeFilter>('week');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const filterEvents = (events: Event[]) => {
     const now = new Date();
@@ -263,21 +265,26 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Events</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.calendarButton}
-            onPress={() => setViewMode(viewMode === 'calendar' ? 'list' : 'calendar')}
-          >
-            <Text style={styles.calendarIconText}>📅</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.createButton}
-            onPress={() => router.push('/create-event')}
-          >
-            <Text style={styles.createButtonText}>Create Event</Text>
-          </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <HamburgerButton onPress={() => setMenuVisible(true)} />
+          <Text style={styles.headerTitle}>Events</Text>
         </View>
+      </View>
+
+      {/* Action Bar */}
+      <View style={styles.actionBar}>
+        <TouchableOpacity 
+          style={styles.calendarButton}
+          onPress={() => setViewMode(viewMode === 'calendar' ? 'list' : 'calendar')}
+        >
+          <Text style={styles.calendarIconText}>📅</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.createButton}
+          onPress={() => router.push('/create-event')}
+        >
+          <Text style={styles.createButtonText}>Create Event</Text>
+        </TouchableOpacity>
       </View>
 
       {viewMode === 'list' ? (
@@ -353,6 +360,11 @@ export default function HomeScreen() {
           <View style={styles.bottomPadding} />
         </ScrollView>
       )}
+
+      <HamburgerMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }
@@ -367,8 +379,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
   calendarButton: {
     width: 40,
     height: 40,

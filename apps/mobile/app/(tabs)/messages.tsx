@@ -10,8 +10,9 @@ import {
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import HamburgerMenu, { HamburgerButton } from '../../components/HamburgerMenu';
 
-type Section = 'chats' | 'calls' | 'settings';
+type SidebarSection = 'chats' | 'event_chats' | 'calls' | 'contacts';
 
 interface Chat {
   id: string;
@@ -21,20 +22,35 @@ interface Chat {
   unread: number;
   pinned: boolean;
   avatar: string | null;
+  isEventChat?: boolean;
 }
 
-const SIDEBAR_ITEMS: { id: Section; icon: string; label: string }[] = [
+const SIDEBAR_ITEMS: { id: SidebarSection; icon: string; label: string }[] = [
   { id: 'chats', icon: '💬', label: 'Chats' },
+  { id: 'event_chats', icon: '🎉', label: 'Event Chats' },
   { id: 'calls', icon: '📞', label: 'Calls' },
-  { id: 'settings', icon: '⚙️', label: 'Settings' },
+  { id: 'contacts', icon: '👥', label: 'Contacts' },
 ];
 
 const INITIAL_CHATS: Chat[] = [
   { id: '1', name: 'John Doe', message: 'Hey, are you coming to the event?', time: '2:30 PM', unread: 2, pinned: true, avatar: null },
   { id: '2', name: 'Sarah Smith', message: 'The party was amazing! 🎉', time: '1:15 PM', unread: 0, pinned: false, avatar: null },
-  { id: '3', name: 'Event Group', message: 'Alex: See you all there!', time: '12:00 PM', unread: 5, pinned: false, avatar: null },
-  { id: '4', name: 'Mike Johnson', message: 'Thanks for the invite', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
-  { id: '5', name: 'Beach Party 🏖️', message: 'You: Can\'t wait!', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
+  { id: '3', name: 'Mike Johnson', message: 'Thanks for the invite', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
+  { id: '4', name: 'Alex Chen', message: 'See you tomorrow!', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
+];
+
+const EVENT_CHATS: Chat[] = [
+  { id: 'e1', name: 'Neon Nights Festival', message: 'Alex: See you all there!', time: '12:00 PM', unread: 5, pinned: false, avatar: null, isEventChat: true },
+  { id: 'e2', name: 'Beach Party 🏖️', message: 'You: Can\'t wait!', time: 'Yesterday', unread: 0, pinned: false, avatar: null, isEventChat: true },
+  { id: 'e3', name: 'Tech Summit 2026', message: 'Host: Doors open at 9 AM', time: 'Yesterday', unread: 3, pinned: false, avatar: null, isEventChat: true },
+];
+
+const CONTACTS = [
+  { id: 'c1', name: 'Alex Chen', status: 'Online', avatar: null },
+  { id: 'c2', name: 'Sarah Smith', status: 'Last seen 2h ago', avatar: null },
+  { id: 'c3', name: 'John Doe', status: 'Last seen yesterday', avatar: null },
+  { id: 'c4', name: 'Mike Johnson', status: 'Online', avatar: null },
+  { id: 'c5', name: 'Emma Wilson', status: 'Last seen 5h ago', avatar: null },
 ];
 
 const SWIPE_THRESHOLD = 60;
@@ -86,7 +102,6 @@ function SwipeableChatItem({
 
   return (
     <View style={styles.swipeContainer}>
-      {/* Pin action (swipe right) */}
       <View style={[styles.actionContainer, styles.pinAction]}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -96,7 +111,6 @@ function SwipeableChatItem({
         </TouchableOpacity>
       </View>
 
-      {/* Archive/Delete actions (swipe left) */}
       <View style={[styles.actionContainer, styles.leftActions]}>
         <TouchableOpacity
           style={[styles.actionButton, styles.archiveButton]}
@@ -127,8 +141,10 @@ function SwipeableChatItem({
             </View>
           )}
           {chat.pinned && <Text style={styles.pinnedIcon}>📌</Text>}
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{chat.name[0]}</Text>
+          <View style={[styles.avatar, chat.isEventChat && styles.eventAvatar]}>
+            <Text style={styles.avatarText}>
+              {chat.isEventChat ? '🎉' : chat.name[0]}
+            </Text>
           </View>
           <View style={styles.chatInfo}>
             <View style={styles.chatHeader}>
@@ -152,16 +168,24 @@ function SwipeableChatItem({
 
 export default function MessagesScreen() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<Section>('chats');
+  const [activeSection, setActiveSection] = useState<SidebarSection>('chats');
   const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
+  const [eventChats, setEventChats] = useState<Chat[]>(EVENT_CHATS);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
 
-  // Calculate total unread messages
   const totalUnread = chats.reduce((sum, chat) => sum + chat.unread, 0);
+  const eventUnread = eventChats.reduce((sum, chat) => sum + chat.unread, 0);
 
-  const sortedChats = [...chats]
+  const getCurrentChats = () => {
+    if (activeSection === 'chats') return chats;
+    if (activeSection === 'event_chats') return eventChats;
+    return [];
+  };
+
+  const sortedChats = [...getCurrentChats()]
     .filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
@@ -180,51 +204,69 @@ export default function MessagesScreen() {
   };
 
   const handlePin = (id: string) => {
-    setChats(chats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+    if (activeSection === 'chats') {
+      setChats(chats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+    } else if (activeSection === 'event_chats') {
+      setEventChats(eventChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+    }
   };
 
   const handleArchive = (ids: string[]) => {
-    setChats(chats.filter((c) => !ids.includes(c.id)));
+    if (activeSection === 'chats') {
+      setChats(chats.filter((c) => !ids.includes(c.id)));
+    } else if (activeSection === 'event_chats') {
+      setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
+    }
     setSelectedChats(new Set());
   };
 
   const handleDelete = (ids: string[]) => {
-    setChats(chats.filter((c) => !ids.includes(c.id)));
+    if (activeSection === 'chats') {
+      setChats(chats.filter((c) => !ids.includes(c.id)));
+    } else if (activeSection === 'event_chats') {
+      setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
+    }
     setSelectedChats(new Set());
   };
 
   const handleMarkRead = (id: string) => {
-    setChats(chats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+    if (activeSection === 'chats') {
+      setChats(chats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+    } else if (activeSection === 'event_chats') {
+      setEventChats(eventChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+    }
   };
 
   const handleReadAll = () => {
+    const currentChats = getCurrentChats();
+    const setCurrentChats = activeSection === 'chats' ? setChats : setEventChats;
     if (selectedChats.size === 0) {
-      setChats(chats.map((c) => ({ ...c, unread: 0 })));
+      setCurrentChats(currentChats.map((c) => ({ ...c, unread: 0 })));
     } else {
-      setChats(chats.map((c) => (selectedChats.has(c.id) ? { ...c, unread: 0 } : c)));
+      setCurrentChats(currentChats.map((c) => (selectedChats.has(c.id) ? { ...c, unread: 0 } : c)));
     }
   };
 
   const selectedHaveUnread = Array.from(selectedChats).some(
-    (id) => (chats.find((c) => c.id === id)?.unread ?? 0) > 0
+    (id) => (getCurrentChats().find((c) => c.id === id)?.unread ?? 0) > 0
   );
 
   const renderChats = () => (
     <View style={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Content Header */}
+      <View style={styles.contentHeader}>
         <TouchableOpacity onPress={() => setIsEditMode(!isEditMode)}>
           <Text style={styles.headerButton}>{isEditMode ? 'Done' : 'Edit'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chats</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            onPress={() => router.push('/compose')}
-          >
-            <Text style={styles.iconText}>✏️</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.contentTitle}>
+          {activeSection === 'chats' ? 'Chats' : 'Event Chats'}
+        </Text>
+        <TouchableOpacity
+          style={styles.composeButton}
+          onPress={() => router.push('/compose')}
+        >
+          <Text style={styles.composeIcon}>✏️</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -233,14 +275,14 @@ export default function MessagesScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder="Search"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#64748b"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
       </View>
 
       {/* Chat List */}
-      <ScrollView style={styles.chatList}>
+      <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
         {sortedChats.map((chat) => (
           <SwipeableChatItem
             key={chat.id}
@@ -257,6 +299,7 @@ export default function MessagesScreen() {
             }}
           />
         ))}
+        <View style={styles.listPadding} />
       </ScrollView>
 
       {/* Bottom Action Bar (Edit Mode) */}
@@ -296,182 +339,186 @@ export default function MessagesScreen() {
 
   const renderCalls = () => (
     <View style={styles.content}>
+      <View style={styles.contentHeader}>
+        <View style={{ width: 50 }} />
+        <Text style={styles.contentTitle}>Calls</Text>
+        <View style={{ width: 50 }} />
+      </View>
       <View style={styles.emptyState}>
         <Text style={styles.emptyIcon}>📞</Text>
-        <Text style={styles.emptyTitle}>Calls</Text>
+        <Text style={styles.emptyTitle}>No Calls Yet</Text>
         <Text style={styles.emptyText}>Your call history will appear here</Text>
       </View>
     </View>
   );
 
-  const renderSettings = () => (
+  const renderContacts = () => (
     <View style={styles.content}>
-      <View style={styles.settingsHeader}>
-        <Text style={styles.settingsHeaderTitle}>Settings</Text>
-      </View>
-      
-      <ScrollView style={styles.settingsScroll}>
-        {/* Profile Section */}
-        <TouchableOpacity 
-          style={styles.profileRow}
-          onPress={() => router.push('/settings/profile')}
-        >
-          <View style={styles.profileAvatar}>
-            <Text style={styles.profileAvatarText}>S</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Sabohiddin</Text>
-            <Text style={styles.profileBio}>Digital goodies designer - Pixsellz</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
+      <View style={styles.contentHeader}>
+        <View style={{ width: 50 }} />
+        <Text style={styles.contentTitle}>Contacts</Text>
+        <TouchableOpacity style={styles.addButton}>
+          <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
+      </View>
 
-        {/* Quick Actions */}
-        <View style={styles.settingsSection}>
-          <TouchableOpacity style={styles.settingsRow}>
-            <View style={[styles.settingsIconBox, { backgroundColor: '#fbbf24' }]}>
-              <Text style={styles.settingsRowIcon}>⭐</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Starred Messages</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.settingsDivider} />
-          <TouchableOpacity style={styles.settingsRow}>
-            <View style={[styles.settingsIconBox, { backgroundColor: '#10b981' }]}>
-              <Text style={styles.settingsRowIcon}>💻</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Linked Devices</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.searchContainer}>
+        <Text style={styles.searchIcon}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search contacts"
+          placeholderTextColor="#64748b"
+        />
+      </View>
 
-        {/* Main Settings */}
-        <View style={styles.settingsSection}>
-          <TouchableOpacity 
-            style={styles.settingsRow}
-            onPress={() => router.push('/settings/account')}
+      <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
+        {CONTACTS.map((contact) => (
+          <TouchableOpacity
+            key={contact.id}
+            style={styles.contactItem}
+            onPress={() => router.push(`/contact/${contact.id}`)}
           >
-            <View style={[styles.settingsIconBox, { backgroundColor: '#3b82f6' }]}>
-              <Text style={styles.settingsRowIcon}>🔑</Text>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{contact.name[0]}</Text>
             </View>
-            <Text style={styles.settingsRowLabel}>Account</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.settingsDivider} />
-          <TouchableOpacity 
-            style={styles.settingsRow}
-            onPress={() => router.push('/settings/chats')}
-          >
-            <View style={[styles.settingsIconBox, { backgroundColor: '#22c55e' }]}>
-              <Text style={styles.settingsRowIcon}>💬</Text>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactName}>{contact.name}</Text>
+              <Text style={styles.contactStatus}>{contact.status}</Text>
             </View>
-            <Text style={styles.settingsRowLabel}>Chats</Text>
-            <Text style={styles.chevron}>›</Text>
+            <TouchableOpacity style={styles.contactAction}>
+              <Text style={styles.contactActionIcon}>💬</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
-          <View style={styles.settingsDivider} />
-          <TouchableOpacity 
-            style={styles.settingsRow}
-            onPress={() => router.push('/settings/notifications')}
-          >
-            <View style={[styles.settingsIconBox, { backgroundColor: '#ef4444' }]}>
-              <Text style={styles.settingsRowIcon}>🔔</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Notifications</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.settingsDivider} />
-          <TouchableOpacity 
-            style={styles.settingsRow}
-            onPress={() => router.push('/settings/data-storage')}
-          >
-            <View style={[styles.settingsIconBox, { backgroundColor: '#22c55e' }]}>
-              <Text style={styles.settingsRowIcon}>📊</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Data and Storage Usage</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Help Section */}
-        <View style={styles.settingsSection}>
-          <TouchableOpacity style={styles.settingsRow}>
-            <View style={[styles.settingsIconBox, { backgroundColor: '#3b82f6' }]}>
-              <Text style={styles.settingsRowIcon}>ℹ️</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Help</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.settingsDivider} />
-          <TouchableOpacity style={styles.settingsRow}>
-            <View style={[styles.settingsIconBox, { backgroundColor: '#ef4444' }]}>
-              <Text style={styles.settingsRowIcon}>❤️</Text>
-            </View>
-            <Text style={styles.settingsRowLabel}>Tell a Friend</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.settingsFooter}>GatherUp</Text>
+        ))}
+        <View style={styles.listPadding} />
       </ScrollView>
     </View>
   );
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'chats': return renderChats();
-      case 'calls': return renderCalls();
-      case 'settings': return renderSettings();
-      default: return renderChats();
+      case 'chats':
+      case 'event_chats':
+        return renderChats();
+      case 'calls':
+        return renderCalls();
+      case 'contacts':
+        return renderContacts();
+      default:
+        return renderChats();
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Left Sidebar */}
-      <View style={styles.sidebar}>
-        {SIDEBAR_ITEMS.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={[styles.sidebarItem, activeSection === item.id && styles.sidebarItemActive]}
-            onPress={() => {
-              setActiveSection(item.id);
-              setIsEditMode(false);
-              setSelectedChats(new Set());
-            }}
-          >
-            <View style={styles.sidebarIconContainer}>
-              <Text style={styles.sidebarIcon}>{item.icon}</Text>
-              {item.id === 'chats' && totalUnread > 0 && (
-                <View style={styles.sidebarBadge}>
-                  <Text style={styles.sidebarBadgeText}>
-                    {totalUnread > 99 ? '99+' : totalUnread}
-                  </Text>
-                </View>
-              )}
-            </View>
-            <Text style={[styles.sidebarLabel, activeSection === item.id && styles.sidebarLabelActive]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <HamburgerButton onPress={() => setMenuVisible(true)} />
+          <Text style={styles.headerTitle}>Messages</Text>
+        </View>
       </View>
 
-      {renderContent()}
+      {/* Main Content with Sidebar */}
+      <View style={styles.mainContent}>
+        {/* Left Sidebar */}
+        <View style={styles.sidebar}>
+          {SIDEBAR_ITEMS.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.sidebarItem,
+                activeSection === item.id && styles.sidebarItemActive,
+              ]}
+              onPress={() => {
+                setActiveSection(item.id);
+                setIsEditMode(false);
+                setSelectedChats(new Set());
+                setSearchQuery('');
+              }}
+            >
+              <View style={styles.sidebarIconContainer}>
+                <Text style={styles.sidebarIcon}>{item.icon}</Text>
+                {item.id === 'chats' && totalUnread > 0 && (
+                  <View style={styles.sidebarBadge}>
+                    <Text style={styles.sidebarBadgeText}>
+                      {totalUnread > 99 ? '99+' : totalUnread}
+                    </Text>
+                  </View>
+                )}
+                {item.id === 'event_chats' && eventUnread > 0 && (
+                  <View style={styles.sidebarBadge}>
+                    <Text style={styles.sidebarBadgeText}>
+                      {eventUnread > 99 ? '99+' : eventUnread}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.sidebarLabel,
+                  activeSection === item.id && styles.sidebarLabelActive,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Content Area */}
+        {renderContent()}
+      </View>
+
+      {/* Hamburger Menu */}
+      <HamburgerMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', backgroundColor: '#f9fafb' },
-  sidebar: { width: 70, backgroundColor: '#1f2937', paddingTop: 16, alignItems: 'center' },
-  sidebarItem: { alignItems: 'center', paddingVertical: 16, paddingHorizontal: 8, width: '100%' },
-  sidebarItemActive: { backgroundColor: '#374151', borderLeftWidth: 3, borderLeftColor: '#3b82f6' },
-  sidebarIconContainer: { position: 'relative', marginBottom: 4 },
+  container: { flex: 1, backgroundColor: '#0f172a' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
+  mainContent: { flex: 1, flexDirection: 'row' },
+  sidebar: {
+    width: 80,
+    backgroundColor: '#1e293b',
+    paddingTop: 12,
+    alignItems: 'center',
+  },
+  sidebarItem: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    width: '100%',
+  },
+  sidebarItemActive: {
+    backgroundColor: '#334155',
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  },
+  sidebarIconContainer: { position: 'relative', marginBottom: 6 },
   sidebarIcon: { fontSize: 24 },
   sidebarBadge: {
     position: 'absolute',
     top: -6,
-    right: -10,
+    right: -12,
     backgroundColor: '#ef4444',
     borderRadius: 10,
     minWidth: 18,
@@ -481,67 +528,87 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sidebarBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  sidebarLabel: { fontSize: 10, color: '#9ca3af', textAlign: 'center' },
+  sidebarLabel: { fontSize: 10, color: '#94a3b8', textAlign: 'center' },
   sidebarLabelActive: { color: '#ffffff', fontWeight: '600' },
-  content: { flex: 1, backgroundColor: '#ffffff' },
-  header: {
+  content: { flex: 1, backgroundColor: '#0f172a' },
+  contentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderBottomColor: '#1e293b',
   },
+  contentTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
   headerButton: { color: '#3b82f6', fontSize: 16, fontWeight: '500' },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#111827' },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  headerPlaceholder: { width: 50 },
-  headerIcon: { marginLeft: 16 },
-  iconText: { fontSize: 20 },
+  composeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  composeIcon: { fontSize: 16 },
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addIcon: { fontSize: 24, color: '#fff', marginTop: -2 },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    marginHorizontal: 12,
-    marginVertical: 8,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: '#1e293b',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  searchIcon: { fontSize: 14, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827' },
+  searchIcon: { fontSize: 14, marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 16, color: '#fff' },
   chatList: { flex: 1 },
   swipeContainer: { position: 'relative', overflow: 'hidden' },
-  actionContainer: { position: 'absolute', top: 0, bottom: 0, flexDirection: 'row', alignItems: 'center' },
+  actionContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   pinAction: { left: 0, backgroundColor: '#3b82f6' },
   leftActions: { right: 0 },
   actionButton: { width: 60, height: '100%', alignItems: 'center', justifyContent: 'center' },
   archiveButton: { backgroundColor: '#8b5cf6' },
   deleteButton: { backgroundColor: '#ef4444' },
-  actionIcon: { fontSize: 18 },
-  chatItemAnimated: { backgroundColor: '#ffffff' },
+  actionIcon: { fontSize: 20 },
+  chatItemAnimated: { backgroundColor: '#0f172a' },
   chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#1e293b',
   },
   selectCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#d1d5db',
-    marginRight: 10,
+    borderColor: '#475569',
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectCircleSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  checkmark: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
-  pinnedIcon: { fontSize: 10, marginRight: 4 },
+  checkmark: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
+  pinnedIcon: { fontSize: 12, marginRight: 6 },
   avatar: {
     width: 48,
     height: 48,
@@ -550,13 +617,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  eventAvatar: { backgroundColor: '#f97316' },
   avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
   chatInfo: { flex: 1, marginLeft: 12 },
   chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chatName: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  chatTime: { fontSize: 12, color: '#9ca3af' },
+  chatName: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  chatTime: { fontSize: 12, color: '#64748b' },
   chatFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  chatMessage: { fontSize: 14, color: '#6b7280', flex: 1 },
+  chatMessage: { fontSize: 14, color: '#94a3b8', flex: 1 },
   unreadBadge: {
     backgroundColor: '#3b82f6',
     borderRadius: 10,
@@ -567,76 +635,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
+  listPadding: { height: 20 },
   bottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderTopColor: '#1e293b',
+    backgroundColor: '#0f172a',
   },
-  bottomButton: { paddingHorizontal: 20, paddingVertical: 8 },
+  bottomButton: { paddingHorizontal: 16, paddingVertical: 8 },
   bottomButtonDisabled: { opacity: 0.4 },
-  bottomButtonText: { color: '#3b82f6', fontSize: 16, fontWeight: '500' },
-  bottomButtonTextDisabled: { color: '#9ca3af' },
+  bottomButtonText: { color: '#3b82f6', fontSize: 15, fontWeight: '500' },
+  bottomButtonTextDisabled: { color: '#64748b' },
   deleteText: { color: '#ef4444' },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyIcon: { fontSize: 64 },
-  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#111827', marginTop: 16 },
-  emptyText: { fontSize: 16, color: '#6b7280', textAlign: 'center', marginTop: 8 },
-  // Settings styles
-  settingsHeader: {
-    paddingTop: 12,
-    paddingBottom: 12,
-    alignItems: 'center',
-    backgroundColor: '#f7f7f7',
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#e5e5ea',
-  },
-  settingsHeaderTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
-  settingsScroll: { flex: 1, backgroundColor: '#f2f2f7' },
-  profileRow: {
+  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#fff', marginTop: 16 },
+  emptyText: { fontSize: 16, color: '#64748b', textAlign: 'center', marginTop: 8 },
+  contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    marginBottom: 20,
-  },
-  profileAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileAvatarText: { color: '#fff', fontSize: 24, fontWeight: '600' },
-  profileInfo: { flex: 1, marginLeft: 12 },
-  profileName: { fontSize: 20, fontWeight: '600', color: '#000' },
-  profileBio: { fontSize: 14, color: '#8e8e93', marginTop: 2 },
-  chevron: { fontSize: 22, color: '#c7c7cc' },
-  settingsSection: { backgroundColor: '#fff', marginBottom: 20 },
-  settingsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
   },
-  settingsIconBox: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
+  contactInfo: { flex: 1, marginLeft: 12 },
+  contactName: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  contactStatus: { fontSize: 13, color: '#64748b', marginTop: 2 },
+  contactAction: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  settingsRowIcon: { fontSize: 16 },
-  settingsRowLabel: { flex: 1, fontSize: 16, color: '#000' },
-  settingsDivider: { height: 0.5, backgroundColor: '#e5e5ea', marginLeft: 58 },
-  settingsFooter: {
-    textAlign: 'center',
-    fontSize: 12,
-    color: '#8e8e93',
-    paddingVertical: 20,
-  },
+  contactActionIcon: { fontSize: 18 },
 });

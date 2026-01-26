@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import HamburgerMenu, { HamburgerButton } from '../../components/HamburgerMenu';
 
 const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=200';
 
@@ -81,6 +83,7 @@ const NOTIFICATIONS: Notification[] = [
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -154,7 +157,17 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={styles.headerLeft}>
+          <HamburgerButton onPress={() => setMenuVisible(true)} />
+          <Text style={styles.headerTitle}>Notifications</Text>
+        </View>
+      </View>
+
+      {/* Action Bar */}
+      <View style={styles.actionBar}>
+        <TouchableOpacity style={styles.searchButton}>
+          <Text style={styles.searchIcon}>🔍</Text>
+        </TouchableOpacity>
         {unreadCount > 0 && (
           <TouchableOpacity style={styles.markReadButton}>
             <Text style={styles.markReadText}>Mark all read</Text>
@@ -179,6 +192,11 @@ export default function NotificationsScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <HamburgerMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }
@@ -193,12 +211,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchIcon: { fontSize: 18 },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
   markReadButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  markReadText: { fontSize: 14, color: '#3b82f6' },
+  markReadText: { fontSize: 14, color: '#3b82f6', fontWeight: '500' },
   scrollView: { flex: 1 },
   section: { marginBottom: 24 },
   sectionTitle: {

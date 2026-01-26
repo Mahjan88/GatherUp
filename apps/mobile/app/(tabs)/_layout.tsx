@@ -24,14 +24,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Alerts',
+          title: 'Notifications',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>🔔</Text>,
         }}
       />
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Chat',
+          title: 'Messages',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 20 }}>💬</Text>,
         }}
       />
