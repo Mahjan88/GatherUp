@@ -1,20 +1,14 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
+import Header from '../../components/Header';
+import BottomTabBar from '../../components/BottomTabBar';
 
 export default function EditProfileScreen() {
   const router = useRouter();
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>‹</Text>
-          <Text style={styles.backText}>Settings</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <Header showBack />
 
       <ScrollView style={styles.content}>
         {/* Profile Photo Section */}
@@ -60,13 +54,15 @@ export default function EditProfileScreen() {
             />
           </View>
         </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
+      <BottomTabBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
+  container: { flex: 1, backgroundColor: '#0f172a' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -8,11 +8,19 @@ import {
   Animated,
   PanResponder,
   TextInput,
+  Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import HamburgerMenu, { HamburgerButton } from '../../components/HamburgerMenu';
+import Header from '../../components/Header';
 
-type SidebarSection = 'chats' | 'event_chats' | 'calls' | 'contacts';
+// Import icons (512px for high-DPI quality)
+const ChatIcon = require('../../assets/Icons/chat_icon.png');
+const CalendarIcon = require('../../assets/Icons/chat_bubbles_icon.png');
+const PhoneIcon = require('../../assets/Icons/phone_icon_512.png');
+const GroupIcon = require('../../assets/Icons/group_icon_512.png');
+
+type SidebarSection = 'personal_chats' | 'event_chats' | 'calls' | 'contacts';
 
 interface Chat {
   id: string;
@@ -25,24 +33,89 @@ interface Chat {
   isEventChat?: boolean;
 }
 
-const SIDEBAR_ITEMS: { id: SidebarSection; icon: string; label: string }[] = [
-  { id: 'chats', icon: '💬', label: 'Chats' },
-  { id: 'event_chats', icon: '🎉', label: 'Event Chats' },
-  { id: 'calls', icon: '📞', label: 'Calls' },
-  { id: 'contacts', icon: '👥', label: 'Contacts' },
+interface SidebarItem {
+  id: SidebarSection;
+  icon: ImageSourcePropType;
+  label: string;
+}
+
+const SIDEBAR_ITEMS: SidebarItem[] = [
+  { id: 'personal_chats', icon: ChatIcon, label: 'Personal' },
+  { id: 'event_chats', icon: CalendarIcon, label: 'Event Chats' },
+  { id: 'calls', icon: PhoneIcon, label: 'Calls' },
+  { id: 'contacts', icon: GroupIcon, label: 'Contacts' },
 ];
 
 const INITIAL_CHATS: Chat[] = [
-  { id: '1', name: 'John Doe', message: 'Hey, are you coming to the event?', time: '2:30 PM', unread: 2, pinned: true, avatar: null },
-  { id: '2', name: 'Sarah Smith', message: 'The party was amazing! 🎉', time: '1:15 PM', unread: 0, pinned: false, avatar: null },
-  { id: '3', name: 'Mike Johnson', message: 'Thanks for the invite', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
-  { id: '4', name: 'Alex Chen', message: 'See you tomorrow!', time: 'Yesterday', unread: 0, pinned: false, avatar: null },
+  {
+    id: '1',
+    name: 'John Doe',
+    message: 'Hey, are you coming to the event?',
+    time: '2:30 PM',
+    unread: 2,
+    pinned: true,
+    avatar: null,
+  },
+  {
+    id: '2',
+    name: 'Sarah Smith',
+    message: 'The party was amazing! 🎉',
+    time: '1:15 PM',
+    unread: 0,
+    pinned: false,
+    avatar: null,
+  },
+  {
+    id: '3',
+    name: 'Mike Johnson',
+    message: 'Thanks for the invite',
+    time: 'Yesterday',
+    unread: 0,
+    pinned: false,
+    avatar: null,
+  },
+  {
+    id: '4',
+    name: 'Alex Chen',
+    message: 'See you tomorrow!',
+    time: 'Yesterday',
+    unread: 0,
+    pinned: false,
+    avatar: null,
+  },
 ];
 
 const EVENT_CHATS: Chat[] = [
-  { id: 'e1', name: 'Neon Nights Festival', message: 'Alex: See you all there!', time: '12:00 PM', unread: 5, pinned: false, avatar: null, isEventChat: true },
-  { id: 'e2', name: 'Beach Party 🏖️', message: 'You: Can\'t wait!', time: 'Yesterday', unread: 0, pinned: false, avatar: null, isEventChat: true },
-  { id: 'e3', name: 'Tech Summit 2026', message: 'Host: Doors open at 9 AM', time: 'Yesterday', unread: 3, pinned: false, avatar: null, isEventChat: true },
+  {
+    id: 'e1',
+    name: 'Neon Nights Festival',
+    message: 'Alex: See you all there!',
+    time: '12:00 PM',
+    unread: 5,
+    pinned: false,
+    avatar: null,
+    isEventChat: true,
+  },
+  {
+    id: 'e2',
+    name: 'Beach Party 🏖️',
+    message: "You: Can't wait!",
+    time: 'Yesterday',
+    unread: 0,
+    pinned: false,
+    avatar: null,
+    isEventChat: true,
+  },
+  {
+    id: 'e3',
+    name: 'Tech Summit 2026',
+    message: 'Host: Doors open at 9 AM',
+    time: 'Yesterday',
+    unread: 3,
+    pinned: false,
+    avatar: null,
+    isEventChat: true,
+  },
 ];
 
 const CONTACTS = [
@@ -86,11 +159,20 @@ function SwipeableChatItem({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx > SWIPE_THRESHOLD) {
-          Animated.spring(translateX, { toValue: 60, useNativeDriver: true }).start();
+          Animated.spring(translateX, {
+            toValue: 60,
+            useNativeDriver: true,
+          }).start();
         } else if (gestureState.dx < -SWIPE_THRESHOLD) {
-          Animated.spring(translateX, { toValue: -120, useNativeDriver: true }).start();
+          Animated.spring(translateX, {
+            toValue: -120,
+            useNativeDriver: true,
+          }).start();
         } else {
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
         }
       },
     })
@@ -105,7 +187,10 @@ function SwipeableChatItem({
       <View style={[styles.actionContainer, styles.pinAction]}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => { onPin(); resetSwipe(); }}
+          onPress={() => {
+            onPin();
+            resetSwipe();
+          }}
         >
           <Text style={styles.actionIcon}>{chat.pinned ? '📍' : '📌'}</Text>
         </TouchableOpacity>
@@ -114,13 +199,19 @@ function SwipeableChatItem({
       <View style={[styles.actionContainer, styles.leftActions]}>
         <TouchableOpacity
           style={[styles.actionButton, styles.archiveButton]}
-          onPress={() => { onArchive(); resetSwipe(); }}
+          onPress={() => {
+            onArchive();
+            resetSwipe();
+          }}
         >
           <Text style={styles.actionIcon}>📦</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => { onDelete(); resetSwipe(); }}
+          onPress={() => {
+            onDelete();
+            resetSwipe();
+          }}
         >
           <Text style={styles.actionIcon}>🗑️</Text>
         </TouchableOpacity>
@@ -136,7 +227,12 @@ function SwipeableChatItem({
           activeOpacity={0.7}
         >
           {isEditMode && (
-            <View style={[styles.selectCircle, isSelected && styles.selectCircleSelected]}>
+            <View
+              style={[
+                styles.selectCircle,
+                isSelected && styles.selectCircleSelected,
+              ]}
+            >
               {isSelected && <Text style={styles.checkmark}>✓</Text>}
             </View>
           )}
@@ -152,7 +248,9 @@ function SwipeableChatItem({
               <Text style={styles.chatTime}>{chat.time}</Text>
             </View>
             <View style={styles.chatFooter}>
-              <Text style={styles.chatMessage} numberOfLines={1}>{chat.message}</Text>
+              <Text style={styles.chatMessage} numberOfLines={1}>
+                {chat.message}
+              </Text>
               {chat.unread > 0 && (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadText}>{chat.unread}</Text>
@@ -168,19 +266,19 @@ function SwipeableChatItem({
 
 export default function MessagesScreen() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<SidebarSection>('chats');
-  const [chats, setChats] = useState<Chat[]>(INITIAL_CHATS);
+  const [activeSection, setActiveSection] =
+    useState<SidebarSection>('personal_chats');
+  const [personalChats, setPersonalChats] = useState<Chat[]>(INITIAL_CHATS);
   const [eventChats, setEventChats] = useState<Chat[]>(EVENT_CHATS);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [menuVisible, setMenuVisible] = useState(false);
 
-  const totalUnread = chats.reduce((sum, chat) => sum + chat.unread, 0);
+  const totalUnread = personalChats.reduce((sum, chat) => sum + chat.unread, 0);
   const eventUnread = eventChats.reduce((sum, chat) => sum + chat.unread, 0);
 
   const getCurrentChats = () => {
-    if (activeSection === 'chats') return chats;
+    if (activeSection === 'personal_chats') return personalChats;
     if (activeSection === 'event_chats') return eventChats;
     return [];
   };
@@ -204,16 +302,22 @@ export default function MessagesScreen() {
   };
 
   const handlePin = (id: string) => {
-    if (activeSection === 'chats') {
-      setChats(chats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+    if (activeSection === 'personal_chats') {
+      setChats(
+        personalChats.map((c) =>
+          c.id === id ? { ...c, pinned: !c.pinned } : c
+        )
+      );
     } else if (activeSection === 'event_chats') {
-      setEventChats(eventChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+      setEventChats(
+        eventChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
+      );
     }
   };
 
   const handleArchive = (ids: string[]) => {
-    if (activeSection === 'chats') {
-      setChats(chats.filter((c) => !ids.includes(c.id)));
+    if (activeSection === 'personal_chats') {
+      setChats(personalChats.filter((c) => !ids.includes(c.id)));
     } else if (activeSection === 'event_chats') {
       setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
     }
@@ -221,8 +325,8 @@ export default function MessagesScreen() {
   };
 
   const handleDelete = (ids: string[]) => {
-    if (activeSection === 'chats') {
-      setChats(chats.filter((c) => !ids.includes(c.id)));
+    if (activeSection === 'personal_chats') {
+      setChats(personalChats.filter((c) => !ids.includes(c.id)));
     } else if (activeSection === 'event_chats') {
       setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
     }
@@ -230,20 +334,29 @@ export default function MessagesScreen() {
   };
 
   const handleMarkRead = (id: string) => {
-    if (activeSection === 'chats') {
-      setChats(chats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+    if (activeSection === 'personal_chats') {
+      setChats(
+        personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
+      );
     } else if (activeSection === 'event_chats') {
-      setEventChats(eventChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      setEventChats(
+        eventChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
+      );
     }
   };
 
   const handleReadAll = () => {
     const currentChats = getCurrentChats();
-    const setCurrentChats = activeSection === 'chats' ? setChats : setEventChats;
+    const setCurrentChats =
+      activeSection === 'personal_chats' ? setChats : setEventChats;
     if (selectedChats.size === 0) {
       setCurrentChats(currentChats.map((c) => ({ ...c, unread: 0 })));
     } else {
-      setCurrentChats(currentChats.map((c) => (selectedChats.has(c.id) ? { ...c, unread: 0 } : c)));
+      setCurrentChats(
+        currentChats.map((c) =>
+          selectedChats.has(c.id) ? { ...c, unread: 0 } : c
+        )
+      );
     }
   };
 
@@ -255,18 +368,18 @@ export default function MessagesScreen() {
     <View style={styles.content}>
       {/* Content Header */}
       <View style={styles.contentHeader}>
-        <TouchableOpacity onPress={() => setIsEditMode(!isEditMode)}>
-          <Text style={styles.headerButton}>{isEditMode ? 'Done' : 'Edit'}</Text>
+        <TouchableOpacity
+          onPress={() => setIsEditMode(!isEditMode)}
+          style={{ width: 50 }}
+        >
+          <Text style={styles.headerButton}>
+            {isEditMode ? 'Done' : 'Edit'}
+          </Text>
         </TouchableOpacity>
         <Text style={styles.contentTitle}>
-          {activeSection === 'chats' ? 'Chats' : 'Event Chats'}
+          {activeSection === 'personal_chats' ? 'Personal' : 'Group Chats'}
         </Text>
-        <TouchableOpacity
-          style={styles.composeButton}
-          onPress={() => router.push('/compose')}
-        >
-          <Text style={styles.composeIcon}>✏️</Text>
-        </TouchableOpacity>
+        <View style={{ width: 50 }} />
       </View>
 
       {/* Search Bar */}
@@ -306,29 +419,58 @@ export default function MessagesScreen() {
       {isEditMode && (
         <View style={styles.bottomBar}>
           <TouchableOpacity
-            style={[styles.bottomButton, selectedChats.size > 0 && !selectedHaveUnread && styles.bottomButtonDisabled]}
+            style={[
+              styles.bottomButton,
+              selectedChats.size > 0 &&
+                !selectedHaveUnread &&
+                styles.bottomButtonDisabled,
+            ]}
             onPress={handleReadAll}
             disabled={selectedChats.size > 0 && !selectedHaveUnread}
           >
-            <Text style={[styles.bottomButtonText, selectedChats.size > 0 && !selectedHaveUnread && styles.bottomButtonTextDisabled]}>
+            <Text
+              style={[
+                styles.bottomButtonText,
+                selectedChats.size > 0 &&
+                  !selectedHaveUnread &&
+                  styles.bottomButtonTextDisabled,
+              ]}
+            >
               {selectedChats.size === 0 ? 'Read All' : 'Read'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.bottomButton, selectedChats.size === 0 && styles.bottomButtonDisabled]}
+            style={[
+              styles.bottomButton,
+              selectedChats.size === 0 && styles.bottomButtonDisabled,
+            ]}
             onPress={() => handleArchive(Array.from(selectedChats))}
             disabled={selectedChats.size === 0}
           >
-            <Text style={[styles.bottomButtonText, selectedChats.size === 0 && styles.bottomButtonTextDisabled]}>
+            <Text
+              style={[
+                styles.bottomButtonText,
+                selectedChats.size === 0 && styles.bottomButtonTextDisabled,
+              ]}
+            >
               Archive
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.bottomButton, selectedChats.size === 0 && styles.bottomButtonDisabled]}
+            style={[
+              styles.bottomButton,
+              selectedChats.size === 0 && styles.bottomButtonDisabled,
+            ]}
             onPress={() => handleDelete(Array.from(selectedChats))}
             disabled={selectedChats.size === 0}
           >
-            <Text style={[styles.bottomButtonText, styles.deleteText, selectedChats.size === 0 && styles.bottomButtonTextDisabled]}>
+            <Text
+              style={[
+                styles.bottomButtonText,
+                styles.deleteText,
+                selectedChats.size === 0 && styles.bottomButtonTextDisabled,
+              ]}
+            >
               Delete
             </Text>
           </TouchableOpacity>
@@ -386,7 +528,11 @@ export default function MessagesScreen() {
               <Text style={styles.contactStatus}>{contact.status}</Text>
             </View>
             <TouchableOpacity style={styles.contactAction}>
-              <Text style={styles.contactActionIcon}>💬</Text>
+              <Image
+                source={ChatIcon}
+                style={styles.contactActionIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
@@ -397,7 +543,7 @@ export default function MessagesScreen() {
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'chats':
+      case 'personal_chats':
       case 'event_chats':
         return renderChats();
       case 'calls':
@@ -411,13 +557,7 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <HamburgerButton onPress={() => setMenuVisible(true)} />
-          <Text style={styles.headerTitle}>Messages</Text>
-        </View>
-      </View>
+      <Header title="Messages" />
 
       {/* Main Content with Sidebar */}
       <View style={styles.mainContent}>
@@ -438,8 +578,17 @@ export default function MessagesScreen() {
               }}
             >
               <View style={styles.sidebarIconContainer}>
-                <Text style={styles.sidebarIcon}>{item.icon}</Text>
-                {item.id === 'chats' && totalUnread > 0 && (
+                <Image
+                  source={item.icon}
+                  style={[
+                    item.id === 'personal_chats'
+                      ? styles.sidebarIconChat
+                      : styles.sidebarIcon,
+                    activeSection === item.id && styles.sidebarIconActive,
+                  ]}
+                  resizeMode="contain"
+                />
+                {item.id === 'personal_chats' && totalUnread > 0 && (
                   <View style={styles.sidebarBadge}>
                     <Text style={styles.sidebarBadgeText}>
                       {totalUnread > 99 ? '99+' : totalUnread}
@@ -469,12 +618,6 @@ export default function MessagesScreen() {
         {/* Content Area */}
         {renderContent()}
       </View>
-
-      {/* Hamburger Menu */}
-      <HamburgerMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-      />
     </View>
   );
 }
@@ -514,7 +657,22 @@ const styles = StyleSheet.create({
     borderLeftColor: '#3b82f6',
   },
   sidebarIconContainer: { position: 'relative', marginBottom: 6 },
-  sidebarIcon: { fontSize: 24 },
+  sidebarIcon: {
+    width: 26,
+    height: 26,
+    opacity: 0.6,
+  },
+  sidebarIconChat: {
+    width: 35,
+    height: 35,
+    opacity: 0.6,
+  },
+  sidebarIconActive: {
+    opacity: 1,
+    width: 40,
+    height: 40,
+    tintColor: '#14b8a6',
+  },
   sidebarBadge: {
     position: 'absolute',
     top: -6,
@@ -583,7 +741,12 @@ const styles = StyleSheet.create({
   },
   pinAction: { left: 0, backgroundColor: '#3b82f6' },
   leftActions: { right: 0 },
-  actionButton: { width: 60, height: '100%', alignItems: 'center', justifyContent: 'center' },
+  actionButton: {
+    width: 60,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   archiveButton: { backgroundColor: '#8b5cf6' },
   deleteButton: { backgroundColor: '#ef4444' },
   actionIcon: { fontSize: 20 },
@@ -620,10 +783,19 @@ const styles = StyleSheet.create({
   eventAvatar: { backgroundColor: '#f97316' },
   avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
   chatInfo: { flex: 1, marginLeft: 12 },
-  chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   chatName: { fontSize: 16, fontWeight: '600', color: '#fff' },
   chatTime: { fontSize: 12, color: '#64748b' },
-  chatFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  chatFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   chatMessage: { fontSize: 14, color: '#94a3b8', flex: 1 },
   unreadBadge: {
     backgroundColor: '#3b82f6',
@@ -649,10 +821,20 @@ const styles = StyleSheet.create({
   bottomButtonText: { color: '#3b82f6', fontSize: 15, fontWeight: '500' },
   bottomButtonTextDisabled: { color: '#64748b' },
   deleteText: { color: '#ef4444' },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
   emptyIcon: { fontSize: 64 },
   emptyTitle: { fontSize: 20, fontWeight: '600', color: '#fff', marginTop: 16 },
-  emptyText: { fontSize: 16, color: '#64748b', textAlign: 'center', marginTop: 8 },
+  emptyText: {
+    fontSize: 16,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -672,5 +854,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  contactActionIcon: { fontSize: 18 },
+  contactActionIcon: {
+    width: 22,
+    height: 22,
+  },
 });

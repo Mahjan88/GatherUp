@@ -9,6 +9,8 @@ import {
   Dimensions 
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import Header from '../../components/Header';
+import BottomTabBar from '../../components/BottomTabBar';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = (width - 48) / 3;
@@ -71,16 +73,14 @@ export default function GalleryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Gallery</Text>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </TouchableOpacity>
-      </View>
+      <Header 
+        showBack 
+        rightElement={
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.addButtonText}>+ Add</Text>
+          </TouchableOpacity>
+        }
+      />
 
       {/* Tabs */}
       <View style={styles.tabBar}>
@@ -108,7 +108,10 @@ export default function GalleryScreen() {
           ? renderMediaGrid(PHOTOS, 'photos')
           : renderMediaGrid(VIDEOS, 'videos')
         }
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      <BottomTabBar />
     </View>
   );
 }

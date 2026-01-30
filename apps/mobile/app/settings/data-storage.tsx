@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
+import Header from '../../components/Header';
+import BottomTabBar from '../../components/BottomTabBar';
 
 export default function DataStorageSettingsScreen() {
   const router = useRouter();
@@ -8,15 +10,7 @@ export default function DataStorageSettingsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>‹</Text>
-          <Text style={styles.backText}>Settings</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Data and Storage Usage</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <Header showBack />
 
       <ScrollView style={styles.content}>
         {/* Media Auto-Download */}
@@ -92,13 +86,15 @@ export default function DataStorageSettingsScreen() {
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
+      <BottomTabBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7' },
+  container: { flex: 1, backgroundColor: '#0f172a' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

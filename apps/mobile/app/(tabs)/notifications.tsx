@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import HamburgerMenu, { HamburgerButton } from '../../components/HamburgerMenu';
+import Header from '../../components/Header';
 
 const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=200';
 
@@ -83,7 +82,6 @@ const NOTIFICATIONS: Notification[] = [
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [menuVisible, setMenuVisible] = useState(false);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -155,25 +153,16 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <HamburgerButton onPress={() => setMenuVisible(true)} />
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-      </View>
+      <Header title="Notifications" />
 
       {/* Action Bar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchIcon}>🔍</Text>
-        </TouchableOpacity>
-        {unreadCount > 0 && (
+      {unreadCount > 0 && (
+        <View style={styles.actionBar}>
           <TouchableOpacity style={styles.markReadButton}>
             <Text style={styles.markReadText}>Mark all read</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* New Invites Section */}
@@ -192,11 +181,6 @@ export default function NotificationsScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      <HamburgerMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-      />
     </View>
   );
 }

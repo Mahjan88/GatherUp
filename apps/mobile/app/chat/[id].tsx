@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import Header from '../../components/Header';
 
 interface Message {
   id: string;
@@ -131,19 +132,7 @@ export default function EventChatScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{EVENT_INFO.title}</Text>
-          <Text style={styles.headerSubtitle}>{EVENT_INFO.participantCount} participants</Text>
-        </View>
-        <TouchableOpacity style={styles.infoButton}>
-          <Text style={styles.infoIcon}>ℹ️</Text>
-        </TouchableOpacity>
-      </View>
+      <Header showBack />
 
       {/* Participants Preview */}
       <View style={styles.participantsBar}>
