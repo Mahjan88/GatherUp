@@ -1,19 +1,25 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import HamburgerMenu from './HamburgerMenu';
+
+const SearchIcon = require('../assets/Icons/search_icon.png');
 
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
   showSearch?: boolean;
+  showHamburger?: boolean;
   rightElement?: React.ReactNode;
 }
 
-export default function Header({ title, showBack = false, showSearch = true, rightElement }: HeaderProps) {
+export default function Header({ title, showBack = false, showSearch = true, showHamburger = true, rightElement }: HeaderProps) {
   const router = useRouter();
+  const [menuVisible, setMenuVisible] = useState(false);
 
   return (
     <View style={styles.header}>
-      {/* Top Row: Logo + GatherUp + Search */}
+      {/* Top Row: Logo + GatherUp + Search + Hamburger */}
       <View style={styles.topRow}>
         <View style={styles.headerLeft}>
           {showBack ? (
@@ -36,7 +42,16 @@ export default function Header({ title, showBack = false, showSearch = true, rig
           {rightElement}
           {showSearch && (
             <TouchableOpacity style={styles.searchButton}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Image 
+                source={SearchIcon}
+                style={styles.searchIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          )}
+          {showHamburger && (
+            <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
+              <Text style={styles.hamburgerIcon}>☰</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -46,6 +61,14 @@ export default function Header({ title, showBack = false, showSearch = true, rig
       {title && (
         <Text style={styles.pageTitle}>{title}</Text>
       )}
+
+      {/* Hamburger Menu Modal */}
+      <HamburgerMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        userName="John Doe"
+        userEmail="john@example.com"
+      />
     </View>
   );
 }
@@ -100,11 +123,27 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'transparent',
+    backgroundColor: '#1e293b',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchIcon: { fontSize: 22 },
+  searchIcon: { 
+    width: 22, 
+    height: 22,
+    tintColor: '#fff',
+  },
+  hamburgerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hamburgerIcon: { 
+    fontSize: 20, 
+    color: '#fff',
+  },
   pageTitle: {
     fontSize: 28,
     fontWeight: '700',

@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'reac
 import { useRouter } from 'expo-router';
 
 const MENU_ITEMS = [
-  { id: 'profile', icon: '👤', label: 'Profile', route: '/settings/profile' },
+  { id: 'profile', icon: '👤', label: 'Profile', route: '/profile' },
   { id: 'settings', icon: '⚙️', label: 'Settings', route: '/settings/account' },
   { id: 'notifications', icon: '🔔', label: 'Notification Settings', route: '/settings/notifications' },
   { id: 'privacy', icon: '🔒', label: 'Privacy', route: '/settings/account' },

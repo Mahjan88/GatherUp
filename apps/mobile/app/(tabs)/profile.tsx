@@ -3,13 +3,13 @@ import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
 
 // Import icons (512px for high-DPI quality)
-const AccountIcon = require('../../assets/Icons/account_icon_v4_512.png');
-const NotificationIcon = require('../../assets/Icons/notification_icon_512.png');
-const SecurityIcon = require('../../assets/Icons/security_icon_v4_512.png');
-const DataIcon = require('../../assets/Icons/data_icon_v4_512.png');
-const HelpIcon = require('../../assets/Icons/help_icon_v4_512.png');
-const AboutIcon = require('../../assets/Icons/about_icon_512.png');
-const EditIcon = require('../../assets/Icons/edit_icon_512.png');
+const AccountIcon = require('../../assets/Icons/account_icon.png');
+const NotificationIcon = require('../../assets/Icons/notification_icon.png');
+const SecurityIcon = require('../../assets/Icons/security_icon.png');
+const DataIcon = require('../../assets/Icons/data_icon.png');
+const HelpIcon = require('../../assets/Icons/help_icon.png');
+const AboutIcon = require('../../assets/Icons/about_icon.png');
+const EditIcon = require('../../assets/Icons/edit_icon.png');
 
 interface SettingsItem {
   id: string;

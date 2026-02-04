@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 
 // Import icons (512px for high-DPI quality)
-const HomeIcon = require('../../assets/Icons/home_icon_512.png');
-const CalendarIcon = require('../../assets/Icons/calendar_icon_512.png');
-const ChatIcon = require('../../assets/Icons/chat_icon_512.png');
-const ProfileIcon = require('../../assets/Icons/profile_icon_512.png');
+const HomeIcon = require('../../assets/Icons/home_icon.png');
+const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
+const NotificationIcon = require('../../assets/Icons/notification_icon.png');
+const ChatIcon = require('../../assets/Icons/message_icon.png');
 
 function CreateButton() {
   const router = useRouter();
@@ -56,7 +56,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="calendar"
         options={{
           title: 'Calendar',
           tabBarIcon: ({ focused }) => (
@@ -98,18 +98,24 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="notifications"
         options={{
-          title: 'Profile',
+          title: 'Notifications',
           tabBarIcon: ({ focused }) => (
             <View style={styles.iconContainer}>
               <Image
-                source={ProfileIcon}
+                source={NotificationIcon}
                 style={[styles.tabIcon, focused && styles.tabIconActive]}
                 resizeMode="contain"
               />
             </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

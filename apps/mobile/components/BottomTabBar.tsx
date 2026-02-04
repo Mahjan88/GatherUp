@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 
-// Import icons (512px for high-DPI quality)
-const HomeIcon = require('../assets/Icons/home_icon_512.png');
-const CalendarIcon = require('../assets/Icons/calendar_icon_512.png');
-const ChatIcon = require('../assets/Icons/chat_icon_512.png');
-const ProfileIcon = require('../assets/Icons/profile_icon_512.png');
+// Import icons
+const HomeIcon = require('../assets/Icons/home_icon.png');
+const CalendarIcon = require('../assets/Icons/calendar_icon.png');
+const ChatIcon = require('../assets/Icons/message_icon.png');
+const NotificationIcon = require('../assets/Icons/notification_icon.png');
 
 interface BottomTabBarProps {
   middleButton?: {
@@ -44,11 +44,11 @@ export default function BottomTabBar({ middleButton, hideMiddleButton }: BottomT
       
       <TouchableOpacity 
         style={styles.tabItem}
-        onPress={() => router.push('/notifications')}
+        onPress={() => router.push('/calendar')}
       >
         <Image 
-          source={CalendarIcon} 
-          style={[styles.tabIcon, isActive('/notifications') && styles.tabIconActive]} 
+          source={CalendarIcon}
+          style={[styles.tabIcon, isActive('/calendar') && styles.tabIconActive]} 
           resizeMode="contain"
         />
       </TouchableOpacity>
@@ -84,11 +84,11 @@ export default function BottomTabBar({ middleButton, hideMiddleButton }: BottomT
 
       <TouchableOpacity 
         style={styles.tabItem}
-        onPress={() => router.push('/profile')}
+        onPress={() => router.push('/notifications')}
       >
         <Image 
-          source={ProfileIcon} 
-          style={[styles.tabIcon, isActive('/profile') && styles.tabIconActive]} 
+          source={NotificationIcon} 
+          style={[styles.tabIcon, isActive('/notifications') && styles.tabIconActive]} 
           resizeMode="contain"
         />
       </TouchableOpacity>

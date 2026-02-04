@@ -16,9 +16,9 @@ import Header from '../../components/Header';
 
 // Import icons (512px for high-DPI quality)
 const ChatIcon = require('../../assets/Icons/chat_icon.png');
-const CalendarIcon = require('../../assets/Icons/chat_bubbles_icon.png');
-const PhoneIcon = require('../../assets/Icons/phone_icon_512.png');
-const GroupIcon = require('../../assets/Icons/group_icon_512.png');
+const GroupChatIcon = require('../../assets/Icons/group_chat_icon.png');
+const PhoneIcon = require('../../assets/Icons/phone_icon.png');
+const ContactIcon = require('../../assets/Icons/contact_icon.png');
 
 type SidebarSection = 'personal_chats' | 'event_chats' | 'calls' | 'contacts';
 
@@ -41,9 +41,9 @@ interface SidebarItem {
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'personal_chats', icon: ChatIcon, label: 'Personal' },
-  { id: 'event_chats', icon: CalendarIcon, label: 'Event Chats' },
+  { id: 'event_chats', icon: GroupChatIcon, label: 'Event Chats' },
   { id: 'calls', icon: PhoneIcon, label: 'Calls' },
-  { id: 'contacts', icon: GroupIcon, label: 'Contacts' },
+  { id: 'contacts', icon: ContactIcon, label: 'Contacts' },
 ];
 
 const INITIAL_CHATS: Chat[] = [
