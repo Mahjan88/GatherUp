@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Modal, Pressable, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import BottomTabBar from '../../components/BottomTabBar';
 
@@ -7,7 +8,7 @@ const GalleryIcon = require('../../assets/Icons/media_gallery_icon.png');
 const ChatIcon = require('../../assets/Icons/group_chat_icon.png');
 const LocationIcon = require('../../assets/Icons/location_icon.png');
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 // Sample image for all events
 const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=800';
@@ -18,10 +19,16 @@ const MOCK_PRIVATE_EVENT = {
   title: "Sarah's VR Game Night",
   organizer: 'Sarah',
   image: SAMPLE_IMAGE,
-  description: 'In ther Des riplio arf the sararis teines. To purr ae lurre ths esrter lurst the wolint nat yourit and eltgit. Ro te pe nnmid lot you ne tte trid gave nestrer.',
+  description: 'Join us for an epic VR gaming night at Sarah\'s place! We\'ll be playing the latest virtual reality games including Beat Saber tournaments, collaborative puzzle adventures, and immersive horror experiences for the brave souls among us.\n\nWhat to expect:\n• Multiple VR headsets available\n• Snacks and drinks provided\n• Friendly competition with prizes\n• No VR experience required - we\'ll teach you!\n\nPlease arrive on time as we\'ll be starting the tournament promptly at 8:30 PM. Feel free to bring your favorite snacks to share with the group. This is going to be an unforgettable night of virtual adventures and real friendships!',
   date: 'Sunday, Jan. 25, 2026',
   time: '7:00 PM EST',
-  location: 'Sarah\'s Place',
+  location: "Sarah's Place",
+  address: '123 Main Street, Apt 4B',
+  city: 'Portland, OR 97201',
+  coordinates: {
+    lat: 45.5152,
+    lng: -122.6784,
+  },
   isPrivate: true,
   isFree: true,
   friendsAttending: [
@@ -40,8 +47,18 @@ const MOCK_PRIVATE_EVENT = {
 export default function EventDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
   const event = MOCK_PRIVATE_EVENT;
+
+  // Static map URL using OpenStreetMap tile service
+  const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.coordinates.lat},${event.coordinates.lng}&zoom=16&size=600x300&maptype=mapnik&markers=${event.coordinates.lat},${event.coordinates.lng},red-pushpin`;
+
+  const openInMaps = () => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${event.coordinates.lat},${event.coordinates.lng}`;
+    Linking.openURL(url);
+  };
 
   return (
     <View style={styles.container}>
@@ -86,7 +103,7 @@ export default function EventDetailScreen() {
               <Text style={styles.actionLabel}>Gallery</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionItem}>
+            <TouchableOpacity style={styles.actionItem} onPress={() => setShowLocationModal(true)}>
               <View style={styles.actionCircle}>
                 <Image source={LocationIcon} style={styles.actionIcon} resizeMode="contain" />
               </View>
@@ -97,7 +114,12 @@ export default function EventDetailScreen() {
           {/* Event Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Event Description</Text>
-            <Text style={styles.descriptionText}>{event.description}</Text>
+            <Text style={styles.descriptionText} numberOfLines={5}>
+              {event.description}
+            </Text>
+            <TouchableOpacity onPress={() => setShowDescriptionModal(true)}>
+              <Text style={styles.seeMoreText}>See More</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Who's Going */}
@@ -146,6 +168,105 @@ export default function EventDetailScreen() {
           onPress: () => {},
         }}
       />
+
+      {/* Location Modal */}
+      <Modal
+        visible={showLocationModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setShowLocationModal(false)}
+        >
+          <Pressable style={styles.locationModal} onPress={(e) => e.stopPropagation()}>
+            {/* Header with Handle and X button */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHandle} />
+              <TouchableOpacity 
+                style={styles.closeXButton}
+                onPress={() => setShowLocationModal(false)}
+              >
+                <Text style={styles.closeXText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Location Header */}
+            <View style={styles.locationHeader}>
+              <View style={styles.locationIconCircle}>
+                <Image source={LocationIcon} style={styles.locationModalIcon} resizeMode="contain" />
+              </View>
+              <View style={styles.locationInfo}>
+                <Text style={styles.locationName}>{event.location}</Text>
+                <Text style={styles.locationAddress}>{event.address}</Text>
+                <Text style={styles.locationCity}>{event.city}</Text>
+              </View>
+            </View>
+
+            {/* Map Preview */}
+            <TouchableOpacity style={styles.mapContainer} onPress={openInMaps}>
+              <Image 
+                source={{ uri: staticMapUrl }}
+                style={styles.mapPreview}
+                resizeMode="cover"
+              />
+              <View style={styles.mapPinOverlay}>
+                <Text style={styles.mapPinEmoji}>📍</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Actions */}
+            <View style={styles.locationActions}>
+              <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
+                <Text style={styles.openMapsText}>Open in Maps</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.copyAddressButton}>
+                <Text style={styles.copyAddressText}>Copy Address</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Description Modal */}
+      <Modal
+        visible={showDescriptionModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDescriptionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable 
+            style={styles.modalOverlayTouchable} 
+            onPress={() => setShowDescriptionModal(false)}
+          />
+          <View style={styles.descriptionModal}>
+            {/* Header with Handle and X button */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHandle} />
+              <TouchableOpacity 
+                style={styles.closeXButton}
+                onPress={() => setShowDescriptionModal(false)}
+              >
+                <Text style={styles.closeXText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Title */}
+            <Text style={styles.descriptionModalTitle}>Event Description</Text>
+            
+            {/* Full Description */}
+            <ScrollView 
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              style={{ maxHeight: height * 0.5 }}
+            >
+              <Text style={styles.descriptionModalText}>{event.description}</Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -238,6 +359,12 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     lineHeight: 24,
   },
+  seeMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#14b8a6',
+    marginTop: 8,
+  },
   attendeesRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,5 +414,169 @@ const styles = StyleSheet.create({
   },
   bottomPadding: { 
     height: 120,
+  },
+  
+  // Location Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalOverlayTouchable: {
+    flex: 1,
+  },
+  locationModal: {
+    backgroundColor: '#1e293b',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: height * 0.75,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 16,
+    position: 'relative',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#475569',
+    borderRadius: 2,
+  },
+  closeXButton: {
+    position: 'absolute',
+    right: 0,
+    top: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#334155',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeXText: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: '300',
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  locationIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  locationModalIcon: {
+    width: 40,
+    height: 40,
+    tintColor: '#14b8a6',
+  },
+  locationInfo: {
+    flex: 1,
+  },
+  locationName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  locationAddress: {
+    fontSize: 15,
+    color: '#94a3b8',
+    marginBottom: 2,
+  },
+  locationCity: {
+    fontSize: 15,
+    color: '#94a3b8',
+  },
+  mapContainer: {
+    height: 180,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+    position: 'relative',
+    backgroundColor: '#e5e7eb',
+  },
+  mapPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  mapPinOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -20,
+    marginLeft: -15,
+  },
+  mapPinEmoji: {
+    fontSize: 32,
+  },
+  locationActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  openMapsButton: {
+    flex: 1,
+    backgroundColor: '#14b8a6',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  openMapsText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  copyAddressButton: {
+    flex: 1,
+    backgroundColor: '#334155',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  copyAddressText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Description Modal Styles
+  descriptionModal: {
+    backgroundColor: '#1e293b',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
+    minHeight: height * 0.5,
+    maxHeight: height * 0.7,
+  },
+  descriptionModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  descriptionScrollView: {
+    minHeight: 200,
+  },
+  descriptionScrollContent: {
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  descriptionModalText: {
+    fontSize: 16,
+    color: '#e2e8f0',
+    lineHeight: 26,
   },
 });
