@@ -3,7 +3,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import BottomTabBar from '../../components/BottomTabBar';
 
 // Import icons (512px for high-DPI quality)
-const GalleryIcon = require('../../assets/Icons/gallery_video_icon.png');
+const GalleryIcon = require('../../assets/Icons/media_gallery_icon.png');
 const ChatIcon = require('../../assets/Icons/group_chat_icon.png');
 const LocationIcon = require('../../assets/Icons/location_icon.png');
 

@@ -40,6 +40,18 @@ export default function Header({ title, showBack = false, showSearch = true, sho
         
         <View style={styles.headerRight}>
           {rightElement}
+          {showHamburger && (
+            <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
+              <Text style={styles.hamburgerIcon}>☰</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Page Title Row with Search */}
+      {title && (
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>{title}</Text>
           {showSearch && (
             <TouchableOpacity style={styles.searchButton}>
               <Image 
@@ -49,17 +61,7 @@ export default function Header({ title, showBack = false, showSearch = true, sho
               />
             </TouchableOpacity>
           )}
-          {showHamburger && (
-            <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
-              <Text style={styles.hamburgerIcon}>☰</Text>
-            </TouchableOpacity>
-          )}
         </View>
-      </View>
-
-      {/* Page Title */}
-      {title && (
-        <Text style={styles.pageTitle}>{title}</Text>
       )}
 
       {/* Hamburger Menu Modal */}
@@ -144,10 +146,15 @@ const styles = StyleSheet.create({
     fontSize: 20, 
     color: '#fff',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
   pageTitle: {
     fontSize: 28,
     fontWeight: '700',
     color: '#fff',
-    marginTop: 16,
   },
 });
