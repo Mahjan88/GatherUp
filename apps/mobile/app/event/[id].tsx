@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Modal, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import BottomTabBar from '../../components/BottomTabBar';
+import SlideUpModal from '../../components/SlideUpModal';
 
 // Import icons (512px for high-DPI quality)
 const GalleryIcon = require('../../assets/Icons/media_gallery_icon.png');
@@ -70,7 +71,7 @@ export default function EventDetailScreen() {
             style={styles.heroImage}
             resizeMode="cover"
           />
-          
+
           {/* Private Event Badge */}
           {event.isPrivate && (
             <View style={styles.privateBadge}>
@@ -170,103 +171,56 @@ export default function EventDetailScreen() {
       />
 
       {/* Location Modal */}
-      <Modal
+      <SlideUpModal
         visible={showLocationModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowLocationModal(false)}
+        onClose={() => setShowLocationModal(false)}
+        scrollable={false}
+        minHeight={0.45}
+        maxHeight={0.6}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
-          onPress={() => setShowLocationModal(false)}
-        >
-          <Pressable style={styles.locationModal} onPress={(e) => e.stopPropagation()}>
-            {/* Header with Handle and X button */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHandle} />
-              <TouchableOpacity 
-                style={styles.closeXButton}
-                onPress={() => setShowLocationModal(false)}
-              >
-                <Text style={styles.closeXText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Location Header */}
-            <View style={styles.locationHeader}>
-              <View style={styles.locationIconCircle}>
-                <Image source={LocationIcon} style={styles.locationModalIcon} resizeMode="contain" />
-              </View>
-              <View style={styles.locationInfo}>
-                <Text style={styles.locationName}>{event.location}</Text>
-                <Text style={styles.locationAddress}>{event.address}</Text>
-                <Text style={styles.locationCity}>{event.city}</Text>
-              </View>
-            </View>
-
-            {/* Map Preview */}
-            <TouchableOpacity style={styles.mapContainer} onPress={openInMaps}>
-              <Image 
-                source={{ uri: staticMapUrl }}
-                style={styles.mapPreview}
-                resizeMode="cover"
-              />
-              <View style={styles.mapPinOverlay}>
-                <Text style={styles.mapPinEmoji}>📍</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Actions */}
-            <View style={styles.locationActions}>
-              <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
-                <Text style={styles.openMapsText}>Open in Maps</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.copyAddressButton}>
-                <Text style={styles.copyAddressText}>Copy Address</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Description Modal */}
-      <Modal
-        visible={showDescriptionModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowDescriptionModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable 
-            style={styles.modalOverlayTouchable} 
-            onPress={() => setShowDescriptionModal(false)}
-          />
-          <View style={styles.descriptionModal}>
-            {/* Header with Handle and X button */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHandle} />
-              <TouchableOpacity 
-                style={styles.closeXButton}
-                onPress={() => setShowDescriptionModal(false)}
-              >
-                <Text style={styles.closeXText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Title */}
-            <Text style={styles.descriptionModalTitle}>Event Description</Text>
-            
-            {/* Full Description */}
-            <ScrollView 
-              showsVerticalScrollIndicator={true}
-              bounces={true}
-              style={{ maxHeight: height * 0.5 }}
-            >
-              <Text style={styles.descriptionModalText}>{event.description}</Text>
-            </ScrollView>
+        {/* Location Header */}
+        <View style={styles.locationHeader}>
+          <View style={styles.locationIconCircle}>
+            <Image source={LocationIcon} style={styles.locationModalIcon} resizeMode="contain" />
+          </View>
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationName}>{event.location}</Text>
+            <Text style={styles.locationAddress}>{event.address}</Text>
+            <Text style={styles.locationCity}>{event.city}</Text>
           </View>
         </View>
-      </Modal>
+
+        {/* Map Preview */}
+        <TouchableOpacity style={styles.mapContainer} onPress={openInMaps}>
+          <Image 
+            source={{ uri: staticMapUrl }}
+            style={styles.mapPreview}
+            resizeMode="cover"
+          />
+          <View style={styles.mapPinOverlay}>
+            <Text style={styles.mapPinEmoji}>📍</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Actions */}
+        <View style={styles.locationActions}>
+          <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
+            <Text style={styles.openMapsText}>Open in Maps</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.copyAddressButton}>
+            <Text style={styles.copyAddressText}>Copy Address</Text>
+          </TouchableOpacity>
+        </View>
+      </SlideUpModal>
+
+      {/* Description Modal */}
+      <SlideUpModal
+        visible={showDescriptionModal}
+        onClose={() => setShowDescriptionModal(false)}
+        title="Event Description"
+      >
+        <Text style={styles.descriptionModalText}>{event.description}</Text>
+      </SlideUpModal>
     </View>
   );
 }
@@ -416,53 +370,7 @@ const styles = StyleSheet.create({
     height: 120,
   },
   
-  // Location Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalOverlayTouchable: {
-    flex: 1,
-  },
-  locationModal: {
-    backgroundColor: '#1e293b',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: height * 0.75,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 12,
-    paddingBottom: 16,
-    position: 'relative',
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#475569',
-    borderRadius: 2,
-  },
-  closeXButton: {
-    position: 'absolute',
-    right: 0,
-    top: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeXText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '300',
-  },
+  // Location Modal Content Styles
   locationHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -550,30 +458,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Description Modal Styles
-  descriptionModal: {
-    backgroundColor: '#1e293b',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
-    minHeight: height * 0.5,
-    maxHeight: height * 0.7,
-  },
-  descriptionModalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-  },
-  descriptionScrollView: {
-    minHeight: 200,
-  },
-  descriptionScrollContent: {
-    paddingBottom: 20,
-    flexGrow: 1,
-  },
+  // Description Modal Content Styles
   descriptionModalText: {
     fontSize: 16,
     color: '#e2e8f0',
