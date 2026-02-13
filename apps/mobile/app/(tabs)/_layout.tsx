@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useCenterButton } from '../../contexts/CenterButtonContext';
 
 // Import icons (512px for high-DPI quality)
 const HomeIcon = require('../../assets/Icons/home_icon.png');
@@ -10,11 +11,20 @@ const ChatIcon = require('../../assets/Icons/message_icon.png');
 
 function CreateButton() {
   const router = useRouter();
+  const { customAction } = useCenterButton();
+
+  const handlePress = () => {
+    if (customAction) {
+      customAction();
+    } else {
+      router.push('/create-event');
+    }
+  };
 
   return (
     <TouchableOpacity
       style={styles.createButton}
-      onPress={() => router.push('/create-event')}
+      onPress={handlePress}
     >
       <Text style={styles.createButtonText}>+</Text>
     </TouchableOpacity>

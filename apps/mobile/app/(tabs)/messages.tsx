@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,10 @@ import {
   ImageSourcePropType,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
+import SlideUpModal from '../../components/SlideUpModal';
+import { useCenterButton } from '../../contexts/CenterButtonContext';
 
 // Import icons (512px for high-DPI quality)
 const ChatIcon = require('../../assets/Icons/chat_icon.png');
@@ -266,6 +269,7 @@ function SwipeableChatItem({
 
 export default function MessagesScreen() {
   const router = useRouter();
+  const { setCustomAction } = useCenterButton();
   const [activeSection, setActiveSection] =
     useState<SidebarSection>('personal_chats');
   const [personalChats, setPersonalChats] = useState<Chat[]>(INITIAL_CHATS);
@@ -273,6 +277,20 @@ export default function MessagesScreen() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+
+  // Register custom action for center button when this screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      setCustomAction(() => setShowNewChatModal(true));
+      
+      // Cleanup: reset to default when leaving this screen
+      return () => {
+        setCustomAction(null);
+      };
+    }, [setCustomAction])
+  );
 
   const totalUnread = personalChats.reduce((sum, chat) => sum + chat.unread, 0);
   const eventUnread = eventChats.reduce((sum, chat) => sum + chat.unread, 0);
@@ -303,7 +321,7 @@ export default function MessagesScreen() {
 
   const handlePin = (id: string) => {
     if (activeSection === 'personal_chats') {
-      setChats(
+      setPersonalChats(
         personalChats.map((c) =>
           c.id === id ? { ...c, pinned: !c.pinned } : c
         )
@@ -317,7 +335,7 @@ export default function MessagesScreen() {
 
   const handleArchive = (ids: string[]) => {
     if (activeSection === 'personal_chats') {
-      setChats(personalChats.filter((c) => !ids.includes(c.id)));
+      setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
     } else if (activeSection === 'event_chats') {
       setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
     }
@@ -326,7 +344,7 @@ export default function MessagesScreen() {
 
   const handleDelete = (ids: string[]) => {
     if (activeSection === 'personal_chats') {
-      setChats(personalChats.filter((c) => !ids.includes(c.id)));
+      setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
     } else if (activeSection === 'event_chats') {
       setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
     }
@@ -335,7 +353,7 @@ export default function MessagesScreen() {
 
   const handleMarkRead = (id: string) => {
     if (activeSection === 'personal_chats') {
-      setChats(
+      setPersonalChats(
         personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
       );
     } else if (activeSection === 'event_chats') {
@@ -348,7 +366,7 @@ export default function MessagesScreen() {
   const handleReadAll = () => {
     const currentChats = getCurrentChats();
     const setCurrentChats =
-      activeSection === 'personal_chats' ? setChats : setEventChats;
+      activeSection === 'personal_chats' ? setPersonalChats : setEventChats;
     if (selectedChats.size === 0) {
       setCurrentChats(currentChats.map((c) => ({ ...c, unread: 0 })));
     } else {
@@ -363,6 +381,16 @@ export default function MessagesScreen() {
   const selectedHaveUnread = Array.from(selectedChats).some(
     (id) => (getCurrentChats().find((c) => c.id === id)?.unread ?? 0) > 0
   );
+
+  const filteredContacts = CONTACTS.filter((contact) =>
+    contact.name.toLowerCase().includes(contactSearchQuery.toLowerCase())
+  );
+
+  const handleStartChat = (contactId: string) => {
+    setShowNewChatModal(false);
+    setContactSearchQuery('');
+    router.push(`/chat/${contactId}`);
+  };
 
   const renderChats = () => (
     <View style={styles.content}>
@@ -618,6 +646,85 @@ export default function MessagesScreen() {
         {/* Content Area */}
         {renderContent()}
       </View>
+
+      {/* New Chat Modal */}
+      <SlideUpModal
+        visible={showNewChatModal}
+        onClose={() => {
+          setShowNewChatModal(false);
+          setContactSearchQuery('');
+        }}
+        title="New Message"
+        minHeight={0.7}
+        maxHeight={0.9}
+      >
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={() => {
+              setShowNewChatModal(false);
+              // Navigate to create group
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>👥</Text>
+            </View>
+            <Text style={styles.quickActionText}>New Group</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={() => {
+              setShowNewChatModal(false);
+              // Navigate to add contact
+            }}
+          >
+            <View style={styles.quickActionIcon}>
+              <Text style={styles.quickActionEmoji}>➕</Text>
+            </View>
+            <Text style={styles.quickActionText}>New Contact</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.modalDivider} />
+
+        {/* Contact Search */}
+        <View style={styles.modalSearchContainer}>
+          <Text style={styles.modalSearchIcon}>🔍</Text>
+          <TextInput
+            style={styles.modalSearchInput}
+            placeholder="Search contacts"
+            placeholderTextColor="#64748b"
+            value={contactSearchQuery}
+            onChangeText={setContactSearchQuery}
+          />
+        </View>
+
+        {/* Contacts List */}
+        <Text style={styles.modalSectionTitle}>Contacts</Text>
+        <ScrollView 
+          style={styles.modalContactsList}
+          showsVerticalScrollIndicator={false}
+        >
+          {filteredContacts.map((contact) => (
+            <TouchableOpacity
+              key={contact.id}
+              style={styles.modalContactItem}
+              onPress={() => handleStartChat(contact.id)}
+            >
+              <View style={styles.modalContactAvatar}>
+                <Text style={styles.modalContactAvatarText}>{contact.name[0]}</Text>
+              </View>
+              <View style={styles.modalContactInfo}>
+                <Text style={styles.modalContactName}>{contact.name}</Text>
+                <Text style={styles.modalContactStatus}>{contact.status}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </SlideUpModal>
     </View>
   );
 }
@@ -857,5 +964,100 @@ const styles = StyleSheet.create({
   contactActionIcon: {
     width: 22,
     height: 22,
+  },
+  // New Chat Modal Styles
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#334155',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  quickActionEmoji: {
+    fontSize: 24,
+  },
+  quickActionText: {
+    fontSize: 13,
+    color: '#e2e8f0',
+    fontWeight: '500',
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: '#334155',
+    marginVertical: 16,
+  },
+  modalSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  modalSearchIcon: {
+    fontSize: 14,
+    marginRight: 10,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#fff',
+  },
+  modalSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#94a3b8',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalContactsList: {
+    flex: 1,
+  },
+  modalContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  modalContactAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalContactAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalContactInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  modalContactName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  modalContactStatus: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
   },
 });
