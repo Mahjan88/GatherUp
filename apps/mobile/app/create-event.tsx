@@ -28,6 +28,7 @@ export default function CreateEventScreen() {
   const [location, setLocation] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [isGroupChatEnabled, setIsGroupChatEnabled] = useState(false);
   const [hasAgenda, setHasAgenda] = useState(false);
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [showAddAgenda, setShowAddAgenda] = useState(false);
@@ -259,6 +260,19 @@ export default function CreateEventScreen() {
             )}
           </View>
         )}
+
+        {/* Enable Group Chat */}
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleInfo}>
+            <Text style={styles.toggleLabel}>Enable Group Chat</Text>
+          </View>
+          <Switch
+            value={isGroupChatEnabled}
+            onValueChange={setIsGroupChatEnabled}
+            trackColor={{ false: '#334155', true: '#3b82f6' }}
+            thumbColor="#fff"
+          />
+        </View>
 
         {/* Private Toggle */}
         <View style={styles.toggleRow}>

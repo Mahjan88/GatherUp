@@ -90,12 +90,14 @@ export default function EventDetailScreen() {
 
           {/* Action Icons */}
           <View style={styles.actionIcons}>
-            <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/chat/${id}`)}>
-              <View style={styles.actionCircle}>
-                <Image source={ChatIcon} style={styles.actionIcon} resizeMode="contain" />
-              </View>
-              <Text style={styles.actionLabel}>Group Chat</Text>
-            </TouchableOpacity>
+            {!event.isGroupChatEnabled && (
+                <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/chat/${id}`)}>
+                  <View style={styles.actionCircle}>
+                    <Image source={ChatIcon} style={styles.actionIcon} resizeMode="contain" />
+                  </View>
+                  <Text style={styles.actionLabel}>Group Chat</Text>
+                </TouchableOpacity>
+            )}
             
             <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/gallery/${id}`)}>
               <View style={styles.actionCircle}>
@@ -141,22 +143,24 @@ export default function EventDetailScreen() {
           </View>
 
           {/* Agenda */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Agenda</Text>
-            <View style={styles.agendaList}>
-              {event.agenda.map((item, index) => (
-                <View key={index} style={styles.agendaItem}>
-                  <View style={styles.agendaTimeline}>
-                    <View style={styles.agendaLine} />
-                  </View>
-                  <Text style={styles.agendaText}>
-                    <Text style={styles.agendaTime}>{item.time}: </Text>
-                    {item.title}
-                  </Text>
+          {event.agenda.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Agenda</Text>
+                <View style={styles.agendaList}>
+                  {event.agenda.map((item, index) => (
+                    <View key={index} style={styles.agendaItem}>
+                      <View style={styles.agendaTimeline}>
+                        <View style={styles.agendaLine} />
+                      </View>
+                      <Text style={styles.agendaText}>
+                        <Text style={styles.agendaTime}>{item.time}: </Text>
+                        {item.title}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          </View>
+              </View>
+          )}
 
           <View style={styles.bottomPadding} />
         </View>

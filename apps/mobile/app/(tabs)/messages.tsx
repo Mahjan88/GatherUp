@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   PanResponder,
   TextInput,
   Image,
-  ImageSourcePropType,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,13 +16,13 @@ import Header from '../../components/Header';
 import SlideUpModal from '../../components/SlideUpModal';
 import { useCenterButton } from '../../contexts/CenterButtonContext';
 
-// Import icons (512px for high-DPI quality)
-const ChatIcon = require('../../assets/Icons/chat_icon.png');
-const GroupChatIcon = require('../../assets/Icons/group_chat_icon.png');
-const PhoneIcon = require('../../assets/Icons/phone_icon.png');
-const ContactIcon = require('../../assets/Icons/contact_icon.png');
+// Import icons
+const EditIcon = require('../../assets/Icons/edit_icon.png');
+const SearchIcon = require('../../assets/Icons/search_icon.png');
+const ArchiveIcon = require('../../assets/Icons/archive_icon.png');
+const DoneIcon = require('../../assets/Icons/done_icon.png');
 
-type SidebarSection = 'personal_chats' | 'event_chats' | 'calls' | 'contacts';
+type ChatFilter = 'all' | 'personal' | 'event' | 'unread' | 'archived';
 
 interface Chat {
   id: string;
@@ -32,22 +31,11 @@ interface Chat {
   time: string;
   unread: number;
   pinned: boolean;
+  archived?: boolean;
   avatar: string | null;
   isEventChat?: boolean;
 }
 
-interface SidebarItem {
-  id: SidebarSection;
-  icon: ImageSourcePropType;
-  label: string;
-}
-
-const SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: 'personal_chats', icon: ChatIcon, label: 'Personal' },
-  { id: 'event_chats', icon: GroupChatIcon, label: 'Event Chats' },
-  { id: 'calls', icon: PhoneIcon, label: 'Calls' },
-  { id: 'contacts', icon: ContactIcon, label: 'Contacts' },
-];
 
 const INITIAL_CHATS: Chat[] = [
   {
@@ -248,7 +236,10 @@ function SwipeableChatItem({
           <View style={styles.chatInfo}>
             <View style={styles.chatHeader}>
               <Text style={styles.chatName}>{chat.name}</Text>
-              <Text style={styles.chatTime}>{chat.time}</Text>
+              <View style={styles.chatTimeRow}>
+                <Text style={styles.chatTime}>{chat.time}</Text>
+                <Text style={styles.chatChevron}>›</Text>
+              </View>
             </View>
             <View style={styles.chatFooter}>
               <Text style={styles.chatMessage} numberOfLines={1}>
@@ -270,15 +261,15 @@ function SwipeableChatItem({
 export default function MessagesScreen() {
   const router = useRouter();
   const { setCustomAction } = useCenterButton();
-  const [activeSection, setActiveSection] =
-    useState<SidebarSection>('personal_chats');
   const [personalChats, setPersonalChats] = useState<Chat[]>(INITIAL_CHATS);
   const [eventChats, setEventChats] = useState<Chat[]>(EVENT_CHATS);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [contactSearchQuery, setContactSearchQuery] = useState('');
+  const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Register custom action for center button when this screen is focused
   useFocusEffect(
@@ -292,22 +283,39 @@ export default function MessagesScreen() {
     }, [setCustomAction])
   );
 
-  const totalUnread = personalChats.reduce((sum, chat) => sum + chat.unread, 0);
-  const eventUnread = eventChats.reduce((sum, chat) => sum + chat.unread, 0);
-
   const getCurrentChats = () => {
-    if (activeSection === 'personal_chats') return personalChats;
-    if (activeSection === 'event_chats') return eventChats;
-    return [];
+    const allChats = [...personalChats, ...eventChats];
+    
+    switch (chatFilter) {
+      case 'personal':
+        return allChats.filter((c) => !c.isEventChat && !c.archived);
+      case 'event':
+        return allChats.filter((c) => c.isEventChat && !c.archived);
+      case 'unread':
+        return allChats.filter((c) => c.unread > 0 && !c.archived);
+      case 'archived':
+        return allChats.filter((c) => c.archived);
+      default:
+        return allChats.filter((c) => !c.archived);
+    }
   };
 
   const sortedChats = [...getCurrentChats()]
-    .filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((c) => 
+      searchQuery === '' || 
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.message.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     .sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return 0;
     });
+
+  // Calculate unread counts
+  const personalUnreadCount = personalChats.filter(c => !c.archived && c.unread > 0).length;
+  const eventUnreadCount = eventChats.filter(c => !c.archived && c.unread > 0).length;
+  const totalUnreadCount = personalUnreadCount + eventUnreadCount;
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedChats);
@@ -320,13 +328,14 @@ export default function MessagesScreen() {
   };
 
   const handlePin = (id: string) => {
-    if (activeSection === 'personal_chats') {
+    // Check if it's in personal chats
+    if (personalChats.some((c) => c.id === id)) {
       setPersonalChats(
         personalChats.map((c) =>
           c.id === id ? { ...c, pinned: !c.pinned } : c
         )
       );
-    } else if (activeSection === 'event_chats') {
+    } else {
       setEventChats(
         eventChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
       );
@@ -334,29 +343,33 @@ export default function MessagesScreen() {
   };
 
   const handleArchive = (ids: string[]) => {
-    if (activeSection === 'personal_chats') {
-      setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
-    } else if (activeSection === 'event_chats') {
-      setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
-    }
+    // Mark chats as archived instead of deleting
+    setPersonalChats(
+      personalChats.map((c) =>
+        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
+      )
+    );
+    setEventChats(
+      eventChats.map((c) =>
+        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
+      )
+    );
     setSelectedChats(new Set());
   };
 
   const handleDelete = (ids: string[]) => {
-    if (activeSection === 'personal_chats') {
-      setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
-    } else if (activeSection === 'event_chats') {
-      setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
-    }
+    setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
+    setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
     setSelectedChats(new Set());
   };
 
   const handleMarkRead = (id: string) => {
-    if (activeSection === 'personal_chats') {
+    // Check if it's in personal chats
+    if (personalChats.some((c) => c.id === id)) {
       setPersonalChats(
         personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
       );
-    } else if (activeSection === 'event_chats') {
+    } else {
       setEventChats(
         eventChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
       );
@@ -365,17 +378,20 @@ export default function MessagesScreen() {
 
   const handleReadAll = () => {
     const currentChats = getCurrentChats();
-    const setCurrentChats =
-      activeSection === 'personal_chats' ? setPersonalChats : setEventChats;
-    if (selectedChats.size === 0) {
-      setCurrentChats(currentChats.map((c) => ({ ...c, unread: 0 })));
-    } else {
-      setCurrentChats(
-        currentChats.map((c) =>
-          selectedChats.has(c.id) ? { ...c, unread: 0 } : c
-        )
-      );
-    }
+    const idsToMark = selectedChats.size === 0 
+      ? currentChats.map((c) => c.id) 
+      : Array.from(selectedChats);
+    
+    setPersonalChats(
+      personalChats.map((c) =>
+        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
+      )
+    );
+    setEventChats(
+      eventChats.map((c) =>
+        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
+      )
+    );
   };
 
   const selectedHaveUnread = Array.from(selectedChats).some(
@@ -386,40 +402,131 @@ export default function MessagesScreen() {
     contact.name.toLowerCase().includes(contactSearchQuery.toLowerCase())
   );
 
-  const handleStartChat = (contactId: string) => {
+  const handleStartChat = (contactId: string, contactName: string) => {
     setShowNewChatModal(false);
     setContactSearchQuery('');
-    router.push(`/chat/${contactId}`);
+    
+    // Find existing personal chat with this contact (not event/group chat)
+    const existingChat = personalChats.find(
+      (chat) => !chat.isEventChat && chat.name === contactName
+    );
+    
+    if (existingChat) {
+      // Open existing chat
+      router.push(`/chat/${existingChat.id}`);
+    } else {
+      // Open new DM chat with this contact
+      router.push(`/chat/dm-${contactId}`);
+    }
   };
 
   const renderChats = () => (
     <View style={styles.content}>
       {/* Content Header */}
       <View style={styles.contentHeader}>
+        {/* Left - Edit Button */}
         <TouchableOpacity
+          style={styles.headerIconButton}
           onPress={() => setIsEditMode(!isEditMode)}
-          style={{ width: 50 }}
         >
-          <Text style={styles.headerButton}>
-            {isEditMode ? 'Done' : 'Edit'}
-          </Text>
+          <Image 
+            source={isEditMode ? DoneIcon : EditIcon} 
+            style={styles.headerIcon} 
+            resizeMode="contain" 
+          />
         </TouchableOpacity>
-        <Text style={styles.contentTitle}>
-          {activeSection === 'personal_chats' ? 'Personal' : 'Group Chats'}
-        </Text>
-        <View style={{ width: 50 }} />
+
+        {/* Right - Search & Archive */}
+        {!isEditMode && (
+          <View style={styles.headerRightSection}>
+            {isSearchMode && (
+              <View style={styles.searchInputContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search..."
+                  placeholderTextColor="#64748b"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                />
+              </View>
+            )}
+            <View style={styles.iconsWrapper}>
+              <TouchableOpacity
+                style={styles.wrapperIconButton}
+                onPress={() => {
+                  setIsSearchMode(!isSearchMode);
+                  if (isSearchMode) {
+                    setSearchQuery('');
+                  }
+                }}
+              >
+                <Image
+                  source={SearchIcon}
+                  style={[
+                    styles.wrapperIcon,
+                    isSearchMode && styles.wrapperIconActive
+                  ]}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+              <View style={styles.iconDivider} />
+              <TouchableOpacity
+                style={styles.wrapperIconButton}
+                onPress={() => setChatFilter(chatFilter === 'archived' ? 'all' : 'archived')}
+              >
+                <Image
+                  source={ArchiveIcon}
+                  style={[
+                    styles.wrapperIcon,
+                    chatFilter === 'archived' && styles.wrapperIconActive
+                  ]}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search"
-          placeholderTextColor="#64748b"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      {/* Filter Tabs */}
+      <View style={styles.filterTabsContainer}>
+        <View style={styles.filterTabsWrapper}>
+          <TouchableOpacity
+            style={[styles.filterTab, chatFilter === 'all' && styles.filterTabActive]}
+            onPress={() => setChatFilter('all')}
+          >
+            <Text style={[styles.filterTabText, chatFilter === 'all' && styles.filterTabTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, chatFilter === 'personal' && styles.filterTabActive]}
+            onPress={() => setChatFilter('personal')}
+          >
+            <Text style={[styles.filterTabText, chatFilter === 'personal' && styles.filterTabTextActive]}>
+              Personal
+            </Text>
+            {personalUnreadCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{personalUnreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterTab, chatFilter === 'unread' && styles.filterTabActive]}
+            onPress={() => setChatFilter('unread')}
+          >
+            <Text style={[styles.filterTabText, chatFilter === 'unread' && styles.filterTabTextActive]}>
+              Unread
+            </Text>
+            {totalUnreadCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{totalUnreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Chat List */}
@@ -507,145 +614,12 @@ export default function MessagesScreen() {
     </View>
   );
 
-  const renderCalls = () => (
-    <View style={styles.content}>
-      <View style={styles.contentHeader}>
-        <View style={{ width: 50 }} />
-        <Text style={styles.contentTitle}>Calls</Text>
-        <View style={{ width: 50 }} />
-      </View>
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyIcon}>📞</Text>
-        <Text style={styles.emptyTitle}>No Calls Yet</Text>
-        <Text style={styles.emptyText}>Your call history will appear here</Text>
-      </View>
-    </View>
-  );
-
-  const renderContacts = () => (
-    <View style={styles.content}>
-      <View style={styles.contentHeader}>
-        <View style={{ width: 50 }} />
-        <Text style={styles.contentTitle}>Contacts</Text>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addIcon}>+</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search contacts"
-          placeholderTextColor="#64748b"
-        />
-      </View>
-
-      <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
-        {CONTACTS.map((contact) => (
-          <TouchableOpacity
-            key={contact.id}
-            style={styles.contactItem}
-            onPress={() => router.push(`/contact/${contact.id}`)}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{contact.name[0]}</Text>
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>{contact.name}</Text>
-              <Text style={styles.contactStatus}>{contact.status}</Text>
-            </View>
-            <TouchableOpacity style={styles.contactAction}>
-              <Image
-                source={ChatIcon}
-                style={styles.contactActionIcon}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-        <View style={styles.listPadding} />
-      </ScrollView>
-    </View>
-  );
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'personal_chats':
-      case 'event_chats':
-        return renderChats();
-      case 'calls':
-        return renderCalls();
-      case 'contacts':
-        return renderContacts();
-      default:
-        return renderChats();
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Header title="Messages" />
 
-      {/* Main Content with Sidebar */}
-      <View style={styles.mainContent}>
-        {/* Left Sidebar */}
-        <View style={styles.sidebar}>
-          {SIDEBAR_ITEMS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.sidebarItem,
-                activeSection === item.id && styles.sidebarItemActive,
-              ]}
-              onPress={() => {
-                setActiveSection(item.id);
-                setIsEditMode(false);
-                setSelectedChats(new Set());
-                setSearchQuery('');
-              }}
-            >
-              <View style={styles.sidebarIconContainer}>
-                <Image
-                  source={item.icon}
-                  style={[
-                    item.id === 'personal_chats'
-                      ? styles.sidebarIconChat
-                      : styles.sidebarIcon,
-                    activeSection === item.id && styles.sidebarIconActive,
-                  ]}
-                  resizeMode="contain"
-                />
-                {item.id === 'personal_chats' && totalUnread > 0 && (
-                  <View style={styles.sidebarBadge}>
-                    <Text style={styles.sidebarBadgeText}>
-                      {totalUnread > 99 ? '99+' : totalUnread}
-                    </Text>
-                  </View>
-                )}
-                {item.id === 'event_chats' && eventUnread > 0 && (
-                  <View style={styles.sidebarBadge}>
-                    <Text style={styles.sidebarBadgeText}>
-                      {eventUnread > 99 ? '99+' : eventUnread}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text
-                style={[
-                  styles.sidebarLabel,
-                  activeSection === item.id && styles.sidebarLabelActive,
-                ]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Content Area */}
-        {renderContent()}
-      </View>
+      {/* Main Content */}
+      {renderChats()}
 
       {/* New Chat Modal */}
       <SlideUpModal
@@ -712,7 +686,7 @@ export default function MessagesScreen() {
             <TouchableOpacity
               key={contact.id}
               style={styles.modalContactItem}
-              onPress={() => handleStartChat(contact.id)}
+              onPress={() => handleStartChat(contact.id, contact.name)}
             >
               <View style={styles.modalContactAvatar}>
                 <Text style={styles.modalContactAvatarText}>{contact.name[0]}</Text>
@@ -745,56 +719,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  mainContent: { flex: 1, flexDirection: 'row' },
-  sidebar: {
-    width: 80,
-    backgroundColor: '#1e293b',
-    paddingTop: 12,
-    alignItems: 'center',
-  },
-  sidebarItem: {
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    width: '100%',
-  },
-  sidebarItemActive: {
-    backgroundColor: '#334155',
-    borderLeftWidth: 3,
-    borderLeftColor: '#3b82f6',
-  },
-  sidebarIconContainer: { position: 'relative', marginBottom: 6 },
-  sidebarIcon: {
-    width: 26,
-    height: 26,
-    opacity: 0.6,
-  },
-  sidebarIconChat: {
-    width: 35,
-    height: 35,
-    opacity: 0.6,
-  },
-  sidebarIconActive: {
-    opacity: 1,
-    width: 40,
-    height: 40,
-    tintColor: '#14b8a6',
-  },
-  sidebarBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -12,
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  sidebarBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  sidebarLabel: { fontSize: 10, color: '#94a3b8', textAlign: 'center' },
-  sidebarLabelActive: { color: '#ffffff', fontWeight: '600' },
   content: { flex: 1, backgroundColor: '#0f172a' },
   contentHeader: {
     flexDirection: 'row',
@@ -807,6 +731,111 @@ const styles = StyleSheet.create({
   },
   contentTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
   headerButton: { color: '#3b82f6', fontSize: 16, fontWeight: '500' },
+  headerIconButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerIconButtonActive: {
+    backgroundColor: '#14b8a6',
+  },
+  headerIcon: {
+    width: 30,
+    height: 30,
+    tintColor: '#14b8a6',
+  },
+  headerIconActive: {
+    tintColor: '#fff',
+  },
+  headerRightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    borderRadius: 25,
+    paddingHorizontal: 8
+  },
+  wrapperIconButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wrapperIcon: {
+    width: 28,
+    height: 28,
+    tintColor: '#14b8a6',
+  },
+  wrapperIconActive: {
+    tintColor: '#fff',
+  },
+  iconDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#334155',
+    marginHorizontal: 4,
+  },
+  searchInputContainer: {
+    backgroundColor: '#1e293b',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minWidth: 150,
+  },
+  searchInput: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  filterTabsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  filterTabsWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#1e293b',
+    borderRadius: 25,
+    padding: 4,
+  },
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 22,
+    gap: 8,
+  },
+  filterTabActive: {
+    backgroundColor: '#334155',
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#94a3b8',
+  },
+  filterTabTextActive: {
+    color: '#fff',
+  },
+  filterBadge: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  filterBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   composeButton: {
     width: 36,
     height: 36,
@@ -896,7 +925,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chatName: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  chatTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   chatTime: { fontSize: 12, color: '#64748b' },
+  chatChevron: { 
+    fontSize: 18, 
+    color: '#64748b', 
+    marginLeft: 4,
+    fontWeight: '300',
+  },
   chatFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

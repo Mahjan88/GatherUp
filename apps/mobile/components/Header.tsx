@@ -3,23 +3,20 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import HamburgerMenu from './HamburgerMenu';
 
-const SearchIcon = require('../assets/Icons/search_icon.png');
-
 interface HeaderProps {
   title?: string;
   showBack?: boolean;
-  showSearch?: boolean;
   showHamburger?: boolean;
   rightElement?: React.ReactNode;
 }
 
-export default function Header({ title, showBack = false, showSearch = true, showHamburger = true, rightElement }: HeaderProps) {
+export default function Header({ title, showBack = false, showHamburger = true, rightElement }: HeaderProps) {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
 
   return (
     <View style={styles.header}>
-      {/* Top Row: Logo + GatherUp + Search + Hamburger */}
+      {/* Top Row: Logo + GatherUp + Hamburger */}
       <View style={styles.topRow}>
         <View style={styles.headerLeft}>
           {showBack ? (
@@ -48,19 +45,10 @@ export default function Header({ title, showBack = false, showSearch = true, sho
         </View>
       </View>
 
-      {/* Page Title Row with Search */}
+      {/* Page Title */}
       {title && (
         <View style={styles.titleRow}>
           <Text style={styles.pageTitle}>{title}</Text>
-          {showSearch && (
-            <TouchableOpacity style={styles.searchButton}>
-              <Image 
-                source={SearchIcon}
-                style={styles.searchIcon}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
         </View>
       )}
 
@@ -120,19 +108,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-  },
-  searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchIcon: { 
-    width: 22, 
-    height: 22,
-    tintColor: '#fff',
   },
   hamburgerButton: {
     width: 40,
