@@ -7,12 +7,22 @@ interface HeaderProps {
   title?: string;
   showBack?: boolean;
   showHamburger?: boolean;
+  showLogo?: boolean;
   rightElement?: React.ReactNode;
+  onBack?: () => void;
 }
 
-export default function Header({ title, showBack = false, showHamburger = true, rightElement }: HeaderProps) {
+export default function Header({ title, showBack = false, showHamburger = true, showLogo = true, rightElement, onBack }: HeaderProps) {
   const router = useRouter();
   const [menuVisible, setMenuVisible] = useState(false);
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.back();
+    }
+  };
 
   return (
     <View style={styles.header}>
@@ -20,19 +30,23 @@ export default function Header({ title, showBack = false, showHamburger = true, 
       <View style={styles.topRow}>
         <View style={styles.headerLeft}>
           {showBack ? (
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
               <Text style={styles.backIcon}>‹</Text>
             </TouchableOpacity>
           ) : null}
-          <Image 
-            source={require('../assets/logo.png')} 
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.headerTitle}>
-            <Text style={styles.titleCyan}>Gather</Text>
-            <Text style={styles.titlePink}>Up</Text>
-          </Text>
+          {showLogo && (
+            <>
+              <Image 
+                source={require('../assets/logo.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.headerTitle}>
+                <Text style={styles.titleCyan}>Gather</Text>
+                <Text style={styles.titlePink}>Up</Text>
+              </Text>
+            </>
+          )}
         </View>
         
         <View style={styles.headerRight}>

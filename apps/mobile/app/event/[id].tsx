@@ -72,6 +72,14 @@ export default function EventDetailScreen() {
             resizeMode="cover"
           />
 
+          {/* Back Button */}
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.push('/')}
+          >
+            <Text style={styles.backButtonText}>‹</Text>
+          </TouchableOpacity>
+
           {/* Private Event Badge */}
           {event.isPrivate && (
             <View style={styles.privateBadge}>
@@ -258,6 +266,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '300',
+    marginTop: -2,
   },
   content: { 
     flex: 1, 

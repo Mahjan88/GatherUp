@@ -16,6 +16,8 @@ const { width } = Dimensions.get('window');
 const PRIVATE_CARD_WIDTH = width * 0.42;
 const PUBLIC_CARD_WIDTH = width * 0.75;
 
+const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
+
 interface PrivateEvent {
   id: string;
   title: string;
@@ -145,30 +147,42 @@ export default function HomeScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Filter Pills */}
         <View style={styles.filterSection}>
-          <TouchableOpacity 
-            style={[styles.filterPill, activeFilter === 'week' && styles.filterPillActive]}
-            onPress={() => setActiveFilter('week')}
-          >
-            <Text style={[styles.filterPillText, activeFilter === 'week' && styles.filterPillTextActive]}>
-              This Week
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterPill, activeFilter === 'month' && styles.filterPillActive]}
-            onPress={() => setActiveFilter('month')}
-          >
-            <Text style={[styles.filterPillText, activeFilter === 'month' && styles.filterPillTextActive]}>
-              This Month
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterPill, activeFilter === 'all' && styles.filterPillActive]}
-            onPress={() => setActiveFilter('all')}
-          >
-            <Text style={[styles.filterPillText, activeFilter === 'all' && styles.filterPillTextActive]}>
-              All Events
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.filterTabsWrapper}>
+            <TouchableOpacity
+              style={[styles.filterTab, styles.filterTabIcon]}
+              onPress={() => router.push('/calendar')}
+            >
+              <Image
+                source={CalendarIcon}
+                style={styles.filterCalendarIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterTab, activeFilter === 'week' && styles.filterTabActive]}
+              onPress={() => setActiveFilter('week')}
+            >
+              <Text style={[styles.filterTabText, activeFilter === 'week' && styles.filterTabTextActive]}>
+                This Week
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterTab, activeFilter === 'month' && styles.filterTabActive]}
+              onPress={() => setActiveFilter('month')}
+            >
+              <Text style={[styles.filterTabText, activeFilter === 'month' && styles.filterTabTextActive]}>
+                This Month
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.filterTab, activeFilter === 'all' && styles.filterTabActive]}
+              onPress={() => setActiveFilter('all')}
+            >
+              <Text style={[styles.filterTabText, activeFilter === 'all' && styles.filterTabTextActive]}>
+                All Events
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* PRIVATE INVITES */}
@@ -197,18 +211,6 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      {/* Floating Calendar Button */}
-      <TouchableOpacity 
-        style={styles.calendarButton}
-        onPress={() => router.push('/calendar')}
-        activeOpacity={0.9}
-      >
-        <View style={styles.calendarIconContainer}>
-          <View style={styles.calendarIconBar} />
-          <View style={styles.calendarIconBar} />
-        </View>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -222,30 +224,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   filterSection: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
+    paddingHorizontal: 10,
     marginBottom: 24,
   },
-  filterPill: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#334155',
+  filterTabsWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#1e293b',
+    borderRadius: 25,
+    padding: 2,
   },
-  filterPillActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 22,
   },
-  filterPillText: {
+  filterTabIcon: {
+    paddingHorizontal: 12,
+  },
+  filterTabActive: {
+    backgroundColor: '#334155',
+  },
+  filterTabText: {
     fontSize: 14,
     color: '#94a3b8',
     fontWeight: '500',
   },
-  filterPillTextActive: {
+  filterTabTextActive: {
     color: '#fff',
+  },
+  filterCalendarIcon: {
+    tintColor: '#94a3b8',
+    width: 35,
+    height: 35,
   },
   section: { 
     marginBottom: 32,
@@ -386,7 +398,7 @@ const styles = StyleSheet.create({
   // Floating Calendar Button
   calendarButton: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 50,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,15 +418,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  calendarIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  calendarIconBar: {
-    width: 3,
-    height: 14,
-    backgroundColor: '#fff',
-    borderRadius: 2,
+  calendarIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#fff',
   },
 });
