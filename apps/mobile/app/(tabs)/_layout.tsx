@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -5,9 +6,39 @@ import { useCenterButton } from '../../contexts/CenterButtonContext';
 
 // Import icons (512px for high-DPI quality)
 const HomeIcon = require('../../assets/Icons/home_icon.png');
-const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
 const NotificationIcon = require('../../assets/Icons/notification_icon.png');
 const ChatIcon = require('../../assets/Icons/message_icon.png');
+const ProfileIcon = require('../../assets/Icons/profile_icon.png');
+
+// Sample user image URL - replace with actual user data
+const USER_PROFILE_IMAGE = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face';
+
+function ProfileTabIcon({ focused }: { focused: boolean }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError || !USER_PROFILE_IMAGE) {
+    // Fallback to profile icon
+    return (
+      <View style={styles.iconContainer}>
+        <Image
+          source={ProfileIcon}
+          style={[styles.tabIcon, focused && styles.tabIconActive]}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.profileIconContainer, focused && styles.profileIconContainerActive]}>
+      <Image
+        source={{ uri: USER_PROFILE_IMAGE }}
+        style={styles.profileImage}
+        onError={() => setImageError(true)}
+      />
+    </View>
+  );
+}
 
 function CreateButton() {
   const router = useRouter();
@@ -66,13 +97,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="calendar"
+        name="notifications"
         options={{
-          title: 'Calendar',
+          title: 'Notifications',
           tabBarIcon: ({ focused }) => (
             <View style={styles.iconContainer}>
               <Image
-                source={CalendarIcon}
+                source={NotificationIcon}
                 style={[styles.tabIcon, focused && styles.tabIconActive]}
                 resizeMode="contain"
               />
@@ -108,22 +139,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="profile"
         options={{
-          title: 'Notifications',
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.iconContainer}>
-              <Image
-                source={NotificationIcon}
-                style={[styles.tabIcon, focused && styles.tabIconActive]}
-                resizeMode="contain"
-              />
-            </View>
-          ),
+          title: 'Profile',
+          tabBarIcon: ({ focused }) => <ProfileTabIcon focused={focused} />,
         }}
       />
+      {/* Hide calendar from tabs */}
       <Tabs.Screen
-        name="profile"
+        name="calendar"
         options={{
           href: null,
         }}
@@ -176,5 +200,21 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     fontWeight: '300',
     marginTop: -2,
+  },
+  profileIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
+  profileIconContainerActive: {
+    borderColor: '#14b8a6',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 14,
   },
 });

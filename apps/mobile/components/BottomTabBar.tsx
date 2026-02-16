@@ -41,14 +41,14 @@ export default function BottomTabBar({ middleButton, hideMiddleButton }: BottomT
           resizeMode="contain"
         />
       </TouchableOpacity>
-      
-      <TouchableOpacity 
+
+      <TouchableOpacity
         style={styles.tabItem}
         onPress={() => router.push('/calendar')}
       >
-        <Image 
+        <Image
           source={CalendarIcon}
-          style={[styles.tabIcon, isActive('/calendar') && styles.tabIconActive]} 
+          style={[styles.tabIcon, isActive('/calendar') && styles.tabIconActive]}
           resizeMode="contain"
         />
       </TouchableOpacity>

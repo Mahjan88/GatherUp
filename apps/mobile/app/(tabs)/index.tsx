@@ -197,6 +197,18 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Floating Calendar Button */}
+      <TouchableOpacity 
+        style={styles.calendarButton}
+        onPress={() => router.push('/calendar')}
+        activeOpacity={0.9}
+      >
+        <View style={styles.calendarIconContainer}>
+          <View style={styles.calendarIconBar} />
+          <View style={styles.calendarIconBar} />
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -369,5 +381,40 @@ const styles = StyleSheet.create({
 
   bottomPadding: { 
     height: 100,
+  },
+
+  // Floating Calendar Button
+  calendarButton: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e293b',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  calendarButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  calendarIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  calendarIconBar: {
+    width: 3,
+    height: 14,
+    backgroundColor: '#fff',
+    borderRadius: 2,
   },
 });
