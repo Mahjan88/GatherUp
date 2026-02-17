@@ -176,7 +176,7 @@ export default function CreateEventScreen() {
           onPress={() => setCurrentPage(1)}
         >
           <Text style={[styles.tabText, currentPage === 1 && styles.tabTextActive]}>
-            1/3 Basics
+            Basics
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -184,7 +184,7 @@ export default function CreateEventScreen() {
           onPress={() => setCurrentPage(2)}
         >
           <Text style={[styles.tabText, currentPage === 2 && styles.tabTextActive]}>
-            2/3 Guests
+            Guests & Privacy
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -192,7 +192,7 @@ export default function CreateEventScreen() {
           onPress={() => setCurrentPage(3)}
         >
           <Text style={[styles.tabText, currentPage === 3 && styles.tabTextActive]}>
-            3/3 Advanced
+            Advanced Settings
           </Text>
         </TouchableOpacity>
       </View>
@@ -651,27 +651,6 @@ export default function CreateEventScreen() {
           </View>
         </View>
       )}
-
-      {/* ========== H. NOTIFICATIONS & REMINDERS ========== */}
-      <Text style={styles.sectionHeader}>Notifications & Reminders</Text>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Reminders</Text>
-        <View style={styles.checkboxGroup}>
-          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder24h(!reminder24h)}>
-            <View style={[styles.checkbox, reminder24h && styles.checkboxActive]}>
-              {reminder24h && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxText}>24h before</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder1h(!reminder1h)}>
-            <View style={[styles.checkbox, reminder1h && styles.checkboxActive]}>
-              {reminder1h && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxText}>1h before</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </>
   );
 
@@ -785,6 +764,27 @@ export default function CreateEventScreen() {
           multiline
           numberOfLines={3}
         />
+      </View>
+
+      {/* ========== H. NOTIFICATIONS & REMINDERS ========== */}
+      <Text style={styles.sectionHeader}>Notifications & Reminders</Text>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Reminders</Text>
+        <View style={styles.checkboxGroup}>
+          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder24h(!reminder24h)}>
+            <View style={[styles.checkbox, reminder24h && styles.checkboxActive]}>
+              {reminder24h && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxText}>24h before</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder1h(!reminder1h)}>
+            <View style={[styles.checkbox, reminder1h && styles.checkboxActive]}>
+              {reminder1h && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxText}>1h before</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ========== J. REVIEWS & FEEDBACK ========== */}
