@@ -29,6 +29,8 @@ export type EventMediaInsert =
 export type NotificationInsert =
   Database['public']['Tables']['notifications']['Insert'];
 
+export type UserUpdate = Database['public']['Tables']['users']['Update'];
+
 export interface PublicFields {
   title?: boolean;
   description?: boolean;

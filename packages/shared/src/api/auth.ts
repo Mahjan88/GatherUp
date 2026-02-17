@@ -1,4 +1,5 @@
 import { getSupabase } from './supabase';
+import { UserUpdate } from '../types';
 
 export async function signInWithEmail(email: string, password: string) {
   const supabase = getSupabase();
@@ -71,11 +72,7 @@ export async function getCurrentUser() {
   return user;
 }
 
-export async function updateProfile(updates: {
-  full_name?: string;
-  avatar_url?: string;
-  bio?: string;
-}) {
+export async function updateProfile(updates: UserUpdate) {
   const supabase = getSupabase();
   const {
     data: { user },
