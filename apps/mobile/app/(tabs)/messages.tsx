@@ -230,27 +230,28 @@ function SwipeableChatItem({
           {chat.pinned && <Text style={styles.pinnedIcon}>📌</Text>}
           <View style={[styles.avatar, chat.isEventChat && styles.eventAvatar]}>
             <Text style={styles.avatarText}>
-              {chat.isEventChat ? '🎉' : chat.name[0]}
+              {chat.isEventChat ? '🎉' : (() => {
+                const parts = chat.name.split(' ');
+                if (parts.length >= 2) {
+                  return parts[0][0] + parts[1][0];
+                }
+                return chat.name.substring(0, 2);
+              })()}
             </Text>
           </View>
           <View style={styles.chatInfo}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatName}>{chat.name}</Text>
-              <View style={styles.chatTimeRow}>
-                <Text style={styles.chatTime}>{chat.time}</Text>
-                <Text style={styles.chatChevron}>›</Text>
+            <Text style={styles.chatName}>{chat.name}</Text>
+            <Text style={styles.chatMessage} numberOfLines={1}>
+              {chat.message}
+            </Text>
+          </View>
+          <View style={styles.chatRight}>
+            {chat.unread > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadText}>{chat.unread}</Text>
               </View>
-            </View>
-            <View style={styles.chatFooter}>
-              <Text style={styles.chatMessage} numberOfLines={1}>
-                {chat.message}
-              </Text>
-              {chat.unread > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadText}>{chat.unread}</Text>
-                </View>
-              )}
-            </View>
+            )}
+            <Text style={styles.chatTime}>{chat.time}</Text>
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -514,15 +515,15 @@ export default function MessagesScreen() {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterTab, chatFilter === 'unread' && styles.filterTabActive]}
-            onPress={() => setChatFilter('unread')}
+            style={[styles.filterTab, chatFilter === 'event' && styles.filterTabActive]}
+            onPress={() => setChatFilter('event')}
           >
-            <Text style={[styles.filterTabText, chatFilter === 'unread' && styles.filterTabTextActive]}>
-              Unread
+            <Text style={[styles.filterTabText, chatFilter === 'event' && styles.filterTabTextActive]}>
+              Groups
             </Text>
-            {totalUnreadCount > 0 && (
+            {eventUnreadCount > 0 && (
               <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{totalUnreadCount}</Text>
+                <Text style={styles.filterBadgeText}>{eventUnreadCount}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -794,7 +795,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterTabsContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 15,
     paddingVertical: 12,
   },
   filterTabsWrapper: {
@@ -806,7 +807,7 @@ const styles = StyleSheet.create({
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 22,
     gap: 8,
@@ -823,7 +824,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   filterBadge: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#14b8a6',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -866,8 +867,16 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 14, marginRight: 10 },
   searchInput: { flex: 1, fontSize: 16, color: '#fff' },
-  chatList: { flex: 1 },
-  swipeContainer: { position: 'relative', overflow: 'hidden' },
+  chatList: { 
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  swipeContainer: { 
+    position: 'relative', 
+    overflow: 'hidden',
+    marginBottom: 10,
+    borderRadius: 16,
+  },
   actionContainer: {
     position: 'absolute',
     top: 0,
@@ -875,7 +884,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  pinAction: { left: 0, backgroundColor: '#3b82f6' },
+  pinAction: { left: 0, backgroundColor: '#3b82f6', borderRadius: 16 },
   leftActions: { right: 0 },
   actionButton: {
     width: 60,
@@ -884,16 +893,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   archiveButton: { backgroundColor: '#8b5cf6' },
-  deleteButton: { backgroundColor: '#ef4444' },
+  deleteButton: { backgroundColor: '#ef4444', borderTopRightRadius: 16, borderBottomRightRadius: 16 },
   actionIcon: { fontSize: 20 },
-  chatItemAnimated: { backgroundColor: '#0f172a' },
+  chatItemAnimated: { 
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+  },
   chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
   },
   selectCircle: {
     width: 24,
@@ -909,50 +919,50 @@ const styles = StyleSheet.create({
   checkmark: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
   pinnedIcon: { fontSize: 12, marginRight: 6 },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3b82f6',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  eventAvatar: { backgroundColor: '#f97316' },
-  avatarText: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
-  chatInfo: { flex: 1, marginLeft: 12 },
-  chatHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  eventAvatar: { backgroundColor: '#000000' },
+  avatarText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
+  chatInfo: { 
+    flex: 1, 
+    marginLeft: 12,
+    justifyContent: 'center',
   },
-  chatName: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  chatTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  chatName: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#fff',
+    marginBottom: 4,
   },
-  chatTime: { fontSize: 12, color: '#64748b' },
-  chatChevron: { 
-    fontSize: 18, 
-    color: '#64748b', 
-    marginLeft: 4,
-    fontWeight: '300',
+  chatMessage: { 
+    fontSize: 14, 
+    color: '#94a3b8',
   },
-  chatFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
+  chatRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
-  chatMessage: { fontSize: 14, color: '#94a3b8', flex: 1 },
+  chatTime: { 
+    fontSize: 12, 
+    color: '#64748b',
+    marginTop: 6,
+  },
   unreadBadge: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    backgroundColor: '#14b8a6',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
-  unreadText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
+  unreadText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
   listPadding: { height: 20 },
   bottomBar: {
     flexDirection: 'row',
