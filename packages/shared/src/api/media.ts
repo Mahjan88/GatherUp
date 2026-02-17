@@ -1,5 +1,5 @@
 import { getSupabase } from './supabase';
-import { EventMedia, EventMediaInsert } from '../types';
+import { EventMediaInsert } from '../types';
 
 export async function uploadEventMedia(
   eventId: string,
@@ -15,7 +15,7 @@ export async function uploadEventMedia(
 
   // Upload to storage
   const filePath = `${eventId}/${Date.now()}-${fileName}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('event-media')
     .upload(filePath, file);
 
@@ -98,7 +98,7 @@ export async function uploadAvatar(file: File | Blob, userId: string) {
   const supabase = getSupabase();
 
   const filePath = `avatars/${userId}-${Date.now()}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('avatars')
     .upload(filePath, file);
 
