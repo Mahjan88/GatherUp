@@ -1,10 +1,11 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack:/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  NotificationData,
 } from '@gatherup/shared';
 import { useRouter } from 'next/navigation';
 
@@ -14,7 +15,7 @@ export default function NotificationsPage() {
 
   const { data: notifications, isLoading } = useQuery({
     queryKey: ['notifications'],
-    queryFn: getNotifications,
+    queryFn: () => getNotifications(),
   });
 
   const markAsReadMutation = useMutation({
@@ -31,13 +32,14 @@ export default function NotificationsPage() {
     },
   });
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: { id: string; type: string; read: boolean; data: unknown }) => {
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
 
-    if (notification.type.includes('event') && notification.data.event_id) {
-      router.push(`/event/${notification.data.event_id}`);
+    const data = notification.data as NotificationData;
+    if (notification.type.includes('event') && data?.event_id) {
+      router.push(`/event/${data.event_id}`);
     }
   };
 
@@ -103,7 +105,7 @@ export default function NotificationsPage() {
                       !notification.read ? 'font-semibold' : 'font-normal'
                     }`}
                   >
-                    {notification.data.message || 'New notification'}
+                    {(notification.data as NotificationData)?.message || 'New notification'}
                   </p>
                   <p className="text-gray-500 text-sm mt-1">
                     {new Date(notification.created_at).toLocaleString()}

@@ -1,6 +1,5 @@
 import { getSupabase } from './supabase';
 import {
-  Event,
   EventInsert,
   EventUpdate,
   EventWithHost,
