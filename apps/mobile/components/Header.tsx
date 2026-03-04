@@ -29,11 +29,6 @@ export default function Header({ title, showBack = false, showHamburger = true, 
       {/* Top Row: Logo + GatherUp + Hamburger */}
       <View style={styles.topRow}>
         <View style={styles.headerLeft}>
-          {showBack ? (
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Text style={styles.backIcon}>‹</Text>
-            </TouchableOpacity>
-          ) : null}
           {showLogo && (
             <>
               <Image 
@@ -59,9 +54,14 @@ export default function Header({ title, showBack = false, showHamburger = true, 
         </View>
       </View>
 
-      {/* Page Title */}
+      {/* Page Title with Back Button */}
       {title && (
         <View style={styles.titleRow}>
+          {showBack && (
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Text style={styles.backIcon}>‹</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.pageTitle}>{title}</Text>
         </View>
       )}
@@ -95,16 +95,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#1e293b',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 4,
+    marginRight: 12,
   },
   backIcon: { 
-    fontSize: 24, 
+    fontSize: 22, 
     color: '#fff', 
     marginTop: -2,
   },
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginTop: 16,
   },
   pageTitle: {

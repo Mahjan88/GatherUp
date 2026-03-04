@@ -41,7 +41,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Calendar" showBack={true} showLogo={false} onBack={() => router.push('/')} />
+      <Header title="Calendar" showBack={true} onBack={() => router.push('/')} />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Month Header */}

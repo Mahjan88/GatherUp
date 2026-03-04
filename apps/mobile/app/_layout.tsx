@@ -121,6 +121,18 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="events-inbox"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="past-events"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
       </CenterButtonProvider>
     </QueryClientProvider>

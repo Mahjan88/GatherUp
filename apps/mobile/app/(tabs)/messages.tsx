@@ -795,13 +795,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterTabsContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   filterTabsWrapper: {
     flexDirection: 'row',
     backgroundColor: '#1e293b',
-    borderRadius: 25,
+    borderRadius: 20,
     padding: 4,
   },
   filterTab: {
