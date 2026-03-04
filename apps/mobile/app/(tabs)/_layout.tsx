@@ -82,7 +82,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: 'Home',
           tabBarIcon: ({ focused }) => (
@@ -143,6 +143,13 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ focused }) => <ProfileTabIcon focused={focused} />,
+        }}
+      />
+      {/* Hide index redirect from tabs */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          href: null,
         }}
       />
       {/* Hide calendar from tabs */}

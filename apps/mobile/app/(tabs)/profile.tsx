@@ -5,96 +5,147 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  Image, 
-  ImageBackground,
-  Dimensions 
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
+import EventCard, { EventCardData } from '../../components/EventCard';
 
-const { width } = Dimensions.get('window');
-const GRID_GAP = 2;
-const GRID_ITEM_SIZE = (width - GRID_GAP * 2) / 3;
+// Sample hosted events data (events the user hosted/co-hosted)
+const HOSTED_EVENTS: EventCardData[] = [];
 
-// Sample hosted events data
-const HOSTED_EVENTS = [
+// Sample attended events (events user attended but didn't host)
+const ATTENDED_EVENTS: EventCardData[] = [
   {
-    id: '1',
-    title: 'Summer Beach Party',
-    image: 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=400',
-    attendees: 45,
-    date: 'Jan 15',
+    id: '10',
+    title: 'New Year Celebration 2026',
+    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
+    date: new Date(2026, 0, 1, 20, 0),
+    location: 'Space Needle, Seattle',
+    hostName: 'Seattle Events',
+    rsvpStatus: 'going',
+    isPast: true,
   },
   {
-    id: '2',
-    title: 'Tech Meetup 2026',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400',
-    attendees: 120,
-    date: 'Jan 10',
+    id: '11',
+    title: 'Tech Meetup January',
+    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600',
+    date: new Date(2026, 0, 15, 18, 0),
+    location: 'Amazon HQ, Seattle',
+    hostName: 'Tech Community',
+    rsvpStatus: 'going',
+    isPast: true,
   },
   {
-    id: '3',
-    title: 'Birthday Bash',
-    image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=400',
-    attendees: 28,
-    date: 'Dec 28',
+    id: '12',
+    title: 'Winter Art Gallery',
+    image: 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=600',
+    date: new Date(2025, 11, 20, 19, 0),
+    location: 'Pioneer Square Gallery',
+    hostName: 'Art Collective',
+    rsvpStatus: 'going',
+    isPast: true,
   },
   {
-    id: '4',
-    title: 'New Year Eve Party',
-    image: 'https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=400',
-    attendees: 85,
-    date: 'Dec 31',
-  },
-  {
-    id: '5',
-    title: 'Art Gallery Opening',
-    image: 'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?w=400',
-    attendees: 62,
-    date: 'Dec 20',
-  },
-  {
-    id: '6',
-    title: 'Startup Pitch Night',
-    image: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400',
-    attendees: 95,
-    date: 'Dec 15',
+    id: '13',
+    title: 'Summer Music Festival',
+    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
+    date: new Date(2024, 7, 10, 16, 0),
+    location: 'Gorge Amphitheatre',
+    hostName: 'Live Nation',
+    rsvpStatus: 'going',
+    isPast: true,
   },
 ];
 
-type TabType = 'events' | 'attended';
+type TabType = 'hosted' | 'attended';
+
+// Helper function to group events by year
+const groupEventsByYear = (events: EventCardData[]): { [year: string]: EventCardData[] } => {
+  const grouped: { [year: string]: EventCardData[] } = {};
+  
+  events.forEach(event => {
+    const year = event.date.getFullYear().toString();
+    if (!grouped[year]) {
+      grouped[year] = [];
+    }
+    grouped[year].push(event);
+  });
+  
+  // Sort events within each year by date (most recent first)
+  Object.keys(grouped).forEach(year => {
+    grouped[year].sort((a, b) => b.date.getTime() - a.date.getTime());
+  });
+  
+  return grouped;
+};
+
+// Get sorted years (most recent first)
+const getSortedYears = (grouped: { [year: string]: EventCardData[] }): string[] => {
+  return Object.keys(grouped).sort((a, b) => parseInt(b) - parseInt(a));
+};
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>('events');
+  const [activeTab, setActiveTab] = useState<TabType>('hosted');
 
-  const handleEventPress = (eventId: string) => {
-    router.push(`/event/${eventId}`);
-  };
-
-  const renderEventGrid = () => (
-    <View style={styles.eventsGrid}>
-      {HOSTED_EVENTS.map((event) => (
-        <TouchableOpacity
-          key={event.id}
-          style={styles.eventGridItem}
-          onPress={() => handleEventPress(event.id)}
-          activeOpacity={0.8}
+  const renderEmptyHosted = () => (
+    <View style={styles.emptyStateCard}>
+      <View style={styles.emptyStateContent}>
+        <Text style={styles.emptyStateTitle}>Start creating amazing events</Text>
+        <Text style={styles.emptyStateText}>
+          Gather your people. Fuel your passion. Create events that make waves.
+        </Text>
+        <TouchableOpacity 
+          style={styles.startNowButton}
+          onPress={() => router.push('/create-event')}
         >
-          <ImageBackground
-            source={{ uri: event.image }}
-            style={styles.eventGridImage}
-          >
-            <View style={styles.eventOverlay}>
-              <View style={styles.eventStats}>
-                <Text style={styles.eventAttendeesText}>{event.attendees}</Text>
-              </View>
-            </View>
-          </ImageBackground>
+          <Text style={styles.startNowText}>Start now</Text>
         </TouchableOpacity>
-      ))}
+      </View>
     </View>
   );
+
+  const renderEmptyAttended = () => (
+    <View style={styles.emptyAttendedContainer}>
+      <Text style={styles.emptyAttendedEmoji}>🎉</Text>
+      <Text style={styles.emptyAttendedTitle}>No events attended yet</Text>
+      <Text style={styles.emptyAttendedText}>
+        Time to get out there and have some fun! Check out events happening near you.
+      </Text>
+      <TouchableOpacity 
+        style={styles.exploreButton}
+        onPress={() => router.push('/(tabs)/home')}
+      >
+        <Text style={styles.exploreButtonText}>Explore Events</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderEventsByYear = (events: EventCardData[]) => {
+    const groupedEvents = groupEventsByYear(events);
+    const sortedYears = getSortedYears(groupedEvents);
+
+    return (
+      <View style={styles.eventsList}>
+        {sortedYears.map(year => (
+          <View key={year} style={styles.yearSection}>
+            <Text style={styles.yearHeader}>{year}</Text>
+            {groupedEvents[year].map(event => (
+              <EventCard key={event.id} event={event} variant="past" />
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderTabContent = () => {
+    if (activeTab === 'hosted') {
+      return HOSTED_EVENTS.length > 0 ? renderEventsByYear(HOSTED_EVENTS) : renderEmptyHosted();
+    } else {
+      return ATTENDED_EVENTS.length > 0 ? renderEventsByYear(ATTENDED_EVENTS) : renderEmptyAttended();
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -158,10 +209,10 @@ export default function ProfileScreen() {
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'events' && styles.tabActive]}
-            onPress={() => setActiveTab('events')}
+            style={[styles.tab, activeTab === 'hosted' && styles.tabActive]}
+            onPress={() => setActiveTab('hosted')}
           >
-            <Text style={[styles.tabText, activeTab === 'events' && styles.tabTextActive]}>
+            <Text style={[styles.tabText, activeTab === 'hosted' && styles.tabTextActive]}>
               Hosted Events
             </Text>
           </TouchableOpacity>
@@ -175,8 +226,8 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Events Grid */}
-        {renderEventGrid()}
+        {/* Tab Content */}
+        {renderTabContent()}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -339,32 +390,92 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#fff',
   },
-  eventsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: GRID_GAP,
+  eventsList: {
+    paddingTop: 8,
   },
-  eventGridItem: {
-    width: GRID_ITEM_SIZE,
-    height: GRID_ITEM_SIZE,
+  yearSection: {
+    marginBottom: 8,
   },
-  eventGridImage: {
-    flex: 1,
-    justifyContent: 'flex-end',
+  yearHeader: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#64748b',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
-  eventOverlay: {
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+
+  // Empty state for hosted events
+  emptyStateCard: {
+    margin: 20,
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    overflow: 'hidden',
+    padding: 24,
   },
-  eventStats: {
-    flexDirection: 'row',
+  emptyStateContent: {
     alignItems: 'center',
   },
-  eventAttendeesText: {
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
   },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  startNowButton: {
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+  },
+  startNowText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+
+  // Empty state for attended events
+  emptyAttendedContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyAttendedEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyAttendedTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  emptyAttendedText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  exploreButton: {
+    backgroundColor: '#14b8a6',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  exploreButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
   bottomPadding: { 
     height: 100 
   },
