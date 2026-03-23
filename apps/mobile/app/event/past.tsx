@@ -3,11 +3,9 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
-  TouchableOpacity, 
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import Header from '../components/Header';
-import EventCard, { EventCardData } from '../components/EventCard';
+import Header from '../../components/Header';
+import EventCard, { EventCardData } from '../../components/EventCard';
 
 const SAMPLE_IMAGES = {
   party: 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=600',
@@ -59,8 +57,24 @@ const PAST_EVENTS: EventCardData[] = [
   },
 ];
 
+const groupEventsByYear = (events: EventCardData[]): Record<number, EventCardData[]> => {
+  return events.reduce((acc, event) => {
+    const year = event.date.getFullYear();
+    if (!acc[year]) {
+      acc[year] = [];
+    }
+    acc[year].push(event);
+    return acc;
+  }, {} as Record<number, EventCardData[]>);
+};
+
+const getSortedYears = (grouped: Record<number, EventCardData[]>): number[] => {
+  return Object.keys(grouped).map(Number).sort((a, b) => b - a);
+};
+
 export default function PastEventsScreen() {
-  const router = useRouter();
+  const groupedEvents = groupEventsByYear(PAST_EVENTS);
+  const sortedYears = getSortedYears(groupedEvents);
 
   return (
     <View style={styles.container}>
@@ -70,11 +84,14 @@ export default function PastEventsScreen() {
       />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          {PAST_EVENTS.map(event => (
-            <EventCard key={event.id} event={event} variant="past" />
-          ))}
-        </View>
+        {sortedYears.map(year => (
+          <View key={year} style={styles.yearSection}>
+            <Text style={styles.yearHeader}>{year}</Text>
+            {groupedEvents[year].map(event => (
+              <EventCard key={event.id} event={event} variant="past" />
+            ))}
+          </View>
+        ))}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -90,8 +107,15 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  section: {
-    paddingTop: 20,
+  yearSection: {
+    paddingTop: 16,
+  },
+  yearHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   bottomPadding: {
     height: 40,

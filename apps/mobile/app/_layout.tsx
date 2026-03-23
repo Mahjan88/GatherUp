@@ -114,7 +114,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="create-event"
+          name="event/create"
           options={{
             title: 'Create Event',
             presentation: 'modal',
@@ -122,13 +122,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="events-inbox"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="past-events"
+          name="event/past"
           options={{
             headerShown: false,
           }}

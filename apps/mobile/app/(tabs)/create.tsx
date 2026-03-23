@@ -6,7 +6,7 @@ export default function CreateScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/create-event');
+    router.replace('/event/create');
   }, []);
 
   return <View style={{ flex: 1, backgroundColor: '#0f172a' }} />;

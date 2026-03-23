@@ -10,25 +10,22 @@ import {
   ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import PeopleSelector, { Person } from '../components/PeopleSelector';
+import PeopleSelector from '../../components/PeopleSelector';
+import {
+  Person,
+  AgendaItem,
+  EventPrivacy,
+  GuestListVisibility,
+  RsvpOption,
+  ChatPermission,
+  MediaPermission,
+  UploadPermission,
+  FeedbackVisibility,
+  EventCategory,
+  TicketType,
+} from '../../types/event';
 
 type FormPage = 1 | 2 | 3;
-type EventPrivacy = 'public' | 'private' | 'invite-only';
-type GuestListVisibility = 'everyone' | 'attendees' | 'hidden';
-type RsvpOption = 'three-way' | 'two-way';
-type ChatPermission = 'hosts' | 'attendees';
-type MediaPermission = 'hosts' | 'attendees' | 'everyone';
-type UploadPermission = 'attendees' | 'hosts';
-type FeedbackVisibility = 'public' | 'attendees_only' | 'host_only';
-type EventCategory = 'networking' | 'party' | 'workshop' | 'conference' | 'social' | 'sports' | 'other';
-type TicketType = 'free' | 'paid';
-
-interface AgendaItem {
-  id: string;
-  time: string;
-  title: string;
-  icon: string;
-}
 
 const AGENDA_ICONS = ['☕', '💬', '💻', '🎤', '🍕', '🎮', '🎵', '📸', '🎉', '⏰'];
 
@@ -42,7 +39,6 @@ const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-// Mock data for co-hosts/invites
 const MOCK_CONTACTS: Person[] = [
   { id: '1', name: 'Sarah Johnson', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
   { id: '2', name: 'Mike Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' },
@@ -54,7 +50,6 @@ const MOCK_CONTACTS: Person[] = [
 export default function CreateEventScreen() {
   const router = useRouter();
   
-  // Current form page
   const [currentPage, setCurrentPage] = useState<FormPage>(1);
   
   // A. Event Basics
@@ -199,19 +194,15 @@ export default function CreateEventScreen() {
     </View>
   );
 
-  // ========== TAB 1: EVENT BASICS + WHEN & WHERE ==========
   const renderPage1 = () => (
     <>
-      {/* ========== A. EVENT BASICS ========== */}
       <Text style={styles.sectionHeader}>Event Basics</Text>
 
-      {/* Cover Photo */}
       <TouchableOpacity style={styles.coverPhotoBox}>
         <Text style={styles.coverPhotoIcon}>📷</Text>
         <Text style={styles.coverPhotoText}>Add Cover Photo</Text>
       </TouchableOpacity>
 
-      {/* Event Title */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Event Title <Text style={styles.requiredAsterisk}>*</Text></Text>
         <TextInput
@@ -223,7 +214,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Description */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Description <Text style={styles.requiredAsterisk}>*</Text></Text>
         <TextInput
@@ -237,10 +227,8 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* ========== B. WHEN & WHERE ========== */}
       <Text style={styles.sectionHeader}>When & Where</Text>
 
-      {/* Start Date/Time */}
       <View style={styles.dateTimeRow}>
         <View style={styles.dateTimeField}>
           <Text style={styles.inputLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
@@ -264,7 +252,6 @@ export default function CreateEventScreen() {
         </View>
       </View>
 
-      {/* End Date/Time */}
       <View style={styles.dateTimeRow}>
         <View style={styles.dateTimeField}>
           <Text style={styles.inputLabel}>End Date</Text>
@@ -288,7 +275,6 @@ export default function CreateEventScreen() {
         </View>
       </View>
 
-      {/* Address */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Address</Text>
         <TextInput
@@ -300,124 +286,117 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Category */}
-    <View style={styles.inputGroup}>
-      <Text style={styles.inputLabel}>Category</Text>
-      <View style={styles.categoryPills}>
-        {EVENT_CATEGORIES.map(cat => (
-          <TouchableOpacity
-            key={cat.value}
-            style={[styles.categoryPill, category === cat.value && styles.categoryPillActive]}
-            onPress={() => setCategory(cat.value)}
-          >
-            <Text style={[styles.categoryPillText, category === cat.value && styles.categoryPillTextActive]}>
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Category</Text>
+        <View style={styles.categoryPills}>
+          {EVENT_CATEGORIES.map(cat => (
+            <TouchableOpacity
+              key={cat.value}
+              style={[styles.categoryPill, category === cat.value && styles.categoryPillActive]}
+              onPress={() => setCategory(cat.value)}
+            >
+              <Text style={[styles.categoryPillText, category === cat.value && styles.categoryPillTextActive]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
-    </View>
 
-    {/* Agenda Toggle */}
-    <View style={styles.inlineToggle}>
-      <View style={styles.toggleInfo}>
+      <View style={styles.inlineToggle}>
+        <View style={styles.toggleInfo}>
           <Text style={styles.toggleLabel}>Add Agenda</Text>
           <Text style={styles.toggleHint}>Create a schedule for your event</Text>
+        </View>
+        <Switch
+          value={hasAgenda}
+          onValueChange={setHasAgenda}
+          trackColor={{ false: '#334155', true: '#14b8a6' }}
+          thumbColor="#fff"
+        />
       </View>
-      <Switch
-        value={hasAgenda}
-        onValueChange={setHasAgenda}
-        trackColor={{ false: '#334155', true: '#14b8a6' }}
-        thumbColor="#fff"
-      />
-    </View>
 
-    {/* Agenda Items */}
-    {hasAgenda && (
-      <View style={[styles.agendaSection, styles.indentedSection]}>
-        {agendaItems.map((item, index) => (
-          <View key={item.id} style={styles.agendaItem}>
-            <View style={styles.agendaTimeline}>
-              <View style={styles.agendaDot} />
-              {index < agendaItems.length - 1 && <View style={styles.agendaLine} />}
+      {hasAgenda && (
+        <View style={[styles.agendaSection, styles.indentedSection]}>
+          {agendaItems.map((item, index) => (
+            <View key={item.id} style={styles.agendaItem}>
+              <View style={styles.agendaTimeline}>
+                <View style={styles.agendaDot} />
+                {index < agendaItems.length - 1 && <View style={styles.agendaLine} />}
+              </View>
+              <View style={styles.agendaIconBox}>
+                <Text style={styles.agendaIcon}>{item.icon}</Text>
+              </View>
+              <View style={styles.agendaContent}>
+                <Text style={styles.agendaTime}>{item.time}</Text>
+                <Text style={styles.agendaTitle}>{item.title}</Text>
+              </View>
+              <TouchableOpacity style={styles.removeButton} onPress={() => removeAgendaItem(item.id)}>
+                <Text style={styles.removeIcon}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.agendaIconBox}>
-              <Text style={styles.agendaIcon}>{item.icon}</Text>
-            </View>
-            <View style={styles.agendaContent}>
-              <Text style={styles.agendaTime}>{item.time}</Text>
-              <Text style={styles.agendaTitle}>{item.title}</Text>
-            </View>
-            <TouchableOpacity style={styles.removeButton} onPress={() => removeAgendaItem(item.id)}>
-              <Text style={styles.removeIcon}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+          ))}
 
-        {showAddAgenda ? (
-          <View style={styles.addAgendaForm}>
-            <View style={styles.agendaFormRow}>
-              <TextInput
-                style={[styles.input, styles.timeInput]}
-                placeholder="10:00 AM"
-                placeholderTextColor="#64748b"
-                value={newAgendaTime}
-                onChangeText={setNewAgendaTime}
-              />
-              <TextInput
-                style={[styles.input, styles.titleInput]}
-                placeholder="Activity title"
-                placeholderTextColor="#64748b"
-                value={newAgendaTitle}
-                onChangeText={setNewAgendaTitle}
-              />
-            </View>
-            <View style={styles.iconPicker}>
-              {AGENDA_ICONS.map(icon => (
+          {showAddAgenda ? (
+            <View style={styles.addAgendaForm}>
+              <View style={styles.agendaFormRow}>
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  placeholder="10:00 AM"
+                  placeholderTextColor="#64748b"
+                  value={newAgendaTime}
+                  onChangeText={setNewAgendaTime}
+                />
+                <TextInput
+                  style={[styles.input, styles.titleInput]}
+                  placeholder="Activity title"
+                  placeholderTextColor="#64748b"
+                  value={newAgendaTitle}
+                  onChangeText={setNewAgendaTitle}
+                />
+              </View>
+              <View style={styles.iconPicker}>
+                {AGENDA_ICONS.map(icon => (
+                  <TouchableOpacity
+                    key={icon}
+                    style={[styles.iconOption, selectedIcon === icon && styles.iconOptionActive]}
+                    onPress={() => setSelectedIcon(icon)}
+                  >
+                    <Text style={styles.iconText}>{icon}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.agendaFormButtons}>
                 <TouchableOpacity
-                  key={icon}
-                  style={[styles.iconOption, selectedIcon === icon && styles.iconOptionActive]}
-                  onPress={() => setSelectedIcon(icon)}
+                  style={styles.cancelAgendaButton}
+                  onPress={() => {
+                    setShowAddAgenda(false);
+                    setNewAgendaTime('');
+                    setNewAgendaTitle('');
+                  }}
                 >
-                  <Text style={styles.iconText}>{icon}</Text>
+                  <Text style={styles.cancelAgendaText}>Cancel</Text>
                 </TouchableOpacity>
-              ))}
+                <TouchableOpacity style={styles.addAgendaButton} onPress={addAgendaItem}>
+                  <Text style={styles.addAgendaText}>Add Item</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.agendaFormButtons}>
-              <TouchableOpacity
-                style={styles.cancelAgendaButton}
-                onPress={() => {
-                  setShowAddAgenda(false);
-                  setNewAgendaTime('');
-                  setNewAgendaTitle('');
-                }}
-              >
-                <Text style={styles.cancelAgendaText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.addAgendaButton} onPress={addAgendaItem}>
-                <Text style={styles.addAgendaText}>Add Item</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.addAgendaItemButton} onPress={() => setShowAddAgenda(true)}>
-            <Text style={styles.addAgendaItemIcon}>+</Text>
-            <Text style={styles.addAgendaItemText}>Add Agenda Item</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    )}
-
+          ) : (
+            <TouchableOpacity style={styles.addAgendaItemButton} onPress={() => setShowAddAgenda(true)}>
+              <Text style={styles.addAgendaItemIcon}>+</Text>
+              <Text style={styles.addAgendaItemText}>Add Agenda Item</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </>
   );
 
-  // ========== TAB 2: GUESTS & PRIVACY + CHAT & SHARING + NOTIFICATIONS ==========
   const renderPage2 = () => (
     <>
-      {/* ========== C. GUESTS & PRIVACY ========== */}
       <Text style={styles.sectionHeader}>Guests & Privacy</Text>
 
-      {/* Co-hosts */}
       <PeopleSelector
         label="Co-Hosts"
         selectedPeople={coHosts}
@@ -436,7 +415,6 @@ export default function CreateEventScreen() {
         onSearchChange={setCoHostSearch}
       />
 
-      {/* Invite People */}
       <PeopleSelector
         label="Invite People"
         selectedPeople={invitedPeople}
@@ -455,7 +433,6 @@ export default function CreateEventScreen() {
         onSearchChange={setInviteSearch}
       />
 
-      {/* Event Privacy */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Event Privacy <Text style={styles.requiredAsterisk}>*</Text></Text>
         <View style={styles.privacyOptions}>
@@ -489,7 +466,6 @@ export default function CreateEventScreen() {
         </View>
       </View>
 
-      {/* Allow Invitees to Invite Others */}
       <View style={styles.inlineToggle}>
         <Text style={styles.toggleLabel}>Allow invitees to invite others</Text>
         <Switch
@@ -500,7 +476,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Guest List Visibility */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Guest List Visibility</Text>
         <View style={styles.radioGroup}>
@@ -525,7 +500,6 @@ export default function CreateEventScreen() {
         </View>
       </View>
 
-      {/* RSVP Required */}
       <View style={styles.inlineToggle}>
         <Text style={styles.toggleLabel}>RSVP Required</Text>
         <Switch
@@ -538,7 +512,6 @@ export default function CreateEventScreen() {
 
       {rsvpRequired && (
         <View style={styles.indentedSection}>
-          {/* RSVP Options */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>RSVP Options</Text>
             <View style={styles.radioGroup}>
@@ -557,7 +530,6 @@ export default function CreateEventScreen() {
             </View>
           </View>
 
-          {/* RSVP Deadline */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>RSVP Deadline</Text>
             <TextInput
@@ -571,10 +543,8 @@ export default function CreateEventScreen() {
         </View>
       )}
 
-      {/* ========== F. CHAT & SHARING ========== */}
       <Text style={styles.sectionHeader}>Chat & Sharing</Text>
 
-      {/* Event Chat Toggle */}
       <View style={styles.inlineToggle}>
         <Text style={styles.toggleLabel}>Event Chat Enabled</Text>
         <Switch
@@ -587,7 +557,6 @@ export default function CreateEventScreen() {
 
       {chatEnabled && (
         <View style={styles.indentedSection}>
-          {/* Who Can Chat */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Who can chat</Text>
             <View style={styles.radioGroup}>
@@ -606,7 +575,6 @@ export default function CreateEventScreen() {
             </View>
           </View>
 
-          {/* Who Can Post Media */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Who can post media</Text>
             <View style={styles.radioGroup}>
@@ -631,7 +599,6 @@ export default function CreateEventScreen() {
             </View>
           </View>
 
-          {/* Who Can Upload */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Who can upload</Text>
             <View style={styles.radioGroup}>
@@ -654,13 +621,10 @@ export default function CreateEventScreen() {
     </>
   );
 
-  // ========== TAB 3: ADVANCED SETTINGS + REVIEWS & FEEDBACK ==========
   const renderPage3 = () => (
     <>
-      {/* ========== I. ADVANCED SETTINGS ========== */}
       <Text style={styles.sectionHeader}>Advanced Settings</Text>
 
-      {/* Cost / Tickets */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Cost / Tickets</Text>
         <View style={styles.radioGroup}>
@@ -691,7 +655,6 @@ export default function CreateEventScreen() {
         )}
       </View>
 
-      {/* Capacity Limit */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Capacity Limit</Text>
         <TextInput
@@ -704,7 +667,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Age Restriction */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Age Restriction</Text>
         <TextInput
@@ -716,7 +678,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* What to Bring */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>What to Bring</Text>
         <TextInput
@@ -728,7 +689,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Dress Code */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Dress Code</Text>
         <TextInput
@@ -740,7 +700,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Accessibility Notes */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Accessibility Notes</Text>
         <TextInput
@@ -752,7 +711,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* Cancellation Policy */}
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Cancellation Policy</Text>
         <TextInput
@@ -766,7 +724,6 @@ export default function CreateEventScreen() {
         />
       </View>
 
-      {/* ========== H. NOTIFICATIONS & REMINDERS ========== */}
       <Text style={styles.sectionHeader}>Notifications & Reminders</Text>
 
       <View style={styles.inputGroup}>
@@ -787,10 +744,8 @@ export default function CreateEventScreen() {
         </View>
       </View>
 
-      {/* ========== J. REVIEWS & FEEDBACK ========== */}
       <Text style={styles.sectionHeader}>Reviews & Feedback</Text>
 
-      {/* Feedback Enabled Toggle */}
       <View style={styles.inlineToggle}>
         <Text style={styles.toggleLabel}>Feedback Enabled</Text>
         <Switch
@@ -831,11 +786,8 @@ export default function CreateEventScreen() {
 
   return (
     <View style={styles.container}>
-
-      {/* Page Tabs */}
       {renderPageTabs()}
 
-      {/* Form Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {currentPage === 1 && renderPage1()}
         {currentPage === 2 && renderPage2()}
@@ -843,7 +795,6 @@ export default function CreateEventScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Bottom Button */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
           <Text style={styles.nextButtonText}>
@@ -859,30 +810,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0f172a',
-  },
-  coverImageArea: {
-    height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coverOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  uploadCoverButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadCoverIcon: {
-    fontSize: 20,
-  },
-  uploadCoverText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
   },
   tabsContainer: {
     paddingHorizontal: 12,

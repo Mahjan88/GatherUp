@@ -97,7 +97,7 @@ export default function ProfileScreen() {
         </Text>
         <TouchableOpacity 
           style={styles.startNowButton}
-          onPress={() => router.push('/create-event')}
+          onPress={() => router.push('/event/create')}
         >
           <Text style={styles.startNowText}>Start now</Text>
         </TouchableOpacity>

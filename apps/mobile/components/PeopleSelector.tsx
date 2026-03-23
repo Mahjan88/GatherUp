@@ -1,11 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
 import SlideUpModal from './SlideUpModal';
+import { Person } from '../types/event';
 
-export interface Person {
-  id: string;
-  name: string;
-  avatar?: string;
-}
+export type { Person };
 
 interface PeopleSelectorProps {
   label: string;

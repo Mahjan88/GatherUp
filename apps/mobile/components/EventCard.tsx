@@ -1,21 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { EventCardData, RsvpStatus, Person } from '../types/event';
 
-export type RsvpStatus = 'none' | 'interested' | 'going';
-
-export interface EventCardData {
-  id: string;
-  title: string;
-  image: string;
-  date: Date;
-  location: string;
-  hostName: string;
-  hostAvatar?: string;
-  rsvpStatus: RsvpStatus;
-  isPending?: boolean;
-  isPast?: boolean;
-  attendees?: { name: string; avatar?: string }[];
-}
+export type { EventCardData, RsvpStatus, Person };
 
 interface EventCardProps {
   event: EventCardData;

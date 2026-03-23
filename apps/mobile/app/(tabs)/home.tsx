@@ -135,7 +135,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>PRIVATE INVITES</Text>
-            <TouchableOpacity onPress={() => router.push('/past-events')}>
+            <TouchableOpacity onPress={() => router.push('/event/past')}>
               <Text style={styles.seeAllLink}>past events</Text>
             </TouchableOpacity>
           </View>
@@ -150,6 +150,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
+        <View style={styles.sectionadding} />
         {/* PUBLIC EVENTS NEAR YOU */}
         <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -160,7 +161,7 @@ export default function HomeScreen() {
         ))}
         </View>
 
-        <View style={styles.bottomPadding} />
+        <View style={styles.sectionadding} />
       </ScrollView>
     </View>
   );
@@ -236,8 +237,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  bottomPadding: { 
-    height: 100,
+  sectionadding: {
+    height: 50,
   },
 
   // Floating Calendar Button

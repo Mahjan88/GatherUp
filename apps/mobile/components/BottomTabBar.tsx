@@ -26,7 +26,7 @@ export default function BottomTabBar({ middleButton, hideMiddleButton }: BottomT
   };
 
   const handleCreatePress = () => {
-    router.push('/create-event');
+    router.push('/event/create');
   };
 
   return (

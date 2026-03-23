@@ -48,7 +48,7 @@ function CreateButton() {
     if (customAction) {
       customAction();
     } else {
-      router.push('/create-event');
+      router.push('/event/create');
     }
   };
 
