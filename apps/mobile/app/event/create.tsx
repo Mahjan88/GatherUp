@@ -158,7 +158,6 @@ export default function CreateEventScreen() {
     if (currentPage < 3) {
       setCurrentPage((currentPage + 1) as FormPage);
     } else {
-      console.log('Creating event...');
       router.back();
     }
   };

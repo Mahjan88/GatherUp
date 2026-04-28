@@ -38,6 +38,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@gatherup/types": "workspace:*",
+    "@gatherup/api-client": "workspace:*",
     "@supabase/supabase-js": "^2.46.2",
     "@tanstack/react-query": "^5.62.8",
     "zustand": "^5.0.2"

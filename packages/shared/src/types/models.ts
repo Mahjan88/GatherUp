@@ -45,7 +45,7 @@ export interface LocationCoords {
   longitude: number;
 }
 
-export type EventVisibility = 'public' | 'private';
+export type EventVisibility = 'public' | 'private' | 'invite_only';
 export type EventMemberStatus = 'invited' | 'pending' | 'joined' | 'declined';
 export type EventMemberRole = 'host' | 'member';
 

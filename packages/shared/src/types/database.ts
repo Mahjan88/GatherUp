@@ -52,10 +52,45 @@ export interface Database {
           end_time: string | null;
           location: string | null;
           location_coords: Json | null;
-          visibility: 'public' | 'private';
+          visibility: 'public' | 'private' | 'invite_only';
           public_fields: Json | null;
           requires_approval: boolean;
           cover_image_url: string | null;
+          address: string | null;
+          city_region: string | null;
+          category:
+            | 'networking'
+            | 'party'
+            | 'workshop'
+            | 'conference'
+            | 'social'
+            | 'sports'
+            | 'other';
+          gallery_for_attendees_only: boolean;
+          show_address_to_invitees: boolean;
+          allow_invite_others: boolean;
+          guest_list_visibility: 'everyone' | 'attendees' | 'hidden';
+          rsvp_required: boolean;
+          capacity_limit: number | null;
+          rsvp_option: 'three-way' | 'two-way';
+          rsvp_deadline: string | null;
+          chat_enabled: boolean;
+          who_can_chat: 'hosts' | 'attendees';
+          who_can_post_media: 'hosts' | 'attendees' | 'everyone';
+          who_can_upload: 'attendees' | 'hosts';
+          reminder_24h: boolean;
+          reminder_1h: boolean;
+          has_agenda: boolean;
+          agenda_items: Json;
+          what_to_bring: string | null;
+          dress_code: string | null;
+          accessibility_notes: string | null;
+          age_restriction: string | null;
+          ticket_type: 'free' | 'paid';
+          ticket_price: number | null;
+          cancellation_policy: string | null;
+          feedback_enabled: boolean;
+          feedback_visibility: 'public' | 'attendees_only' | 'host_only';
           created_at: string;
           updated_at: string;
         };
@@ -68,10 +103,45 @@ export interface Database {
           end_time?: string | null;
           location?: string | null;
           location_coords?: Json | null;
-          visibility?: 'public' | 'private';
+          visibility?: 'public' | 'private' | 'invite_only';
           public_fields?: Json | null;
           requires_approval?: boolean;
           cover_image_url?: string | null;
+          address?: string | null;
+          city_region?: string | null;
+          category?:
+            | 'networking'
+            | 'party'
+            | 'workshop'
+            | 'conference'
+            | 'social'
+            | 'sports'
+            | 'other';
+          gallery_for_attendees_only?: boolean;
+          show_address_to_invitees?: boolean;
+          allow_invite_others?: boolean;
+          guest_list_visibility?: 'everyone' | 'attendees' | 'hidden';
+          rsvp_required?: boolean;
+          capacity_limit?: number | null;
+          rsvp_option?: 'three-way' | 'two-way';
+          rsvp_deadline?: string | null;
+          chat_enabled?: boolean;
+          who_can_chat?: 'hosts' | 'attendees';
+          who_can_post_media?: 'hosts' | 'attendees' | 'everyone';
+          who_can_upload?: 'attendees' | 'hosts';
+          reminder_24h?: boolean;
+          reminder_1h?: boolean;
+          has_agenda?: boolean;
+          agenda_items?: Json;
+          what_to_bring?: string | null;
+          dress_code?: string | null;
+          accessibility_notes?: string | null;
+          age_restriction?: string | null;
+          ticket_type?: 'free' | 'paid';
+          ticket_price?: number | null;
+          cancellation_policy?: string | null;
+          feedback_enabled?: boolean;
+          feedback_visibility?: 'public' | 'attendees_only' | 'host_only';
           created_at?: string;
           updated_at?: string;
         };
@@ -84,10 +154,45 @@ export interface Database {
           end_time?: string | null;
           location?: string | null;
           location_coords?: Json | null;
-          visibility?: 'public' | 'private';
+          visibility?: 'public' | 'private' | 'invite_only';
           public_fields?: Json | null;
           requires_approval?: boolean;
           cover_image_url?: string | null;
+          address?: string | null;
+          city_region?: string | null;
+          category?:
+            | 'networking'
+            | 'party'
+            | 'workshop'
+            | 'conference'
+            | 'social'
+            | 'sports'
+            | 'other';
+          gallery_for_attendees_only?: boolean;
+          show_address_to_invitees?: boolean;
+          allow_invite_others?: boolean;
+          guest_list_visibility?: 'everyone' | 'attendees' | 'hidden';
+          rsvp_required?: boolean;
+          capacity_limit?: number | null;
+          rsvp_option?: 'three-way' | 'two-way';
+          rsvp_deadline?: string | null;
+          chat_enabled?: boolean;
+          who_can_chat?: 'hosts' | 'attendees';
+          who_can_post_media?: 'hosts' | 'attendees' | 'everyone';
+          who_can_upload?: 'attendees' | 'hosts';
+          reminder_24h?: boolean;
+          reminder_1h?: boolean;
+          has_agenda?: boolean;
+          agenda_items?: Json;
+          what_to_bring?: string | null;
+          dress_code?: string | null;
+          accessibility_notes?: string | null;
+          age_restriction?: string | null;
+          ticket_type?: 'free' | 'paid';
+          ticket_price?: number | null;
+          cancellation_policy?: string | null;
+          feedback_enabled?: boolean;
+          feedback_visibility?: 'public' | 'attendees_only' | 'host_only';
           created_at?: string;
           updated_at?: string;
         };
@@ -107,27 +212,30 @@ export interface Database {
           event_id: string;
           user_id: string;
           status: 'invited' | 'pending' | 'joined' | 'declined';
-          role: 'host' | 'member';
+          role: 'host' | 'cohost' | 'member';
           joined_at: string;
           updated_at: string;
+          rsvp_status: 'none' | 'interested' | 'going';
         };
         Insert: {
           id?: string;
           event_id: string;
           user_id: string;
           status?: 'invited' | 'pending' | 'joined' | 'declined';
-          role?: 'host' | 'member';
+          role?: 'host' | 'cohost' | 'member';
           joined_at?: string;
           updated_at?: string;
+          rsvp_status?: 'none' | 'interested' | 'going';
         };
         Update: {
           id?: string;
           event_id?: string;
           user_id?: string;
           status?: 'invited' | 'pending' | 'joined' | 'declined';
-          role?: 'host' | 'member';
+          role?: 'host' | 'cohost' | 'member';
           joined_at?: string;
           updated_at?: string;
+          rsvp_status?: 'none' | 'interested' | 'going';
         };
         Relationships: [
           {

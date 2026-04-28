@@ -12,11 +12,13 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!fullName || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
@@ -36,10 +38,11 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       await signUpWithEmail(email, password, fullName);
-      alert('Account created! Please check your email to verify your account.');
+      setSuccess('Account created! Please check your email to verify your account.');
       router.push('/login');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -61,6 +64,12 @@ export default function SignUpPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+              {success}
             </div>
           )}
 

@@ -13,7 +13,7 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [isAuthenticated] = useState(false); // TODO: Replace with actual auth state
+  const [isAuthenticated] = useState(false); // TODO: Integrate useAuth hook from @gatherup/shared when auth screens are implemented
   const router = useRouter();
 
   useEffect(() => {

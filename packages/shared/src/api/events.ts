@@ -57,7 +57,7 @@ export async function deleteEvent(id: string) {
 }
 
 export async function getEvents(filters?: {
-  visibility?: 'public' | 'private';
+  visibility?: 'public' | 'private' | 'invite_only';
   startDate?: string;
   endDate?: string;
 }) {

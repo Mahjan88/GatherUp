@@ -51,15 +51,18 @@ Event-based social platform combining the best features of Meetup and Telegram. 
 
 ### Backend
 
+- **API Server**: Fastify 5 (modular monolith)
+- **ORM**: Drizzle ORM (type-safe PostgreSQL queries)
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth with multiple providers
-- **Real-time**: Supabase Realtime subscriptions
+- **Real-time**: WebSocket via Fastify + Supabase Realtime
 - **Storage**: Supabase Storage for media files
-- **Security**: Row Level Security (RLS) policies
+- **Validation**: Zod schemas for all API inputs
+- **Security**: Row Level Security (RLS) policies + JWT verification
 
 ### Development
 
-- **Language**: TypeScript
+- **Language**: TypeScript (strict mode)
 - **Monorepo**: Turborepo with pnpm workspaces
 - **Code Quality**: ESLint, Prettier
 - **CI/CD**: GitHub Actions
@@ -73,47 +76,41 @@ gatherup/
 │   │   ├── app/               # Expo Router screens
 │   │   │   ├── (auth)/       # Auth screens (login, signup)
 │   │   │   ├── (tabs)/       # Tab navigation screens
-│   │   │   ├── event/[id].tsx # Event detail
-│   │   │   ├── chat/[id].tsx  # Event chat
-│   │   │   ├── dm/[userId].tsx # Direct messages
-│   │   │   ├── gallery/[id].tsx # Event gallery
-│   │   │   └── create-event.tsx
+│   │   │   ├── event/        # Event detail & creation
+│   │   │   ├── chat/         # Event chat
+│   │   │   └── gallery/      # Event gallery
 │   │   └── components/        # Mobile components
 │   │
 │   └── web/                   # Next.js web app
 │       ├── app/
 │       │   ├── (auth)/       # Auth pages
 │       │   ├── (tabs)/       # Main app pages
-│       │   └── providers.tsx  # React Query provider
+│       │   └── providers.tsx  # React Query + Supabase init
 │       └── components/        # Web components
 │
+├── services/
+│   └── api/                   # Fastify modular monolith backend
+│       └── src/
+│           ├── config/        # Env validation, DB connection
+│           ├── db/schema/     # Drizzle ORM table definitions
+│           ├── modules/       # Domain modules (auth, events, messaging, media, notifications)
+│           ├── plugins/       # Cross-cutting (CORS, JWT auth, WebSocket)
+│           └── types/         # Fastify type extensions
+│
 ├── packages/
-│   └── shared/                # Shared code
-│       ├── src/
-│       │   ├── types/        # TypeScript types & DB schema
-│       │   ├── api/          # Supabase API clients
-│       │   ├── hooks/        # Shared React hooks
-│       │   ├── utils/        # Utility functions
-│       │   └── constants/    # App constants
-│       └── package.json
+│   ├── types/                 # Shared TypeScript types & constants
+│   ├── api-client/            # HTTP client for frontend → API calls
+│   └── shared/                # Legacy shared code (Supabase direct calls, hooks, utils)
 │
 ├── supabase/
-│   ├── migrations/           # Database migrations
-│   │   ├── 20240101000000_initial_schema.sql
-│   │   ├── 20240101000001_rls_policies.sql
-│   │   └── 20240101000002_storage_buckets.sql
-│   └── config.toml           # Supabase configuration
+│   ├── migrations/            # Database migrations (source of truth)
+│   └── config.toml            # Supabase local dev config
 │
-├── .github/
-│   └── workflows/
-│       └── ci.yml            # CI pipeline
-│
-├── package.json              # Root package.json
-├── pnpm-workspace.yaml       # pnpm workspace config
-├── turbo.json                # Turborepo config
-├── SETUP.md                  # Setup instructions
-├── DEPLOYMENT.md             # Deployment guide
-└── CONTRIBUTING.md           # Contributing guidelines
+├── .github/workflows/ci.yml  # CI pipeline
+├── CLAUDE.md                  # AI assistant guidance
+├── SETUP.md                   # Setup instructions
+├── DEPLOYMENT.md              # Deployment guide
+└── CONTRIBUTING.md            # Contributing guidelines
 ```
 
 ## 🚀 Getting Started

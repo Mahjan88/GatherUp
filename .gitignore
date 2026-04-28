@@ -188,3 +188,6 @@ metro-cache/
 # Cursor IDE
 .cursor/
 .cursorignore
+
+# Drizzle
+services/api/drizzle/

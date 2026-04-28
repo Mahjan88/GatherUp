@@ -1,6 +1,7 @@
 export const EVENT_VISIBILITY = {
   PUBLIC: 'public' as const,
   PRIVATE: 'private' as const,
+  INVITE_ONLY: 'invite_only' as const,
 };
 
 export const EVENT_MEMBER_STATUS = {
@@ -12,6 +13,7 @@ export const EVENT_MEMBER_STATUS = {
 
 export const EVENT_MEMBER_ROLE = {
   HOST: 'host' as const,
+  COHOST: 'cohost' as const,
   MEMBER: 'member' as const,
 };
 

@@ -25,8 +25,9 @@ export default function LoginPage() {
     try {
       await signInWithEmail(email, password);
       router.push('/');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -36,8 +37,9 @@ export default function LoginPage() {
     try {
       await signInWithOAuth(provider);
       router.push('/');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(message);
     }
   };
 
