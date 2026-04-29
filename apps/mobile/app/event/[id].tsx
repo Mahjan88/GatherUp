@@ -11,39 +11,28 @@ const LocationIcon = require('../../assets/Icons/location_icon.png');
 
 const { width, height } = Dimensions.get('window');
 
-// Sample image for all events
-const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=800';
+// TODO: Replace with real data fetched from API using the event ID
 
-// Mock private event data
-const MOCK_PRIVATE_EVENT = {
-  id: '1',
-  title: "Sarah's VR Game Night",
-  organizer: 'Sarah',
-  image: SAMPLE_IMAGE,
-  description: 'Join us for an epic VR gaming night at Sarah\'s place! We\'ll be playing the latest virtual reality games including Beat Saber tournaments, collaborative puzzle adventures, and immersive horror experiences for the brave souls among us.\n\nWhat to expect:\n• Multiple VR headsets available\n• Snacks and drinks provided\n• Friendly competition with prizes\n• No VR experience required - we\'ll teach you!\n\nPlease arrive on time as we\'ll be starting the tournament promptly at 8:30 PM. Feel free to bring your favorite snacks to share with the group. This is going to be an unforgettable night of virtual adventures and real friendships!',
-  date: 'Sunday, Jan. 25, 2026',
-  time: '7:00 PM EST',
-  location: "Sarah's Place",
-  address: '123 Main Street, Apt 4B',
-  city: 'Portland, OR 97201',
-  coordinates: {
-    lat: 45.5152,
-    lng: -122.6784,
-  },
-  isPrivate: true,
-  isFree: true,
-  friendsAttending: [
-    { id: '1', name: 'Alex', avatar: 'https://i.pravatar.cc/100?img=1' },
-    { id: '2', name: 'Sarah', avatar: 'https://i.pravatar.cc/100?img=2' },
-    { id: '3', name: 'Mike', avatar: 'https://i.pravatar.cc/100?img=3' },
-  ],
-  mutualFriends: 5,
-  agenda: [
-    { time: '7:00 PM', title: 'Welcome & Drinks' },
-    { time: '8:30 PM', title: 'VR Tournament' },
-    { time: '10:00 PM', title: 'Late Night Quest' },
-  ],
-};
+// Event type for when real data is loaded from API
+interface EventDetail {
+  id: string;
+  title: string;
+  organizer: string;
+  image: string;
+  description: string;
+  date: string;
+  time: string;
+  location: string;
+  address: string;
+  city: string;
+  coordinates: { lat: number; lng: number };
+  isPrivate: boolean;
+  isFree: boolean;
+  isGroupChatEnabled?: boolean;
+  friendsAttending: { id: string; name: string; avatar: string }[];
+  mutualFriends: number;
+  agenda: { time: string; title: string }[];
+}
 
 export default function EventDetailScreen() {
   const router = useRouter();
@@ -51,7 +40,26 @@ export default function EventDetailScreen() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
-  const event = MOCK_PRIVATE_EVENT;
+  // TODO: Fetch event data from API using the id param
+  const [event, setEvent] = useState<EventDetail | null>(null);
+
+  if (!event) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyState}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push('/')}
+          >
+            <Text style={styles.backButtonText}>‹</Text>
+          </TouchableOpacity>
+          <Text style={styles.emptyStateIcon}>📅</Text>
+          <Text style={styles.emptyStateTitle}>Event not found</Text>
+          <Text style={styles.emptyStateText}>This event may have been removed or is no longer available.</Text>
+        </View>
+      </View>
+    );
+  }
 
   // Static map URL using OpenStreetMap tile service
   const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.coordinates.lat},${event.coordinates.lng}&zoom=16&size=600x300&maptype=mapnik&markers=${event.coordinates.lat},${event.coordinates.lng},red-pushpin`;
@@ -395,8 +403,30 @@ const styles = StyleSheet.create({
   agendaTime: {
     color: '#94a3b8',
   },
-  bottomPadding: { 
+  bottomPadding: {
     height: 120,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   
   // Location Modal Content Styles

@@ -13,72 +13,9 @@ import EventCard, { EventCardData } from '../../components/EventCard';
 
 const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
 
-const SAMPLE_IMAGES = {
-  party: 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=600',
-  concert: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
-  game: 'https://images.unsplash.com/photo-1511882150382-421056c89033?w=600',
-  tech: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600',
-};
-
-const PRIVATE_EVENTS: EventCardData[] = [
-  {
-    id: '1',
-    title: 'Shabeh Jomeh Seattle - Wellbeing Meetup',
-    image: SAMPLE_IMAGES.party,
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    location: '1158 Broadway Seattle,...',
-    hostName: 'Mas Oud',
-    rsvpStatus: 'interested',
-  },
-  {
-    id: '2',
-    title: "KREA Showboat",
-    image: SAMPLE_IMAGES.game,
-    date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-    location: 'Seattle, WA',
-    hostName: 'Bahar S',
-    rsvpStatus: 'going',
-  },
-  {
-    id: '3',
-    title: 'VIP Launch Party',
-    image: SAMPLE_IMAGES.concert,
-    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    location: 'Downtown Seattle',
-    hostName: 'Alex Chen',
-    rsvpStatus: 'none',
-  },
-];
-
-const PUBLIC_EVENTS: EventCardData[] = [
-  {
-    id: '4',
-    title: 'Neon Nights Festival',
-    image: SAMPLE_IMAGES.concert,
-    date: new Date(2026, 0, 24),
-    location: 'Seattle Convention Center',
-    hostName: 'Seattle Events',
-    rsvpStatus: 'none',
-  },
-  {
-    id: '5',
-    title: 'Art Gallery Opening',
-    image: SAMPLE_IMAGES.tech,
-    date: new Date(2026, 0, 28),
-    location: 'Pioneer Square Gallery',
-    hostName: 'Art Collective',
-    rsvpStatus: 'none',
-  },
-  {
-    id: '6',
-    title: 'Startup Summit 2026',
-    image: SAMPLE_IMAGES.party,
-    date: new Date(2026, 1, 1),
-    location: 'Tech Hub Downtown',
-    hostName: 'Startup Network',
-    rsvpStatus: 'none',
-  },
-];
+// TODO: Replace with real data from API
+const PRIVATE_EVENTS: EventCardData[] = [];
+const PUBLIC_EVENTS: EventCardData[] = [];
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -139,15 +76,21 @@ export default function HomeScreen() {
               <Text style={styles.seeAllLink}>past events</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-          >
-            {PRIVATE_EVENTS.map(event => (
-              <EventCard key={event.id} event={event} variant="compact" />
-            ))}
-          </ScrollView>
+          {PRIVATE_EVENTS.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {PRIVATE_EVENTS.map(event => (
+                <EventCard key={event.id} event={event} variant="compact" />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No private invites yet</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.sectionadding} />
@@ -156,9 +99,15 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>PUBLIC EVENTS NEAR YOU</Text>
           </View>
-        {PUBLIC_EVENTS.map(event => (
-          <EventCard key={event.id} event={event} variant="full" />
-        ))}
+        {PUBLIC_EVENTS.length > 0 ? (
+          PUBLIC_EVENTS.map(event => (
+            <EventCard key={event.id} event={event} variant="full" />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No public events nearby</Text>
+          </View>
+        )}
         </View>
 
         <View style={styles.sectionadding} />
@@ -239,6 +188,16 @@ const styles = StyleSheet.create({
 
   sectionadding: {
     height: 50,
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 15,
+    color: '#64748b',
+    textAlign: 'center',
   },
 
   // Floating Calendar Button

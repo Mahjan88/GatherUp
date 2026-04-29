@@ -27,78 +27,20 @@ interface Participant {
   avatar: string;
 }
 
-// Mock event data
+// TODO: Replace with real data from API
 const EVENT_INFO = {
-  title: 'Music Festival 2026',
-  participantCount: 48,
+  title: '',
+  participantCount: 0,
 };
 
-// Mock participants
-const PARTICIPANTS: Participant[] = [
-  { id: '1', name: 'Alex', avatar: 'A' },
-  { id: '2', name: 'Sarah', avatar: 'S' },
-  { id: '3', name: 'Mike', avatar: 'M' },
-  { id: '4', name: 'Lisa', avatar: 'L' },
-  { id: '5', name: 'John', avatar: 'J' },
-];
-
-// Mock messages
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: '1',
-    text: 'Hey everyone! So excited for this event! 🎉',
-    sender: 'Sarah',
-    senderAvatar: 'S',
-    timestamp: '2:30 PM',
-    isMe: false,
-  },
-  {
-    id: '2',
-    text: 'Same here! Can\'t wait to see everyone there',
-    sender: 'Mike',
-    senderAvatar: 'M',
-    timestamp: '2:32 PM',
-    isMe: false,
-  },
-  {
-    id: '3',
-    text: 'What time should we meet up?',
-    sender: 'You',
-    senderAvatar: 'Y',
-    timestamp: '2:35 PM',
-    isMe: true,
-  },
-  {
-    id: '4',
-    text: 'I was thinking around 7pm at the main entrance?',
-    sender: 'Alex',
-    senderAvatar: 'A',
-    timestamp: '2:36 PM',
-    isMe: false,
-  },
-  {
-    id: '5',
-    text: 'Sounds good to me! 👍',
-    sender: 'Lisa',
-    senderAvatar: 'L',
-    timestamp: '2:38 PM',
-    isMe: false,
-  },
-  {
-    id: '6',
-    text: 'Perfect, see you all there!',
-    sender: 'You',
-    senderAvatar: 'Y',
-    timestamp: '2:40 PM',
-    isMe: true,
-  },
-];
+const PARTICIPANTS: Participant[] = [];
+const INITIAL_MESSAGES: Message[] = [];
 
 export default function EventChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const sendMessage = () => {
@@ -135,21 +77,25 @@ export default function EventChatScreen() {
       <Header showBack />
 
       {/* Participants Preview */}
-      <View style={styles.participantsBar}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {PARTICIPANTS.map((participant, index) => (
-            <View 
-              key={participant.id} 
-              style={[styles.participantAvatar, { backgroundColor: getAvatarColor(participant.name) }]}
-            >
-              <Text style={styles.participantAvatarText}>{participant.avatar}</Text>
-            </View>
-          ))}
-          <View style={styles.moreParticipants}>
-            <Text style={styles.moreParticipantsText}>+{EVENT_INFO.participantCount - 5}</Text>
-          </View>
-        </ScrollView>
-      </View>
+      {PARTICIPANTS.length > 0 && (
+        <View style={styles.participantsBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {PARTICIPANTS.map((participant) => (
+              <View
+                key={participant.id}
+                style={[styles.participantAvatar, { backgroundColor: getAvatarColor(participant.name) }]}
+              >
+                <Text style={styles.participantAvatarText}>{participant.avatar}</Text>
+              </View>
+            ))}
+            {EVENT_INFO.participantCount > PARTICIPANTS.length && (
+              <View style={styles.moreParticipants}>
+                <Text style={styles.moreParticipantsText}>+{EVENT_INFO.participantCount - PARTICIPANTS.length}</Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Messages */}
       <ScrollView 

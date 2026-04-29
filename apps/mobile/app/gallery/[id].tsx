@@ -15,9 +15,6 @@ import BottomTabBar from '../../components/BottomTabBar';
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = (width - 48) / 3;
 
-// Sample image for all events
-const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=600';
-
 type TabType = 'photos' | 'videos';
 
 interface MediaItem {

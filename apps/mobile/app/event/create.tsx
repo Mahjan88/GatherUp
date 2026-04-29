@@ -39,13 +39,8 @@ const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const MOCK_CONTACTS: Person[] = [
-  { id: '1', name: 'Sarah Johnson', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100' },
-  { id: '2', name: 'Mike Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100' },
-  { id: '3', name: 'Emily Davis', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100' },
-  { id: '4', name: 'Alex Thompson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100' },
-  { id: '5', name: 'Jessica Williams', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100' },
-];
+// TODO: Replace with real contacts from API
+const AVAILABLE_CONTACTS: Person[] = [];
 
 export default function CreateEventScreen() {
   const router = useRouter();
@@ -408,7 +403,7 @@ export default function CreateEventScreen() {
           setCoHostSearch('');
         }}
         modalTitle="Add Co-Hosts"
-        availablePeople={MOCK_CONTACTS}
+        availablePeople={AVAILABLE_CONTACTS}
         onTogglePerson={toggleCoHost}
         searchQuery={coHostSearch}
         onSearchChange={setCoHostSearch}
@@ -426,7 +421,7 @@ export default function CreateEventScreen() {
           setInviteSearch('');
         }}
         modalTitle="Invite People"
-        availablePeople={MOCK_CONTACTS}
+        availablePeople={AVAILABLE_CONTACTS}
         onTogglePerson={toggleInvitedPerson}
         searchQuery={inviteSearch}
         onSearchChange={setInviteSearch}

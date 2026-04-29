@@ -14,7 +14,7 @@ export default function EditProfileScreen() {
         {/* Profile Photo Section */}
         <View style={styles.photoSection}>
           <View style={styles.avatarLarge}>
-            <Text style={styles.avatarText}>S</Text>
+            <Text style={styles.avatarText}>?</Text>
           </View>
           <Text style={styles.photoHint}>
             Enter your name and add an optional{'\n'}profile picture
@@ -28,7 +28,6 @@ export default function EditProfileScreen() {
         <View style={styles.inputSection}>
           <TextInput
             style={styles.nameInput}
-            defaultValue="Sabohiddin"
             placeholder="Your Name"
             placeholderTextColor="#8e8e93"
           />
@@ -38,7 +37,7 @@ export default function EditProfileScreen() {
         <View style={styles.infoSection}>
           <Text style={styles.sectionLabel}>PHONE NUMBER</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoValue}>+998 90 943 32 00</Text>
+            <Text style={styles.infoValue}>Not set</Text>
           </View>
         </View>
 
@@ -48,7 +47,6 @@ export default function EditProfileScreen() {
           <View style={styles.infoRow}>
             <TextInput
               style={styles.aboutInput}
-              defaultValue="Digital goodies designer - Pixsellz"
               placeholder="Add About"
               placeholderTextColor="#8e8e93"
             />

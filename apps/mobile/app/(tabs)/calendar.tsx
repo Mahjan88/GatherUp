@@ -12,22 +12,12 @@ interface CalendarEvent {
   host: string;
 }
 
-const EVENTS_BY_DATE: Record<number, CalendarEvent[]> = {
-  18: [
-    { id: '1', title: 'Neon Nights Festival', time: '8:00 PM', host: 'Chane' },
-  ],
-  25: [
-    { id: '2', title: "Sarah's VR Game Night", time: '7:00 PM', host: 'Sarah' },
-    { id: '3', title: 'Movie Night & Pizza', time: '9:00 PM', host: 'Mike' },
-  ],
-  28: [
-    { id: '4', title: 'Art Gallery Opening', time: '6:00 PM', host: 'Modern Art' },
-  ],
-};
+// TODO: Replace with real data from API
+const EVENTS_BY_DATE: Record<number, CalendarEvent[]> = {};
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const [selectedDay, setSelectedDay] = useState(18);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
 
   const getDaysInMonth = () => {
     const days = [];

@@ -11,40 +11,25 @@ import { useRouter } from 'expo-router';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-const MOCK_CONTACTS = [
-  { id: '1', name: 'Alex Morgan', status: 'last seen recently' },
-  { id: '2', name: 'Amanda Lee', status: 'online' },
-  { id: '3', name: 'Andrew Smith', status: 'last seen yesterday' },
-  { id: '4', name: 'Brian Johnson', status: 'last seen recently' },
-  { id: '5', name: 'Catherine Brown', status: 'online' },
-  { id: '6', name: 'Daniel Wilson', status: 'last seen a long time ago' },
-  { id: '7', name: 'Emily Davis', status: 'last seen recently' },
-  { id: '8', name: 'Frank Miller', status: 'online' },
-  { id: '9', name: 'Grace Taylor', status: 'last seen yesterday' },
-  { id: '10', name: 'Henry Anderson', status: 'last seen recently' },
-  { id: '11', name: 'Isabella Thomas', status: 'online' },
-  { id: '12', name: 'James Jackson', status: 'last seen recently' },
-  { id: '13', name: 'Karen White', status: 'last seen a long time ago' },
-  { id: '14', name: 'Liam Harris', status: 'online' },
-  { id: '15', name: 'Mia Martin', status: 'last seen recently' },
-];
+// TODO: Replace with real contacts from API
+const CONTACTS: { id: string; name: string; status: string }[] = [];
 
 // Group contacts by first letter
-const groupedContacts = MOCK_CONTACTS.reduce((acc, contact) => {
+const groupedContacts = CONTACTS.reduce((acc, contact) => {
   const letter = contact.name[0].toUpperCase();
   if (!acc[letter]) {
     acc[letter] = [];
   }
   acc[letter].push(contact);
   return acc;
-}, {} as Record<string, typeof MOCK_CONTACTS>);
+}, {} as Record<string, typeof CONTACTS>);
 
 export default function ComposeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredContacts = searchQuery
-    ? MOCK_CONTACTS.filter((c) =>
+    ? CONTACTS.filter((c) =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : null;

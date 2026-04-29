@@ -2,8 +2,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'rea
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
 
-const SAMPLE_IMAGE = 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=200';
-
 interface Notification {
   id: string;
   type: 'invite' | 'reminder' | 'update' | 'rsvp';
@@ -18,67 +16,8 @@ interface Notification {
   isRead: boolean;
 }
 
-const NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'invite',
-    title: 'New Event Invitation',
-    message: 'Sarah invited you to',
-    eventId: '1',
-    eventTitle: 'Neon Nights Festival',
-    eventImage: SAMPLE_IMAGE,
-    fromUser: 'Sarah',
-    fromAvatar: 'S',
-    time: '2 min ago',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'invite',
-    title: 'New Event Invitation',
-    message: 'Mike invited you to',
-    eventId: '2',
-    eventTitle: 'Movie Night & Pizza',
-    eventImage: SAMPLE_IMAGE,
-    fromUser: 'Mike',
-    fromAvatar: 'M',
-    time: '15 min ago',
-    isRead: false,
-  },
-  {
-    id: '3',
-    type: 'rsvp',
-    title: 'RSVP Confirmed',
-    message: 'Alex is going to your event',
-    eventId: '1',
-    eventTitle: 'Neon Nights Festival',
-    fromUser: 'Alex',
-    fromAvatar: 'A',
-    time: '1 hour ago',
-    isRead: true,
-  },
-  {
-    id: '4',
-    type: 'reminder',
-    title: 'Event Tomorrow',
-    message: 'Don\'t forget! Your event starts tomorrow at 8:00 PM',
-    eventId: '1',
-    eventTitle: 'Neon Nights Festival',
-    eventImage: SAMPLE_IMAGE,
-    time: '3 hours ago',
-    isRead: true,
-  },
-  {
-    id: '5',
-    type: 'update',
-    title: 'Event Updated',
-    message: 'The venue has been changed for',
-    eventId: '3',
-    eventTitle: 'Tech Summit 2026',
-    time: 'Yesterday',
-    isRead: true,
-  },
-];
+// TODO: Replace with real data from API
+const NOTIFICATIONS: Notification[] = [];
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -165,19 +104,29 @@ export default function NotificationsScreen() {
       )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* New Invites Section */}
-        {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>New Invites</Text>
-            {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).map(renderNotification)}
+        {NOTIFICATIONS.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyTitle}>No notifications yet</Text>
+            <Text style={styles.emptyText}>When you get invites, reminders, or updates they'll show up here</Text>
           </View>
-        )}
+        ) : (
+          <>
+            {/* New Invites Section */}
+            {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>New Invites</Text>
+                {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).map(renderNotification)}
+              </View>
+            )}
 
-        {/* Earlier Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Earlier</Text>
-          {NOTIFICATIONS.filter(n => n.type !== 'invite' || n.isRead).map(renderNotification)}
-        </View>
+            {/* Earlier Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Earlier</Text>
+              {NOTIFICATIONS.filter(n => n.type !== 'invite' || n.isRead).map(renderNotification)}
+            </View>
+          </>
+        )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -294,5 +243,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 12,
   },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: { fontSize: 48, marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 8 },
+  emptyText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 },
   bottomPadding: { height: 100 },
 });

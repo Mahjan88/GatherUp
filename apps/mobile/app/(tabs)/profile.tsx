@@ -10,52 +10,9 @@ import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
 import EventCard, { EventCardData } from '../../components/EventCard';
 
-// Sample hosted events data (events the user hosted/co-hosted)
+// TODO: Replace with real data from API
 const HOSTED_EVENTS: EventCardData[] = [];
-
-// Sample attended events (events user attended but didn't host)
-const ATTENDED_EVENTS: EventCardData[] = [
-  {
-    id: '10',
-    title: 'New Year Celebration 2026',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
-    date: new Date(2026, 0, 1, 20, 0),
-    location: 'Space Needle, Seattle',
-    hostName: 'Seattle Events',
-    rsvpStatus: 'going',
-    isPast: true,
-  },
-  {
-    id: '11',
-    title: 'Tech Meetup January',
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600',
-    date: new Date(2026, 0, 15, 18, 0),
-    location: 'Amazon HQ, Seattle',
-    hostName: 'Tech Community',
-    rsvpStatus: 'going',
-    isPast: true,
-  },
-  {
-    id: '12',
-    title: 'Winter Art Gallery',
-    image: 'https://images.unsplash.com/photo-1529543544277-750e0662819e?w=600',
-    date: new Date(2025, 11, 20, 19, 0),
-    location: 'Pioneer Square Gallery',
-    hostName: 'Art Collective',
-    rsvpStatus: 'going',
-    isPast: true,
-  },
-  {
-    id: '13',
-    title: 'Summer Music Festival',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600',
-    date: new Date(2024, 7, 10, 16, 0),
-    location: 'Gorge Amphitheatre',
-    hostName: 'Live Nation',
-    rsvpStatus: 'going',
-    isPast: true,
-  },
-];
+const ATTENDED_EVENTS: EventCardData[] = [];
 
 type TabType = 'hosted' | 'attended';
 
@@ -160,17 +117,17 @@ export default function ProfileScreen() {
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarLarge}>
-              <Text style={styles.avatarLargeText}>J</Text>
+              <Text style={styles.avatarLargeText}>?</Text>
             </View>
             <TouchableOpacity style={styles.editAvatarButton}>
               <Text style={styles.editAvatarText}>+</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.userName}>John Doe</Text>
-          <Text style={styles.userHandle}>@johndoe</Text>
+          <Text style={styles.userName}>Set up your profile</Text>
+          <Text style={styles.userHandle}>@username</Text>
           <Text style={styles.userBio}>
-            Event enthusiast | Bringing people together | Vancouver, BC
+            Tap "Edit Profile" to add your bio
           </Text>
 
           {/* Stats Row */}
@@ -180,11 +137,11 @@ export default function ProfileScreen() {
               <Text style={styles.statLabel}>Hosted</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>1.2K</Text>
+              <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>Followers</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>384</Text>
+              <Text style={styles.statNumber}>0</Text>
               <Text style={styles.statLabel}>Following</Text>
             </TouchableOpacity>
           </View>

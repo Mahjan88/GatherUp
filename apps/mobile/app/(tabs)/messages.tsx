@@ -37,85 +37,11 @@ interface Chat {
 }
 
 
-const INITIAL_CHATS: Chat[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    message: 'Hey, are you coming to the event?',
-    time: '2:30 PM',
-    unread: 2,
-    pinned: true,
-    avatar: null,
-  },
-  {
-    id: '2',
-    name: 'Sarah Smith',
-    message: 'The party was amazing! 🎉',
-    time: '1:15 PM',
-    unread: 0,
-    pinned: false,
-    avatar: null,
-  },
-  {
-    id: '3',
-    name: 'Mike Johnson',
-    message: 'Thanks for the invite',
-    time: 'Yesterday',
-    unread: 0,
-    pinned: false,
-    avatar: null,
-  },
-  {
-    id: '4',
-    name: 'Alex Chen',
-    message: 'See you tomorrow!',
-    time: 'Yesterday',
-    unread: 0,
-    pinned: false,
-    avatar: null,
-  },
-];
+// TODO: Replace with real data from API
+const INITIAL_CHATS: Chat[] = [];
+const EVENT_CHATS: Chat[] = [];
 
-const EVENT_CHATS: Chat[] = [
-  {
-    id: 'e1',
-    name: 'Neon Nights Festival',
-    message: 'Alex: See you all there!',
-    time: '12:00 PM',
-    unread: 5,
-    pinned: false,
-    avatar: null,
-    isEventChat: true,
-  },
-  {
-    id: 'e2',
-    name: 'Beach Party 🏖️',
-    message: "You: Can't wait!",
-    time: 'Yesterday',
-    unread: 0,
-    pinned: false,
-    avatar: null,
-    isEventChat: true,
-  },
-  {
-    id: 'e3',
-    name: 'Tech Summit 2026',
-    message: 'Host: Doors open at 9 AM',
-    time: 'Yesterday',
-    unread: 3,
-    pinned: false,
-    avatar: null,
-    isEventChat: true,
-  },
-];
-
-const CONTACTS = [
-  { id: 'c1', name: 'Alex Chen', status: 'Online', avatar: null },
-  { id: 'c2', name: 'Sarah Smith', status: 'Last seen 2h ago', avatar: null },
-  { id: 'c3', name: 'John Doe', status: 'Last seen yesterday', avatar: null },
-  { id: 'c4', name: 'Mike Johnson', status: 'Online', avatar: null },
-  { id: 'c5', name: 'Emma Wilson', status: 'Last seen 5h ago', avatar: null },
-];
+const CONTACTS: { id: string; name: string; status: string; avatar: string | null }[] = [];
 
 const SWIPE_THRESHOLD = 60;
 
@@ -532,22 +458,30 @@ export default function MessagesScreen() {
 
       {/* Chat List */}
       <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
-        {sortedChats.map((chat) => (
-          <SwipeableChatItem
-            key={chat.id}
-            chat={chat}
-            isEditMode={isEditMode}
-            isSelected={selectedChats.has(chat.id)}
-            onSelect={() => toggleSelect(chat.id)}
-            onPin={() => handlePin(chat.id)}
-            onArchive={() => handleArchive([chat.id])}
-            onDelete={() => handleDelete([chat.id])}
-            onPress={() => {
-              handleMarkRead(chat.id);
-              router.push(`/chat/${chat.id}`);
-            }}
-          />
-        ))}
+        {sortedChats.length > 0 ? (
+          sortedChats.map((chat) => (
+            <SwipeableChatItem
+              key={chat.id}
+              chat={chat}
+              isEditMode={isEditMode}
+              isSelected={selectedChats.has(chat.id)}
+              onSelect={() => toggleSelect(chat.id)}
+              onPin={() => handlePin(chat.id)}
+              onArchive={() => handleArchive([chat.id])}
+              onDelete={() => handleDelete([chat.id])}
+              onPress={() => {
+                handleMarkRead(chat.id);
+                router.push(`/chat/${chat.id}`);
+              }}
+            />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>💬</Text>
+            <Text style={styles.emptyTitle}>No messages yet</Text>
+            <Text style={styles.emptyText}>Start a conversation with friends or join an event chat</Text>
+          </View>
+        )}
         <View style={styles.listPadding} />
       </ScrollView>
 
