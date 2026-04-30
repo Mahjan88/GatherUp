@@ -12,6 +12,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -35,6 +36,13 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Background orbs */}
+      <View style={styles.bgEffects}>
+        <View style={[styles.orb, styles.orb1]} />
+        <View style={[styles.orb, styles.orb2]} />
+        <View style={[styles.orb, styles.orb3]} />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -42,8 +50,8 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/logo.png')} 
+            <Image
+              source={require('../../assets/logo.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -60,7 +68,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your email"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor="rgba(255, 255, 255, 0.25)"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -73,7 +81,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Enter your password"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor="rgba(255, 255, 255, 0.25)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -88,6 +96,7 @@ export default function LoginScreen() {
               style={[styles.loginButton, loading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={loading}
+              activeOpacity={0.85}
             >
               <Text style={styles.loginButtonText}>
                 {loading ? 'Signing In...' : 'Log In'}
@@ -102,35 +111,44 @@ export default function LoginScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Social Login Buttons */}
+          {/* Social Login Buttons — white pill style */}
           <View style={styles.socialButtons}>
-            <TouchableOpacity 
-              style={styles.socialButton}
-              onPress={() => handleSocialLogin('google')}
-            >
-              <Text style={styles.socialIconText}>G</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.socialButton}
-              onPress={() => handleSocialLogin('facebook')}
-            >
-              <Text style={styles.socialIconText}>f</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.socialButton}
               onPress={() => handleSocialLogin('apple')}
+              activeOpacity={0.85}
             >
-              <Text style={styles.socialIconText}></Text>
+              <FontAwesome5 name="apple" size={22} color="#111" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => handleSocialLogin('google')}
+              activeOpacity={0.85}
+            >
+              <Image
+                source={require('../../assets/google-logo.png')}
+                style={{ width: 22, height: 22 }}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => handleSocialLogin('facebook')}
+              activeOpacity={0.85}
+            >
+              <FontAwesome5 name="facebook" size={22} color="#1877F2" />
             </TouchableOpacity>
           </View>
 
           {/* Sign Up Link */}
           <View style={styles.signupRow}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <Link href="/(auth)/signup" style={styles.signupLink}>
-              Sign Up
+            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Link href="/(auth)/signup" asChild>
+              <TouchableOpacity>
+                <Text style={styles.signupLink}> Sign Up</Text>
+              </TouchableOpacity>
             </Link>
           </View>
         </View>
@@ -142,14 +160,46 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#000',
+  },
+  bgEffects: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  orb1: {
+    width: 260,
+    height: 260,
+    backgroundColor: 'rgba(0, 212, 170, 0.12)',
+    top: -60,
+    left: -80,
+  },
+  orb2: {
+    width: 200,
+    height: 200,
+    backgroundColor: 'rgba(224, 64, 160, 0.10)',
+    top: 60,
+    right: -60,
+  },
+  orb3: {
+    width: 180,
+    height: 180,
+    backgroundColor: 'rgba(64, 128, 255, 0.08)',
+    bottom: 140,
+    left: 40,
   },
   keyboardView: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
     justifyContent: 'center',
   },
   logoContainer: {
@@ -161,58 +211,61 @@ const styles = StyleSheet.create({
     height: 80,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#9ca3af',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
   form: {
-    gap: 16,
+    gap: 14,
   },
   inputContainer: {
     gap: 6,
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#9ca3af',
+    color: 'rgba(255, 255, 255, 0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#3a3a3a',
-    borderRadius: 8,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     color: '#fff',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
   },
   forgotButton: {
     alignSelf: 'flex-end',
   },
   forgotText: {
-    color: '#14b8a6',
-    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 13,
     fontWeight: '500',
   },
   loginButton: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 50,
     paddingVertical: 16,
-    marginTop: 8,
+    marginTop: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   loginButtonText: {
-    color: '#0a0a0a',
+    color: '#000',
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 16,
@@ -220,48 +273,43 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 22,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#3a3a3a',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   dividerText: {
-    color: '#6b7280',
+    color: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
-    fontSize: 14,
+    fontSize: 13,
   },
   socialButtons: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
+    gap: 14,
   },
   socialButton: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderRadius: 50,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  socialIconText: {
-    fontSize: 22,
-    color: '#fff',
   },
   signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 28,
   },
   signupText: {
-    color: '#9ca3af',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 14,
   },
   signupLink: {
-    color: '#14b8a6',
+    color: '#fff',
     fontWeight: '600',
-    fontSize: 15,
+    fontSize: 14,
   },
 });

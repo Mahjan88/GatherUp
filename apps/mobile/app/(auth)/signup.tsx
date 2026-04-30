@@ -10,8 +10,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -24,8 +26,7 @@ export default function SignupScreen() {
     setShowPhoneVerification(true);
   };
 
-  const handleEmailSignup = () => {
-    // Navigate to email signup flow or show phone verification
+  const handlePhoneLogin = () => {
     setShowPhoneVerification(true);
   };
 
@@ -37,76 +38,88 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Background orbs */}
+      <View style={styles.bgEffects}>
+        <View style={[styles.orb, styles.orb1]} />
+        <View style={[styles.orb, styles.orb2]} />
+        <View style={[styles.orb, styles.orb3]} />
+      </View>
+
       <View style={styles.content}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../assets/logo.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
+        {/* Top section — logo + title, vertically centered in available space */}
+        <View style={styles.topSection}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.title}>Gather<Text style={styles.titleAccent}>Up</Text></Text>
         </View>
 
-        {/* Title */}
-        <Text style={styles.title}>Sign up for GatherUp</Text>
-
-        {/* Social Login Buttons */}
-        <View style={styles.buttonsContainer}>
-          <TouchableOpacity 
-            style={styles.socialButton}
-            onPress={() => handleSocialSignup('google')}
-          >
-            <View style={styles.socialIconContainer}>
-              <Text style={styles.socialIconText}>G</Text>
-            </View>
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.socialButton}
-            onPress={() => handleSocialSignup('facebook')}
-          >
-            <View style={styles.socialIconContainer}>
-              <Text style={styles.socialIconText}>f</Text>
-            </View>
-            <Text style={styles.socialButtonText}>Continue with Facebook</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.socialButton}
-            onPress={() => handleSocialSignup('apple')}
-          >
-            <View style={styles.socialIconContainer}>
-              <Text style={styles.socialIconText}></Text>
-            </View>
-            <Text style={styles.socialButtonText}>Continue with Apple</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.socialButton}
-            onPress={handleEmailSignup}
-          >
-            <View style={styles.socialIconContainer}>
-              <Text style={styles.socialIconText}>✉</Text>
-            </View>
-            <Text style={styles.socialButtonText}>Continue with Email</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Section */}
+        {/* Bottom section — buttons pinned to bottom */}
         <View style={styles.bottomSection}>
-          <Text style={styles.alreadyText}>Already have an account?</Text>
-          
-          <TouchableOpacity 
-            style={styles.loginButton}
-            onPress={() => router.push('/(auth)/login')}
+          {/* Social Login Buttons — white pill style */}
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => handleSocialSignup('apple')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.socialIconContainer}>
+                <FontAwesome5 name="apple" size={20} color="#111" />
+              </View>
+              <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              <View style={styles.socialIconSpacer} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => handleSocialSignup('google')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.socialIconContainer}>
+                <Image
+                  source={require('../../assets/google-logo.png')}
+                  style={{ width: 20, height: 20 }}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              <View style={styles.socialIconSpacer} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => handleSocialSignup('facebook')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.socialIconContainer}>
+                <FontAwesome5 name="facebook" size={20} color="#1877F2" />
+              </View>
+              <Text style={styles.socialButtonText}>
+                Continue with Facebook
+              </Text>
+              <View style={styles.socialIconSpacer} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Phone login link */}
+          <TouchableOpacity
+            style={styles.phoneLink}
+            onPress={handlePhoneLogin}
           >
-            <Text style={styles.loginButtonText}>Log In</Text>
+            <Text style={styles.phoneLinkIcon}>📞</Text>
+            <Text style={styles.phoneLinkText}>
+              Log in with Phone (existing only)
+            </Text>
           </TouchableOpacity>
 
+          {/* Terms */}
           <Text style={styles.termsText}>
-            By continuing, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms of Service</Text>
+            By pressing Continue, you agree to our{' '}
+            <Text style={styles.termsLink}>Terms of Use</Text>
             {' '}and{' '}
             <Text style={styles.termsLink}>Privacy Policy</Text>
           </Text>
@@ -126,7 +139,7 @@ export default function SignupScreen() {
           <SafeAreaView style={styles.modalContent}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setShowPhoneVerification(false)}
               >
@@ -138,9 +151,12 @@ export default function SignupScreen() {
 
             {/* Verification Content */}
             <View style={styles.verificationContent}>
-              <Text style={styles.verificationTitle}>Verify your phone number</Text>
+              <Text style={styles.verificationTitle}>
+                Verify your phone number
+              </Text>
               <Text style={styles.verificationSubtitle}>
-                To keep our community secure and trustworthy, we verify every new account.
+                To keep our community secure and trustworthy, we verify every
+                new account.
               </Text>
 
               {/* Phone Input */}
@@ -152,7 +168,9 @@ export default function SignupScreen() {
                 </TouchableOpacity>
                 <View style={styles.phoneInputDivider} />
                 <View style={styles.phoneInputWrapper}>
-                  <Text style={styles.phoneLabel}>Phone Number<Text style={styles.required}>*</Text></Text>
+                  <Text style={styles.phoneLabel}>
+                    Phone Number<Text style={styles.required}>*</Text>
+                  </Text>
                   <TextInput
                     style={styles.phoneInput}
                     placeholder="(555) 123-4567"
@@ -167,7 +185,7 @@ export default function SignupScreen() {
 
             {/* Send Code Button */}
             <View style={styles.sendCodeContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.sendCodeButton}
                 onPress={handleSendCode}
               >
@@ -184,91 +202,122 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#000',
+  },
+  bgEffects: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  orb: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  orb1: {
+    width: 260,
+    height: 260,
+    backgroundColor: 'rgba(0, 212, 170, 0.12)',
+    top: -60,
+    left: -80,
+  },
+  orb2: {
+    width: 200,
+    height: 200,
+    backgroundColor: 'rgba(224, 64, 160, 0.10)',
+    top: 60,
+    right: -60,
+  },
+  orb3: {
+    width: 180,
+    height: 180,
+    backgroundColor: 'rgba(64, 128, 255, 0.08)',
+    bottom: 140,
+    left: 40,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 28,
+  },
+  topSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 20,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 24,
+    marginBottom: 5,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 150,
+    height: 150,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 30,
+    fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 40,
+    letterSpacing: -0.3,
+  },
+  titleAccent: {
+    color: '#FF00FF',
+  },
+  bottomSection: {
+    paddingBottom: 30,
   },
   buttonsContainer: {
     gap: 12,
+    marginBottom: 40,
   },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#3a3a3a',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 50,
   },
   socialIconContainer: {
-    width: 32,
-    height: 32,
+    width: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  socialIconText: {
-    fontSize: 20,
-    color: '#fff',
+  socialIconSpacer: {
+    width: 20,
   },
   socialButtonText: {
     flex: 1,
     textAlign: 'center',
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-    marginRight: 32,
-  },
-  bottomSection: {
-    position: 'absolute',
-    bottom: 40,
-    left: 24,
-    right: 24,
-    alignItems: 'center',
-  },
-  alreadyText: {
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  loginButton: {
-    width: '100%',
-    backgroundColor: '#3a3a3a',
-    borderRadius: 8,
-    paddingVertical: 16,
-    marginBottom: 20,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#111',
+    fontSize: 14,
     fontWeight: '600',
-    textAlign: 'center',
+  },
+  phoneLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+    marginBottom: 50
+  },
+  phoneLinkIcon: {
+    fontSize: 16,
+  },
+  phoneLinkText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
   },
   termsText: {
-    color: '#6b7280',
-    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 11,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 17,
   },
   termsLink: {
+    color: 'rgba(255, 255, 255, 0.7)',
     textDecorationLine: 'underline',
   },
 
@@ -373,7 +422,7 @@ const styles = StyleSheet.create({
   },
   sendCodeButton: {
     backgroundColor: '#fff',
-    borderRadius: 30,
+    borderRadius: 50,
     paddingVertical: 16,
   },
   sendCodeText: {
