@@ -3,7 +3,8 @@ import { z } from 'zod';
 export const signUpSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  fullName: z.string().min(1).max(100),
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().max(50).optional(),
 });
 
 export const signInEmailSchema = z.object({
@@ -17,10 +18,17 @@ export const signInPhoneSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  fullName: z.string().min(1).max(100).optional(),
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().max(50).nullable().optional(),
+  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores').nullable().optional(),
+  tagline: z.string().max(100).nullable().optional(),
   avatarUrl: z.string().url().nullable().optional(),
   bio: z.string().max(500).nullable().optional(),
   phone: z.string().nullable().optional(),
+  city: z.string().max(100).nullable().optional(),
+  state: z.string().max(100).nullable().optional(),
+  country: z.string().max(100).nullable().optional(),
+  userData: z.record(z.unknown()).nullable().optional(),
 });
 
 export const searchUsersSchema = z.object({

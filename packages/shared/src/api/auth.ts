@@ -15,7 +15,8 @@ export async function signInWithEmail(email: string, password: string) {
 export async function signUpWithEmail(
   email: string,
   password: string,
-  fullName: string
+  firstName: string,
+  lastName?: string
 ) {
   const supabase = getSupabase();
   const { data, error } = await supabase.auth.signUp({
@@ -23,7 +24,8 @@ export async function signUpWithEmail(
     password,
     options: {
       data: {
-        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
       },
     },
   });
@@ -108,7 +110,7 @@ export async function searchUsers(query: string) {
   const { data, error } = await supabase
     .from('users')
     .select('*')
-    .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
+    .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,username.ilike.%${query}%,email.ilike.%${query}%`)
     .limit(10);
 
   if (error) throw error;

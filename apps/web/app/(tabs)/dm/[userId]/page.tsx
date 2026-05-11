@@ -90,7 +90,7 @@ export default function DirectMessagePage() {
     <div className="flex flex-col h-[calc(100vh-200px)]">
       {otherUser && (
         <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold">{otherUser.full_name}</h2>
+          <h2 className="text-xl font-semibold">{otherUser.first_name}{otherUser.last_name ? ` ${otherUser.last_name}` : ''}</h2>
         </div>
       )}
 

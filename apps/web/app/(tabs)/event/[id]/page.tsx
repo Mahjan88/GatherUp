@@ -104,7 +104,7 @@ export default function EventDetailPage() {
             <span className="text-2xl mr-3">👤</span>
             <div>
               <p className="font-medium">Host</p>
-              <p>{event.host.full_name}</p>
+              <p>{event.host.first_name}{event.host.last_name ? ` ${event.host.last_name}` : ''}</p>
             </div>
           </div>
 

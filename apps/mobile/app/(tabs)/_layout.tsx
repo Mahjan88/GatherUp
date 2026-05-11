@@ -6,7 +6,7 @@ import { useCenterButton } from '../../contexts/CenterButtonContext';
 
 // Import icons (512px for high-DPI quality)
 const HomeIcon = require('../../assets/Icons/home_icon.png');
-const NotificationIcon = require('../../assets/Icons/notification_icon.png');
+const SearchIcon = require('../../assets/Icons/search_icon.png');
 const ChatIcon = require('../../assets/Icons/message_icon.png');
 const ProfileIcon = require('../../assets/Icons/profile_icon.png');
 
@@ -97,13 +97,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="discover"
         options={{
-          title: 'Notifications',
+          title: 'Discover',
           tabBarIcon: ({ focused }) => (
             <View style={styles.iconContainer}>
               <Image
-                source={NotificationIcon}
+                source={SearchIcon}
                 style={[styles.tabIcon, focused && styles.tabIconActive]}
                 resizeMode="contain"
               />
@@ -152,9 +152,16 @@ export default function TabsLayout() {
           href: null,
         }}
       />
-      {/* Hide calendar from tabs */}
+      {/* Hide calendar from tabs — accessible via home screen */}
       <Tabs.Screen
         name="calendar"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Hide notifications from tabs — accessible via header bell icon */}
+      <Tabs.Screen
+        name="notifications"
         options={{
           href: null,
         }}

@@ -9,31 +9,29 @@ export class EventsService {
   constructor(private app: FastifyInstance) {}
 
   async create(hostId: string, input: CreateEventInput) {
-    const [event] = await this.app.db
+    const [created] = await this.app.db
       .insert(events)
       .values({
         ...input,
         hostId,
         startTime: new Date(input.startTime),
         endTime: input.endTime ? new Date(input.endTime) : null,
-        rsvpDeadline: input.rsvpDeadline ? new Date(input.rsvpDeadline) : null,
-        ticketPrice: input.ticketPrice?.toString() ?? null,
       })
       .returning();
 
-    return event;
+    return created;
   }
 
   async getById(eventId: string) {
-    const event = await this.app.db.query.events.findFirst({
+    const result = await this.app.db.query.events.findFirst({
       where: eq(events.id, eventId),
     });
 
-    if (!event) throw new Error('Event not found');
+    if (!result) throw new Error('Event not found');
 
     // Get host info
     const host = await this.app.db.query.users.findFirst({
-      where: eq(users.id, event.hostId),
+      where: eq(users.id, result.hostId),
     });
 
     // Get member count
@@ -42,7 +40,7 @@ export class EventsService {
       .from(eventMembers)
       .where(and(eq(eventMembers.eventId, eventId), eq(eventMembers.status, 'joined')));
 
-    return { ...event, host, memberCount: memberCount.count };
+    return { ...result, host, memberCount: memberCount.count };
   }
 
   async list(query: GetEventsQuery) {
@@ -59,6 +57,12 @@ export class EventsService {
     }
     if (query.category) {
       conditions.push(eq(events.category, query.category));
+    }
+    if (query.status) {
+      conditions.push(eq(events.status, query.status));
+    }
+    if (query.communityId) {
+      conditions.push(eq(events.communityId, query.communityId));
     }
 
     const offset = (query.page - 1) * query.limit;
@@ -81,17 +85,15 @@ export class EventsService {
 
   async update(eventId: string, hostId: string, input: UpdateEventInput) {
     // Verify ownership
-    const event = await this.app.db.query.events.findFirst({
+    const existing = await this.app.db.query.events.findFirst({
       where: and(eq(events.id, eventId), eq(events.hostId, hostId)),
     });
 
-    if (!event) throw new Error('Event not found or not authorized');
+    if (!existing) throw new Error('Event not found or not authorized');
 
     const updateData: Record<string, unknown> = { ...input };
     if (input.startTime) updateData.startTime = new Date(input.startTime);
     if (input.endTime) updateData.endTime = new Date(input.endTime);
-    if (input.rsvpDeadline) updateData.rsvpDeadline = new Date(input.rsvpDeadline);
-    if (input.ticketPrice !== undefined) updateData.ticketPrice = input.ticketPrice?.toString() ?? null;
 
     const [updated] = await this.app.db
       .update(events)
@@ -103,11 +105,11 @@ export class EventsService {
   }
 
   async delete(eventId: string, hostId: string) {
-    const event = await this.app.db.query.events.findFirst({
+    const existing = await this.app.db.query.events.findFirst({
       where: and(eq(events.id, eventId), eq(events.hostId, hostId)),
     });
 
-    if (!event) throw new Error('Event not found or not authorized');
+    if (!existing) throw new Error('Event not found or not authorized');
 
     await this.app.db.delete(events).where(eq(events.id, eventId));
   }
@@ -122,7 +124,7 @@ export class EventsService {
 
   async getJoinedEvents(userId: string) {
     const results = await this.app.db
-      .select({ event: events })
+      .select({ events })
       .from(eventMembers)
       .innerJoin(events, eq(eventMembers.eventId, events.id))
       .where(
@@ -133,7 +135,7 @@ export class EventsService {
       )
       .orderBy(desc(events.startTime));
 
-    return results.map((r) => r.event);
+    return results.map((r) => r.events);
   }
 
   // --- Member management ---

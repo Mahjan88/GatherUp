@@ -10,7 +10,7 @@ export async function getNotifications(limit = 50) {
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('notifications')
+    .from('notification')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
@@ -23,7 +23,7 @@ export async function getNotifications(limit = 50) {
 export async function markNotificationAsRead(id: string) {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('notifications')
+    .from('notification')
     .update({ read: true })
     .eq('id', id)
     .select()
@@ -42,7 +42,7 @@ export async function markAllNotificationsAsRead() {
   if (!user) throw new Error('Not authenticated');
 
   const { error } = await supabase
-    .from('notifications')
+    .from('notification')
     .update({ read: true })
     .eq('user_id', user.id)
     .eq('read', false);
@@ -53,7 +53,7 @@ export async function markAllNotificationsAsRead() {
 export async function createNotification(notification: NotificationInsert) {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('notifications')
+    .from('notification')
     .insert(notification)
     .select()
     .single();
@@ -73,13 +73,13 @@ export async function subscribeToNotifications(
   if (!user) throw new Error('Not authenticated');
 
   const channel = supabase
-    .channel('notifications')
+    .channel('notification')
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'notifications',
+        table: 'notification',
         filter: `user_id=eq.${user.id}`,
       },
       (payload) => {
@@ -102,7 +102,7 @@ export async function getUnreadCount() {
   if (!user) throw new Error('Not authenticated');
 
   const { count, error } = await supabase
-    .from('notifications')
+    .from('notification')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
     .eq('read', false);

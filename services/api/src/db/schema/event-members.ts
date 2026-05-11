@@ -12,7 +12,9 @@ export const eventMembers = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    status: text('status', { enum: ['invited', 'pending', 'joined', 'declined'] })
+    status: text('status', {
+      enum: ['invited', 'pending', 'joined', 'declined', 'removed'],
+    })
       .notNull()
       .default('invited'),
     role: text('role', { enum: ['host', 'cohost', 'member'] })
@@ -21,6 +23,13 @@ export const eventMembers = pgTable(
     rsvpStatus: text('rsvp_status', { enum: ['none', 'interested', 'going'] })
       .notNull()
       .default('none'),
+    invitedBy: uuid('invited_by').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    lastReadMessageId: uuid('last_read_message_id'),
+    mutedUntil: timestamp('muted_until', { withTimezone: true }),
+    rsvpAt: timestamp('rsvp_at', { withTimezone: true }),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
     joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },

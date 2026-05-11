@@ -2,61 +2,47 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getEvents } from '@gatherup/shared';
+import { getMyHostedEvents, getMyInvitedEvents } from '@gatherup/shared';
 import Link from 'next/link';
 
-type TimeFilter = 'upcoming' | 'today' | 'tomorrow' | 'week';
-type VisibilityFilter = 'all' | 'public' | 'private';
+type FeedTab = 'upcoming' | 'invites' | 'series';
 
 export default function HomePage() {
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
-  const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>('all');
+  const [activeTab, setActiveTab] = useState<FeedTab>('upcoming');
 
-  const { data: events, isLoading, refetch } = useQuery({
-    queryKey: ['events', visibilityFilter],
-    queryFn: () =>
-      getEvents({
-        visibility: visibilityFilter === 'all' ? undefined : visibilityFilter,
-      }),
+  const { data: hostedEvents, isLoading: loadingHosted } = useQuery({
+    queryKey: ['events', 'hosted'],
+    queryFn: () => getMyHostedEvents(),
   });
 
-  const filterEventsByTime = (events: any[] = []) => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const weekEnd = new Date(today);
-    weekEnd.setDate(weekEnd.getDate() + 7);
+  const { data: invitedEvents, isLoading: loadingInvited } = useQuery({
+    queryKey: ['events', 'invited'],
+    queryFn: () => getMyInvitedEvents(),
+  });
 
-    switch (timeFilter) {
-      case 'today':
-        return events.filter((e) => {
-          const eventDate = new Date(e.start_time);
-          return eventDate >= today && eventDate < tomorrow;
-        });
-      case 'tomorrow':
-        const dayAfterTomorrow = new Date(tomorrow);
-        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-        return events.filter((e) => {
-          const eventDate = new Date(e.start_time);
-          return eventDate >= tomorrow && eventDate < dayAfterTomorrow;
-        });
-      case 'week':
-        return events.filter((e) => {
-          const eventDate = new Date(e.start_time);
-          return eventDate >= today && eventDate < weekEnd;
-        });
-      default:
-        return events;
-    }
-  };
+  // TODO: Add query for series subscription events via feed endpoint
+  // const { data: feedEvents } = useQuery({
+  //   queryKey: ['events', 'feed'],
+  //   queryFn: () => client.events.feed(),
+  // });
 
-  const filteredEvents = filterEventsByTime(events);
+  const isLoading = loadingHosted || loadingInvited;
+
+  const upcomingEvents = [
+    ...(hostedEvents || []),
+    ...(invitedEvents?.filter((e: any) => e.status === 'joined') || []),
+  ].sort((a: any, b: any) =>
+    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
+
+  const pendingInvites = invitedEvents?.filter(
+    (e: any) => e.status === 'invited'
+  ) || [];
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Discover Events</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Home</h2>
         <Link
           href="/create-event"
           className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
@@ -65,88 +51,119 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="text-sm font-medium text-gray-700 self-center">Time:</span>
-          {(['upcoming', 'today', 'tomorrow', 'week'] as TimeFilter[]).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setTimeFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${
-                timeFilter === filter
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm font-medium text-gray-700 self-center">Visibility:</span>
-          {(['all', 'public', 'private'] as VisibilityFilter[]).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setVisibilityFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${
-                visibilityFilter === filter
-                  ? 'bg-primary-100 text-primary-700 border border-primary-600'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
+      {/* Feed Tabs */}
+      <div className="bg-white rounded-lg shadow-sm p-1 mb-6 inline-flex gap-1">
+        {([
+          { key: 'upcoming', label: 'My Upcoming' },
+          { key: 'invites', label: `Invites${pendingInvites.length > 0 ? ` (${pendingInvites.length})` : ''}` },
+          { key: 'series', label: 'Series Updates' },
+        ] as { key: FeedTab; label: string }[]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.key
+                ? 'bg-primary-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Events Grid */}
+      {/* Content */}
       {isLoading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
         </div>
-      ) : filteredEvents && filteredEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <Link
-              key={event.id}
-              href={`/event/${event.id}`}
-              className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-            >
-              {event.cover_image_url && (
-                <div className="h-48 bg-gray-200"></div>
-              )}
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 flex-1">
-                    {event.title}
-                  </h3>
-                  {event.visibility === 'public' && (
-                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                      Public
-                    </span>
+      ) : activeTab === 'upcoming' ? (
+        upcomingEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {upcomingEvents.map((event: any) => (
+              <Link
+                key={event.id}
+                href={`/event/${event.id}`}
+                className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
+                {event.cover_image_url && (
+                  <div className="h-48 bg-gray-200"></div>
+                )}
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {new Date(event.start_time).toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                  {event.location && (
+                    <p className="text-gray-500 text-sm mt-1">{event.location}</p>
                   )}
                 </div>
-                <p className="text-gray-600 text-sm mb-2">
-                  📅 {new Date(event.start_time).toLocaleDateString()}
-                </p>
-                {event.location && (
-                  <p className="text-gray-600 text-sm mb-2">
-                    📍 {event.location}
-                  </p>
-                )}
-                <p className="text-gray-600 text-sm">
-                  👥 {event.member_count || 0} members
-                </p>
-              </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg mb-4">No upcoming events</p>
+            <Link
+              href="/discover"
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Discover events nearby
             </Link>
-          ))}
-        </div>
+          </div>
+        )
+      ) : activeTab === 'invites' ? (
+        pendingInvites.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pendingInvites.map((event: any) => (
+              <div
+                key={event.id}
+                className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-primary-500"
+              >
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {new Date(event.start_time).toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                  {event.location && (
+                    <p className="text-gray-500 text-sm mt-1">{event.location}</p>
+                  )}
+                  <div className="flex gap-3 mt-4">
+                    <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
+                      Going
+                    </button>
+                    <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No pending invites</p>
+          </div>
+        )
       ) : (
+        /* Series Updates tab */
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No events found</p>
+          <p className="text-gray-500 text-lg mb-2">No series updates</p>
+          <p className="text-gray-400 text-sm">
+            Subscribe to event series to see new events here when they are created
+          </p>
         </div>
       )}
     </div>

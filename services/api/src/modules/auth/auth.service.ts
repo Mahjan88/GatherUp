@@ -16,7 +16,10 @@ export class AuthService {
     const { data, error } = await supabase.auth.admin.createUser({
       email: input.email,
       password: input.password,
-      user_metadata: { full_name: input.fullName },
+      user_metadata: {
+        first_name: input.firstName,
+        last_name: input.lastName,
+      },
       email_confirm: true,
     });
 
@@ -57,10 +60,17 @@ export class AuthService {
 
   async updateProfile(userId: string, input: UpdateProfileInput) {
     const updateData: Record<string, unknown> = {};
-    if (input.fullName !== undefined) updateData.fullName = input.fullName;
+    if (input.firstName !== undefined) updateData.firstName = input.firstName;
+    if (input.lastName !== undefined) updateData.lastName = input.lastName;
+    if (input.username !== undefined) updateData.username = input.username;
+    if (input.tagline !== undefined) updateData.tagline = input.tagline;
     if (input.avatarUrl !== undefined) updateData.avatarUrl = input.avatarUrl;
     if (input.bio !== undefined) updateData.bio = input.bio;
     if (input.phone !== undefined) updateData.phone = input.phone;
+    if (input.city !== undefined) updateData.city = input.city;
+    if (input.state !== undefined) updateData.state = input.state;
+    if (input.country !== undefined) updateData.country = input.country;
+    if (input.userData !== undefined) updateData.userData = input.userData;
 
     const [updated] = await this.app.db
       .update(users)
@@ -77,7 +87,9 @@ export class AuthService {
       .from(users)
       .where(
         or(
-          ilike(users.fullName, `%${query}%`),
+          ilike(users.firstName, `%${query}%`),
+          ilike(users.lastName, `%${query}%`),
+          ilike(users.username, `%${query}%`),
           ilike(users.email, `%${query}%`)
         )
       )

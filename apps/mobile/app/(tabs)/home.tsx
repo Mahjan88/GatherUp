@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,8 +14,9 @@ import EventCard, { EventCardData } from '../../components/EventCard';
 const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
 
 // TODO: Replace with real data from API
-const PRIVATE_EVENTS: EventCardData[] = [];
-const PUBLIC_EVENTS: EventCardData[] = [];
+const MY_UPCOMING_EVENTS: EventCardData[] = [];
+const INVITED_EVENTS: EventCardData[] = [];
+const SERIES_EVENTS: (EventCardData & { seriesName: string })[] = [];
 
 type TimeFilter = 'week' | 'month' | 'all';
 
@@ -23,9 +24,15 @@ export default function HomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<TimeFilter>('week');
 
+  const handleSeriesResponse = (eventId: string, response: 'going' | 'not_this_time') => {
+    // TODO: Call API to respond to series event
+    // POST /api/events/:id/respond with status: 'joined' or 'declined'
+    console.log(`Series event ${eventId}: ${response}`);
+  };
+
   return (
     <View style={styles.container}>
-      <Header title="Events" />
+      <Header title="Home" />
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Filter Pills */}
@@ -41,7 +48,7 @@ export default function HomeScreen() {
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterTab, activeFilter === 'week' && styles.filterTabActive]}
               onPress={() => setActiveFilter('week')}
             >
@@ -49,7 +56,7 @@ export default function HomeScreen() {
                 This Week
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterTab, activeFilter === 'month' && styles.filterTabActive]}
               onPress={() => setActiveFilter('month')}
             >
@@ -57,7 +64,7 @@ export default function HomeScreen() {
                 This Month
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterTab, activeFilter === 'all' && styles.filterTabActive]}
               onPress={() => setActiveFilter('all')}
             >
@@ -68,60 +75,100 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* PRIVATE INVITES */}
+        {/* SERIES UPDATES — dismissable action cards */}
+        {SERIES_EVENTS.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>SERIES UPDATES</Text>
+            </View>
+            {SERIES_EVENTS.map(event => (
+              <View key={event.id} style={styles.seriesCard}>
+                <View style={styles.seriesLabel}>
+                  <Text style={styles.seriesLabelText}>
+                    New from {event.seriesName}
+                  </Text>
+                </View>
+                <EventCard event={event} variant="full" />
+                <View style={styles.seriesActions}>
+                  <TouchableOpacity
+                    style={styles.goingButton}
+                    onPress={() => handleSeriesResponse(event.id, 'going')}
+                  >
+                    <Text style={styles.goingButtonText}>Going</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.notThisTimeButton}
+                    onPress={() => handleSeriesResponse(event.id, 'not_this_time')}
+                  >
+                    <Text style={styles.notThisTimeButtonText}>Not this time</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* INVITES */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PRIVATE INVITES</Text>
+            <Text style={styles.sectionTitle}>INVITES</Text>
             <TouchableOpacity onPress={() => router.push('/event/past')}>
               <Text style={styles.seeAllLink}>past events</Text>
             </TouchableOpacity>
           </View>
-          {PRIVATE_EVENTS.length > 0 ? (
+          {INVITED_EVENTS.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
             >
-              {PRIVATE_EVENTS.map(event => (
+              {INVITED_EVENTS.map(event => (
                 <EventCard key={event.id} event={event} variant="compact" />
               ))}
             </ScrollView>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No private invites yet</Text>
+              <Text style={styles.emptyStateText}>No invites right now</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.sectionadding} />
-        {/* PUBLIC EVENTS NEAR YOU */}
+        <View style={styles.sectionDivider} />
+
+        {/* MY UPCOMING EVENTS */}
         <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>PUBLIC EVENTS NEAR YOU</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>MY UPCOMING EVENTS</Text>
           </View>
-        {PUBLIC_EVENTS.length > 0 ? (
-          PUBLIC_EVENTS.map(event => (
-            <EventCard key={event.id} event={event} variant="full" />
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No public events nearby</Text>
-          </View>
-        )}
+          {MY_UPCOMING_EVENTS.length > 0 ? (
+            MY_UPCOMING_EVENTS.map(event => (
+              <EventCard key={event.id} event={event} variant="full" />
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No upcoming events</Text>
+              <TouchableOpacity
+                style={styles.discoverLink}
+                onPress={() => router.push('/discover')}
+              >
+                <Text style={styles.discoverLinkText}>Discover events nearby</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        <View style={styles.sectionadding} />
+        <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: '#0f172a',
   },
-  scrollView: { 
+  scrollView: {
     flex: 1,
   },
   filterSection: {
@@ -160,7 +207,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
   },
-  section: { 
+  section: {
     marginBottom: 32,
   },
   sectionHeader: {
@@ -181,13 +228,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#14b8a6',
   },
-  horizontalScroll: { 
-    paddingHorizontal: 20, 
+  horizontalScroll: {
+    paddingHorizontal: 20,
     gap: 12,
   },
-
-  sectionadding: {
-    height: 50,
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#1e293b',
+    marginHorizontal: 20,
+    marginBottom: 32,
   },
   emptyState: {
     paddingVertical: 40,
@@ -199,33 +248,71 @@ const styles = StyleSheet.create({
     color: '#64748b',
     textAlign: 'center',
   },
-
-  // Floating Calendar Button
-  calendarButton: {
-    position: 'absolute',
-    bottom: 50,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-    paddingVertical: 12,
+  discoverLink: {
+    marginTop: 12,
     paddingHorizontal: 20,
-    borderRadius: 24,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    paddingVertical: 10,
+    backgroundColor: '#1e293b',
+    borderRadius: 20,
   },
-  calendarButtonText: {
-    color: '#fff',
+  discoverLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#14b8a6',
+  },
+  // Series action card styles
+  seriesCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#14b8a6',
+    backgroundColor: '#0f2a2e',
+    overflow: 'hidden',
+  },
+  seriesLabel: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(20, 184, 166, 0.15)',
+  },
+  seriesLabelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#14b8a6',
+  },
+  seriesActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  goingButton: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#14b8a6',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  goingButtonText: {
     fontSize: 15,
     fontWeight: '600',
+    color: '#0f172a',
   },
-  calendarIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#fff',
+  notThisTimeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  notThisTimeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#94a3b8',
+  },
+  bottomPadding: {
+    height: 100,
   },
 });

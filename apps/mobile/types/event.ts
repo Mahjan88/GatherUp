@@ -22,25 +22,25 @@ export interface AgendaItem {
   icon: string;
 }
 
-export interface LocationCoords {
-  latitude: number;
-  longitude: number;
-}
-
 export interface Event {
   id: string;
-  
+
   // Event Basics
   title: string;
+  tagline: string | null;
   description: string | null;
   coverImage: string | null;
   galleryForAttendeesOnly: boolean;
-  
+
   // When & Where
   startDate: Date;
   endDate: Date | null;
+  timezone: string;
   address: string | null;
-  locationCoords: LocationCoords | null;
+  latitude: number | null;
+  longitude: number | null;
+  isOnline: boolean;
+  virtualLink: string | null;
   showAddressToInvitees: boolean;
   
   // Host & Co-hosts

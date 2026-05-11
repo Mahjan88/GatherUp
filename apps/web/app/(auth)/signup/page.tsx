@@ -7,7 +7,8 @@ import { signUpWithEmail, signInWithOAuth } from '@gatherup/shared';
 
 export default function SignUpPage() {
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,7 +22,7 @@ export default function SignUpPage() {
     setError('');
     setSuccess('');
 
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!firstName || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
@@ -38,7 +39,7 @@ export default function SignUpPage() {
 
     setLoading(true);
     try {
-      await signUpWithEmail(email, password, fullName);
+      await signUpWithEmail(email, password, firstName, lastName || undefined);
       setSuccess(
         'Account created! Please check your email to verify your account.'
       );
@@ -190,18 +191,32 @@ export default function SignUpPage() {
         ) : (
           /* Email signup form */
           <form className="space-y-4" onSubmit={handleSignUp}>
-            <div>
-              <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">
-                Full Name
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-4 py-3.5 border border-white/[0.12] bg-white/[0.04] text-white rounded-xl focus:outline-none focus:border-[rgba(0,212,170,0.5)] placeholder-white/25 text-sm"
-                placeholder="Enter your full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-4 py-3.5 border border-white/[0.12] bg-white/[0.04] text-white rounded-xl focus:outline-none focus:border-[rgba(0,212,170,0.5)] placeholder-white/25 text-sm"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3.5 border border-white/[0.12] bg-white/[0.04] text-white rounded-xl focus:outline-none focus:border-[rgba(0,212,170,0.5)] placeholder-white/25 text-sm"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
             </div>
 
             <div>

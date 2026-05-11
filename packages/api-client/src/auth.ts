@@ -3,8 +3,8 @@ import type { ApiClient } from './client.js';
 export class AuthApi {
   constructor(private client: ApiClient) {}
 
-  signUp(email: string, password: string, fullName: string) {
-    return this.client.post('/api/auth/signup', { email, password, fullName });
+  signUp(email: string, password: string, firstName: string, lastName?: string) {
+    return this.client.post('/api/auth/signup', { email, password, firstName, lastName });
   }
 
   signInEmail(email: string, password: string) {
@@ -19,7 +19,19 @@ export class AuthApi {
     return this.client.get('/api/auth/me');
   }
 
-  updateProfile(data: { fullName?: string; avatarUrl?: string | null; bio?: string | null; phone?: string | null }) {
+  updateProfile(data: {
+    firstName?: string;
+    lastName?: string | null;
+    username?: string | null;
+    tagline?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    phone?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    userData?: Record<string, unknown> | null;
+  }) {
     return this.client.patch('/api/auth/me', data);
   }
 

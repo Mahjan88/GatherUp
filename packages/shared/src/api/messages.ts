@@ -12,7 +12,7 @@ import {
 export async function sendEventMessage(message: EventMessageInsert) {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('event_messages')
+    .from('event_message')
     .insert(message)
     .select()
     .single();
@@ -24,11 +24,11 @@ export async function sendEventMessage(message: EventMessageInsert) {
 export async function getEventMessages(eventId: string, limit = 50) {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('event_messages')
+    .from('event_message')
     .select(
       `
       *,
-      sender:users!event_messages_sender_id_fkey(*)
+      sender:users!event_message_sender_id_fkey(*)
     `
     )
     .eq('event_id', eventId)
@@ -51,7 +51,7 @@ export async function subscribeToEventMessages(
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'event_messages',
+        table: 'event_message',
         filter: `event_id=eq.${eventId}`,
       },
       (payload) => {
@@ -69,7 +69,7 @@ export async function subscribeToEventMessages(
 export async function sendPrivateMessage(message: PrivateMessageInsert) {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from('private_messages')
+    .from('private_message')
     .insert(message)
     .select()
     .single();
@@ -87,12 +87,12 @@ export async function getPrivateMessages(otherUserId: string, limit = 50) {
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
-    .from('private_messages')
+    .from('private_message')
     .select(
       `
       *,
-      sender:users!private_messages_sender_id_fkey(*),
-      recipient:users!private_messages_recipient_id_fkey(*)
+      sender:users!private_message_sender_id_fkey(*),
+      recipient:users!private_message_recipient_id_fkey(*)
     `
     )
     .or(
@@ -115,12 +115,12 @@ export async function getConversations() {
 
   // Get latest message for each conversation
   const { data, error } = await supabase
-    .from('private_messages')
+    .from('private_message')
     .select(
       `
       *,
-      sender:users!private_messages_sender_id_fkey(*),
-      recipient:users!private_messages_recipient_id_fkey(*)
+      sender:users!private_message_sender_id_fkey(*),
+      recipient:users!private_message_recipient_id_fkey(*)
     `
     )
     .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
@@ -150,7 +150,7 @@ export async function markPrivateMessagesAsRead(otherUserId: string) {
   if (!user) throw new Error('Not authenticated');
 
   const { error } = await supabase
-    .from('private_messages')
+    .from('private_message')
     .update({ read: true })
     .eq('sender_id', otherUserId)
     .eq('recipient_id', user.id)
@@ -170,13 +170,13 @@ export async function subscribeToPrivateMessages(
   if (!user) throw new Error('Not authenticated');
 
   const channel = supabase
-    .channel('private_messages')
+    .channel('private_message')
     .on(
       'postgres_changes',
       {
         event: 'INSERT',
         schema: 'public',
-        table: 'private_messages',
+        table: 'private_message',
         filter: `recipient_id=eq.${user.id}`,
       },
       (payload) => {

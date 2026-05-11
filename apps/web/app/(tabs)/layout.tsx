@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, signOut } from '@gatherup/shared';
@@ -9,12 +9,20 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, loading, router]);
+
+  // TODO: Fetch unread notification count from API
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     fetchUnreadCount().then(setUnreadCount);
+  //   }
+  // }, [isAuthenticated]);
 
   if (loading || !isAuthenticated) {
     return (
@@ -29,8 +37,8 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
 
   const tabs = [
     { name: 'Home', path: '/', icon: '🏠' },
+    { name: 'Discover', path: '/discover', icon: '🔍' },
     { name: 'Events', path: '/events', icon: '📅' },
-    { name: 'Notifications', path: '/notifications', icon: '🔔' },
     { name: 'Messages', path: '/messages', icon: '💬' },
   ];
 
@@ -63,6 +71,24 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
                   {tab.name}
                 </Link>
               ))}
+
+              {/* Notification Bell */}
+              <Link
+                href="/notifications"
+                className={`relative px-3 py-2 rounded-md text-sm font-medium ${
+                  pathname === '/notifications'
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span>🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+
               <button
                 onClick={handleSignOut}
                 className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"

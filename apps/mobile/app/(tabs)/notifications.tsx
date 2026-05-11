@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Notifications" />
+      <Header title="Notifications" showBack={true} showNotificationBell={false} />
 
       {/* Action Bar */}
       {unreadCount > 0 && (

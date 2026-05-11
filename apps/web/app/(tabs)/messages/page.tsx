@@ -39,20 +39,20 @@ export default function MessagesPage() {
                 {otherUser.avatar_url ? (
                   <img
                     src={otherUser.avatar_url}
-                    alt={otherUser.full_name}
+                    alt={otherUser.first_name}
                     className="w-12 h-12 rounded-full"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
                     <span className="text-white text-lg font-semibold">
-                      {otherUser.full_name[0].toUpperCase()}
+                      {otherUser.first_name[0].toUpperCase()}
                     </span>
                   </div>
                 )}
                 <div className="flex-1 ml-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-base">
-                      {otherUser.full_name}
+                      {otherUser.first_name}{otherUser.last_name ? ` ${otherUser.last_name}` : ''}
                     </span>
                     <span className="text-xs text-gray-500">
                       {new Date(conversation.created_at).toLocaleTimeString([], {

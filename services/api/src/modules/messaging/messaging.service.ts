@@ -1,7 +1,7 @@
 import { eq, and, or, desc, lt, count } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { eventMessages } from '../../db/schema/event-messages.js';
-import { privateMessages } from '../../db/schema/private-messages.js';
+import { eventMessage } from '../../db/schema/event-messages.js';
+import { privateMessage } from '../../db/schema/private-messages.js';
 import { users } from '../../db/schema/users.js';
 import type { SendEventMessageInput, SendPrivateMessageInput } from './messaging.schema.js';
 
@@ -12,7 +12,7 @@ export class MessagingService {
 
   async sendEventMessage(eventId: string, senderId: string, input: SendEventMessageInput) {
     const [message] = await this.app.db
-      .insert(eventMessages)
+      .insert(eventMessage)
       .values({
         eventId,
         senderId,
@@ -25,21 +25,21 @@ export class MessagingService {
   }
 
   async getEventMessages(eventId: string, limit = 50, before?: string) {
-    const conditions = [eq(eventMessages.eventId, eventId)];
+    const conditions = [eq(eventMessage.eventId, eventId)];
 
     if (before) {
-      conditions.push(lt(eventMessages.createdAt, new Date(before)));
+      conditions.push(lt(eventMessage.createdAt, new Date(before)));
     }
 
     const messages = await this.app.db
       .select({
-        message: eventMessages,
+        message: eventMessage,
         sender: users,
       })
-      .from(eventMessages)
-      .innerJoin(users, eq(eventMessages.senderId, users.id))
+      .from(eventMessage)
+      .innerJoin(users, eq(eventMessage.senderId, users.id))
       .where(and(...conditions))
-      .orderBy(desc(eventMessages.createdAt))
+      .orderBy(desc(eventMessage.createdAt))
       .limit(limit);
 
     return messages.map((m) => ({
@@ -52,7 +52,7 @@ export class MessagingService {
 
   async sendPrivateMessage(senderId: string, input: SendPrivateMessageInput) {
     const [message] = await this.app.db
-      .insert(privateMessages)
+      .insert(privateMessage)
       .values({
         senderId,
         recipientId: input.recipientId,
@@ -66,24 +66,24 @@ export class MessagingService {
   async getPrivateMessages(userId: string, otherUserId: string, limit = 50, before?: string) {
     const conditions = [
       or(
-        and(eq(privateMessages.senderId, userId), eq(privateMessages.recipientId, otherUserId)),
-        and(eq(privateMessages.senderId, otherUserId), eq(privateMessages.recipientId, userId))
+        and(eq(privateMessage.senderId, userId), eq(privateMessage.recipientId, otherUserId)),
+        and(eq(privateMessage.senderId, otherUserId), eq(privateMessage.recipientId, userId))
       ),
     ];
 
     if (before) {
-      conditions.push(lt(privateMessages.createdAt, new Date(before)));
+      conditions.push(lt(privateMessage.createdAt, new Date(before)));
     }
 
     const messages = await this.app.db
       .select({
-        message: privateMessages,
+        message: privateMessage,
         sender: users,
       })
-      .from(privateMessages)
-      .innerJoin(users, eq(privateMessages.senderId, users.id))
+      .from(privateMessage)
+      .innerJoin(users, eq(privateMessage.senderId, users.id))
       .where(and(...conditions))
-      .orderBy(desc(privateMessages.createdAt))
+      .orderBy(desc(privateMessage.createdAt))
       .limit(limit);
 
     return messages.map((m) => ({
@@ -96,18 +96,18 @@ export class MessagingService {
     // Get all private messages involving the user, ordered by most recent
     const allMessages = await this.app.db
       .select({
-        message: privateMessages,
+        message: privateMessage,
         sender: users,
       })
-      .from(privateMessages)
-      .innerJoin(users, eq(privateMessages.senderId, users.id))
+      .from(privateMessage)
+      .innerJoin(users, eq(privateMessage.senderId, users.id))
       .where(
         or(
-          eq(privateMessages.senderId, userId),
-          eq(privateMessages.recipientId, userId)
+          eq(privateMessage.senderId, userId),
+          eq(privateMessage.recipientId, userId)
         )
       )
-      .orderBy(desc(privateMessages.createdAt));
+      .orderBy(desc(privateMessage.createdAt));
 
     // Group by conversation partner and take the latest message
     const conversationMap = new Map<string, (typeof allMessages)[0]>();
@@ -141,13 +141,13 @@ export class MessagingService {
 
   async markAsRead(userId: string, otherUserId: string) {
     await this.app.db
-      .update(privateMessages)
+      .update(privateMessage)
       .set({ read: true })
       .where(
         and(
-          eq(privateMessages.senderId, otherUserId),
-          eq(privateMessages.recipientId, userId),
-          eq(privateMessages.read, false)
+          eq(privateMessage.senderId, otherUserId),
+          eq(privateMessage.recipientId, userId),
+          eq(privateMessage.read, false)
         )
       );
   }

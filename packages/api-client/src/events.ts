@@ -5,6 +5,9 @@ export class EventsApi {
 
   list(params?: {
     visibility?: string;
+    status?: string;
+    communityId?: string;
+    seriesId?: string;
     startDate?: string;
     endDate?: string;
     category?: string;
@@ -12,6 +15,10 @@ export class EventsApi {
     limit?: number;
   }) {
     return this.client.get('/api/events', params);
+  }
+
+  feed() {
+    return this.client.get('/api/events/feed');
   }
 
   getById(id: string) {
