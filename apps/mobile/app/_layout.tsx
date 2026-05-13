@@ -50,84 +50,96 @@ export default function RootLayout() {
       <CenterButtonProvider>
         {showSplash && <SplashScreen onFinish={onSplashFinish} />}
         <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="compose"
-          options={{
-            headerShown: false,
-            presentation: 'modal',
-          }}
-        />
-        <Stack.Screen
-          name="chat/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="contact/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings/profile"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings/account"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings/chats"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings/notifications"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="settings/data-storage"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="event/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="gallery/[id]"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="event/create"
-          options={{
-            title: 'Create Event',
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="event/past"
-          options={{
-            headerShown: false,
-          }}
-        />
-      </Stack>
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="compose"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+            }}
+          />
+          <Stack.Screen
+            name="chat/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="contact/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/profile"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/account"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/chats"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/notifications"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/data-storage"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="event/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="gallery/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="event/create"
+            options={{
+              title: 'Create Event',
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="event/past"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="event/invite"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="discover"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="community/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="community/create"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="series/[id]"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="series/create"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="settings/blocked"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="report"
+            options={{ headerShown: false }}
+          />
+        </Stack>
       </CenterButtonProvider>
     </QueryClientProvider>
   );

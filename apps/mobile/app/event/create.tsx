@@ -49,17 +49,28 @@ export default function CreateEventScreen() {
   
   // A. Event Basics
   const [title, setTitle] = useState('');
+  const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [galleryForAttendeesOnly, setGalleryForAttendeesOnly] = useState(true);
-  
+
   // B. When & Where
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [timezone, setTimezone] = useState('America/New_York');
+  const [location, setLocation] = useState('');
   const [address, setAddress] = useState('');
+  const [cityRegion, setCityRegion] = useState('');
   const [showAddressToInvitees, setShowAddressToInvitees] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [virtualLink, setVirtualLink] = useState('');
+
+  // Organizer & Series
+  const [organizerType, setOrganizerType] = useState<'user' | 'community'>('user');
+  const [communityId, setCommunityId] = useState('');
+  const [seriesId, setSeriesId] = useState('');
   
   // C. Guests & Privacy
   const [eventPrivacy, setEventPrivacy] = useState<EventPrivacy>('public');
@@ -209,6 +220,17 @@ export default function CreateEventScreen() {
       </View>
 
       <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Tagline</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="A short catchy subtitle"
+          placeholderTextColor="#64748b"
+          value={tagline}
+          onChangeText={setTagline}
+        />
+      </View>
+
+      <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Description <Text style={styles.requiredAsterisk}>*</Text></Text>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -270,15 +292,79 @@ export default function CreateEventScreen() {
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Address</Text>
+        <Text style={styles.inputLabel}>Timezone</Text>
         <TextInput
           style={styles.input}
-          placeholder="Where's your event?"
+          placeholder="e.g., America/New_York"
           placeholderTextColor="#64748b"
-          value={address}
-          onChangeText={setAddress}
+          value={timezone}
+          onChangeText={setTimezone}
         />
       </View>
+
+      <View style={styles.inlineToggle}>
+        <View style={styles.toggleInfo}>
+          <Text style={styles.toggleLabel}>Online Event</Text>
+          <Text style={styles.toggleHint}>This event takes place virtually</Text>
+        </View>
+        <Switch
+          value={isOnline}
+          onValueChange={setIsOnline}
+          trackColor={{ false: '#334155', true: '#14b8a6' }}
+          thumbColor="#fff"
+        />
+      </View>
+
+      {isOnline && (
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Meeting Link</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="https://zoom.us/j/..."
+            placeholderTextColor="#64748b"
+            value={virtualLink}
+            onChangeText={setVirtualLink}
+            autoCapitalize="none"
+          />
+        </View>
+      )}
+
+      {!isOnline && (
+        <>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Venue Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., Rooftop Lounge, Main Hall"
+              placeholderTextColor="#64748b"
+              value={location}
+              onChangeText={setLocation}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Address</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Where's your event?"
+              placeholderTextColor="#64748b"
+              value={address}
+              onChangeText={setAddress}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>City / Region</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="San Francisco, CA"
+              placeholderTextColor="#64748b"
+              value={cityRegion}
+              onChangeText={setCityRegion}
+            />
+          </View>
+        </>
+      )}
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Category</Text>
@@ -389,6 +475,57 @@ export default function CreateEventScreen() {
 
   const renderPage2 = () => (
     <>
+      <Text style={styles.sectionHeader}>Hosting As</Text>
+
+      <View style={styles.inputGroup}>
+        <View style={styles.privacyOptions}>
+          <TouchableOpacity
+            style={[styles.privacyOption, organizerType === 'user' && styles.privacyOptionActive]}
+            onPress={() => setOrganizerType('user')}
+          >
+            <Text style={[styles.privacyOptionTitle, organizerType === 'user' && styles.privacyOptionTitleActive]}>
+              Myself
+            </Text>
+            <Text style={styles.privacyOptionHint}>Host as your personal profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.privacyOption, organizerType === 'community' && styles.privacyOptionActive]}
+            onPress={() => setOrganizerType('community')}
+          >
+            <Text style={[styles.privacyOptionTitle, organizerType === 'community' && styles.privacyOptionTitleActive]}>
+              A Community
+            </Text>
+            <Text style={styles.privacyOptionHint}>Host on behalf of a community</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {organizerType === 'community' && (
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Select Community</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Choose a community..."
+            placeholderTextColor="#64748b"
+            value={communityId}
+            onChangeText={setCommunityId}
+          />
+          {/* TODO: Replace with a proper picker from user's communities */}
+        </View>
+      )}
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Part of a Series <Text style={{ color: '#64748b', fontWeight: '400' }}>(optional)</Text></Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Standalone event"
+          placeholderTextColor="#64748b"
+          value={seriesId}
+          onChangeText={setSeriesId}
+        />
+        {/* TODO: Replace with a proper picker from user's series */}
+      </View>
+
       <Text style={styles.sectionHeader}>Guests & Privacy</Text>
 
       <PeopleSelector
