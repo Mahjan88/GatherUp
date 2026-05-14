@@ -15,20 +15,14 @@ const CalendarIcon = require('../../assets/Icons/calendar_icon.png');
 
 // TODO: Replace with real data from API
 const MY_UPCOMING_EVENTS: EventCardData[] = [];
+
 const INVITED_EVENTS: EventCardData[] = [];
-const SERIES_EVENTS: (EventCardData & { seriesName: string })[] = [];
 
 type TimeFilter = 'week' | 'month' | 'all';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<TimeFilter>('week');
-
-  const handleSeriesResponse = (eventId: string, response: 'going' | 'not_this_time') => {
-    // TODO: Call API to respond to series event
-    // POST /api/events/:id/respond with status: 'joined' or 'declined'
-    console.log(`Series event ${eventId}: ${response}`);
-  };
 
   return (
     <View style={styles.container}>
@@ -74,39 +68,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* SERIES UPDATES — dismissable action cards */}
-        {SERIES_EVENTS.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>SERIES UPDATES</Text>
-            </View>
-            {SERIES_EVENTS.map(event => (
-              <View key={event.id} style={styles.seriesCard}>
-                <View style={styles.seriesLabel}>
-                  <Text style={styles.seriesLabelText}>
-                    New from {event.seriesName}
-                  </Text>
-                </View>
-                <EventCard event={event} variant="full" />
-                <View style={styles.seriesActions}>
-                  <TouchableOpacity
-                    style={styles.goingButton}
-                    onPress={() => handleSeriesResponse(event.id, 'going')}
-                  >
-                    <Text style={styles.goingButtonText}>Going</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.notThisTimeButton}
-                    onPress={() => handleSeriesResponse(event.id, 'not_this_time')}
-                  >
-                    <Text style={styles.notThisTimeButtonText}>Not this time</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* INVITES */}
         <View style={styles.section}>
@@ -259,58 +220,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#14b8a6',
-  },
-  // Series action card styles
-  seriesCard: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#14b8a6',
-    backgroundColor: '#0f2a2e',
-    overflow: 'hidden',
-  },
-  seriesLabel: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(20, 184, 166, 0.15)',
-  },
-  seriesLabelText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#14b8a6',
-  },
-  seriesActions: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  goingButton: {
-    flex: 1,
-    paddingVertical: 10,
-    backgroundColor: '#14b8a6',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  goingButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
-  },
-  notThisTimeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  notThisTimeButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#94a3b8',
   },
   bottomPadding: {
     height: 100,

@@ -10,8 +10,9 @@ import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
 import EventCard, { EventCardData } from '../../components/EventCard';
 
-// TODO: Replace with real data from API
+// TODO: Replace with real API data
 const HOSTED_EVENTS: EventCardData[] = [];
+
 const ATTENDED_EVENTS: EventCardData[] = [];
 
 type TabType = 'hosted' | 'attended';
@@ -153,12 +154,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.shareProfileButton}>
               <Text style={styles.shareProfileText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.settingsButton}
-              onPress={() => router.push('/settings/account')}
-            >
-              <Text style={styles.settingsIcon}>⚙️</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -312,16 +307,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-  },
-  settingsButton: {
-    backgroundColor: '#1e293b',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsIcon: {
-    fontSize: 18,
   },
   tabsContainer: {
     flexDirection: 'row',

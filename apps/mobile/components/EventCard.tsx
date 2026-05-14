@@ -182,6 +182,14 @@ export default function EventCard({ event, variant = 'compact' }: EventCardProps
           <TouchableOpacity style={styles.fullShareBtn}>
             <Text style={styles.fullShareIcon}>➦</Text>
           </TouchableOpacity>
+          {event.isPrivate && event.chatUnread && event.chatUnread > 0 ? (
+            <TouchableOpacity style={styles.fullChatBtn}>
+              <Text style={styles.fullChatIcon}>💬</Text>
+              <View style={styles.fullChatBadge}>
+                <Text style={styles.fullChatBadgeText}>{event.chatUnread}</Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
         </View>
       )}
     </TouchableOpacity>
@@ -402,6 +410,37 @@ const styles = StyleSheet.create({
   fullShareIcon: {
     fontSize: 18,
     color: '#94a3b8',
+  },
+  fullChatBtn: {
+    width: 44,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#334155',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  fullChatIcon: {
+    fontSize: 16,
+  },
+  fullChatBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#1e293b',
+  },
+  fullChatBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
 
   // Past variant (shorter cards for past events)

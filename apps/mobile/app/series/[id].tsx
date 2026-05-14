@@ -62,7 +62,7 @@ export default function SeriesDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
-  // TODO: Fetch series data from API using the id param
+  // TODO: Fetch real data from API using the series ID
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [notifyOnEvents, setNotifyOnEvents] = useState(true);

@@ -29,8 +29,7 @@ const formatBlockedDate = (dateStr: string): string => {
 export default function BlockedUsersScreen() {
   const router = useRouter();
 
-  // TODO: Fetch blocked users from API
-  // GET /api/users/me/blocked
+  // TODO: Replace with real API data
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
 
   const handleUnblock = (user: BlockedUser) => {

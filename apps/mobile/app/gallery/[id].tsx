@@ -24,7 +24,7 @@ interface MediaItem {
   uploadedAt: string;
 }
 
-// Mock data - empty for now to show empty state
+// TODO: Replace with real API data
 const PHOTOS: MediaItem[] = [];
 const VIDEOS: MediaItem[] = [];
 

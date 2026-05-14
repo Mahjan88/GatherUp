@@ -16,7 +16,7 @@ interface Notification {
   isRead: boolean;
 }
 
-// TODO: Replace with real data from API
+// TODO: Replace with real API data
 const NOTIFICATIONS: Notification[] = [];
 
 export default function NotificationsScreen() {

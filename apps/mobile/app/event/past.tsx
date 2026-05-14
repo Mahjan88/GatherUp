@@ -7,7 +7,7 @@ import {
 import Header from '../../components/Header';
 import EventCard, { EventCardData } from '../../components/EventCard';
 
-// TODO: Replace with real data from API
+// TODO: Replace with real API data
 const PAST_EVENTS: EventCardData[] = [];
 
 const groupEventsByYear = (events: EventCardData[]): Record<number, EventCardData[]> => {

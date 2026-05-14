@@ -22,7 +22,7 @@ const SearchIcon = require('../../assets/Icons/search_icon.png');
 const ArchiveIcon = require('../../assets/Icons/archive_icon.png');
 const DoneIcon = require('../../assets/Icons/done_icon.png');
 
-type ChatFilter = 'all' | 'personal' | 'event' | 'unread' | 'archived';
+type ChatFilter = 'all' | 'personal' | 'groups' | 'unread' | 'archived';
 
 interface Chat {
   id: string;
@@ -33,13 +33,12 @@ interface Chat {
   pinned: boolean;
   archived?: boolean;
   avatar: string | null;
-  isEventChat?: boolean;
+  isGroupChat?: boolean;
 }
 
-
-// TODO: Replace with real data from API
+// TODO: Replace with real API data
 const INITIAL_CHATS: Chat[] = [];
-const EVENT_CHATS: Chat[] = [];
+const GROUP_CHATS: Chat[] = [];
 
 const CONTACTS: { id: string; name: string; status: string; avatar: string | null }[] = [];
 
@@ -154,9 +153,9 @@ function SwipeableChatItem({
             </View>
           )}
           {chat.pinned && <Text style={styles.pinnedIcon}>📌</Text>}
-          <View style={[styles.avatar, chat.isEventChat && styles.eventAvatar]}>
+          <View style={[styles.avatar, chat.isGroupChat && styles.groupAvatar]}>
             <Text style={styles.avatarText}>
-              {chat.isEventChat ? '🎉' : (() => {
+              {chat.isGroupChat ? '👥' : (() => {
                 const parts = chat.name.split(' ');
                 if (parts.length >= 2) {
                   return parts[0][0] + parts[1][0];
@@ -189,7 +188,7 @@ export default function MessagesScreen() {
   const router = useRouter();
   const { setCustomAction } = useCenterButton();
   const [personalChats, setPersonalChats] = useState<Chat[]>(INITIAL_CHATS);
-  const [eventChats, setEventChats] = useState<Chat[]>(EVENT_CHATS);
+  const [groupChats, setGroupChats] = useState<Chat[]>(GROUP_CHATS);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -211,13 +210,12 @@ export default function MessagesScreen() {
   );
 
   const getCurrentChats = () => {
-    const allChats = [...personalChats, ...eventChats];
-    
+    const allChats = [...personalChats, ...groupChats];
     switch (chatFilter) {
       case 'personal':
-        return allChats.filter((c) => !c.isEventChat && !c.archived);
-      case 'event':
-        return allChats.filter((c) => c.isEventChat && !c.archived);
+        return allChats.filter((c) => !c.isGroupChat && !c.archived);
+      case 'groups':
+        return allChats.filter((c) => c.isGroupChat && !c.archived);
       case 'unread':
         return allChats.filter((c) => c.unread > 0 && !c.archived);
       case 'archived':
@@ -241,8 +239,7 @@ export default function MessagesScreen() {
 
   // Calculate unread counts
   const personalUnreadCount = personalChats.filter(c => !c.archived && c.unread > 0).length;
-  const eventUnreadCount = eventChats.filter(c => !c.archived && c.unread > 0).length;
-  const totalUnreadCount = personalUnreadCount + eventUnreadCount;
+  const groupUnreadCount = groupChats.filter(c => !c.archived && c.unread > 0).length;
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedChats);
@@ -255,70 +252,41 @@ export default function MessagesScreen() {
   };
 
   const handlePin = (id: string) => {
-    // Check if it's in personal chats
     if (personalChats.some((c) => c.id === id)) {
-      setPersonalChats(
-        personalChats.map((c) =>
-          c.id === id ? { ...c, pinned: !c.pinned } : c
-        )
-      );
+      setPersonalChats(personalChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
     } else {
-      setEventChats(
-        eventChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
-      );
+      setGroupChats(groupChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
     }
   };
 
   const handleArchive = (ids: string[]) => {
-    // Mark chats as archived instead of deleting
-    setPersonalChats(
-      personalChats.map((c) =>
-        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
-      )
-    );
-    setEventChats(
-      eventChats.map((c) =>
-        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
-      )
-    );
+    setPersonalChats(personalChats.map((c) => ids.includes(c.id) ? { ...c, archived: !c.archived } : c));
+    setGroupChats(groupChats.map((c) => ids.includes(c.id) ? { ...c, archived: !c.archived } : c));
     setSelectedChats(new Set());
   };
 
   const handleDelete = (ids: string[]) => {
     setPersonalChats(personalChats.filter((c) => !ids.includes(c.id)));
-    setEventChats(eventChats.filter((c) => !ids.includes(c.id)));
+    setGroupChats(groupChats.filter((c) => !ids.includes(c.id)));
     setSelectedChats(new Set());
   };
 
   const handleMarkRead = (id: string) => {
-    // Check if it's in personal chats
     if (personalChats.some((c) => c.id === id)) {
-      setPersonalChats(
-        personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
-      );
+      setPersonalChats(personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
     } else {
-      setEventChats(
-        eventChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
-      );
+      setGroupChats(groupChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
     }
   };
 
   const handleReadAll = () => {
     const currentChats = getCurrentChats();
-    const idsToMark = selectedChats.size === 0 
-      ? currentChats.map((c) => c.id) 
+    const idsToMark = selectedChats.size === 0
+      ? currentChats.map((c) => c.id)
       : Array.from(selectedChats);
-    
-    setPersonalChats(
-      personalChats.map((c) =>
-        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
-      )
-    );
-    setEventChats(
-      eventChats.map((c) =>
-        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
-      )
-    );
+
+    setPersonalChats(personalChats.map((c) => idsToMark.includes(c.id) ? { ...c, unread: 0 } : c));
+    setGroupChats(groupChats.map((c) => idsToMark.includes(c.id) ? { ...c, unread: 0 } : c));
   };
 
   const selectedHaveUnread = Array.from(selectedChats).some(
@@ -333,9 +301,8 @@ export default function MessagesScreen() {
     setShowNewChatModal(false);
     setContactSearchQuery('');
     
-    // Find existing personal chat with this contact (not event/group chat)
     const existingChat = personalChats.find(
-      (chat) => !chat.isEventChat && chat.name === contactName
+      (chat) => chat.name === contactName
     );
     
     if (existingChat) {
@@ -441,15 +408,15 @@ export default function MessagesScreen() {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterTab, chatFilter === 'event' && styles.filterTabActive]}
-            onPress={() => setChatFilter('event')}
+            style={[styles.filterTab, chatFilter === 'groups' && styles.filterTabActive]}
+            onPress={() => setChatFilter('groups')}
           >
-            <Text style={[styles.filterTabText, chatFilter === 'event' && styles.filterTabTextActive]}>
+            <Text style={[styles.filterTabText, chatFilter === 'groups' && styles.filterTabTextActive]}>
               Groups
             </Text>
-            {eventUnreadCount > 0 && (
+            {groupUnreadCount > 0 && (
               <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{eventUnreadCount}</Text>
+                <Text style={styles.filterBadgeText}>{groupUnreadCount}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -479,7 +446,7 @@ export default function MessagesScreen() {
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>💬</Text>
             <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptyText}>Start a conversation with friends or join an event chat</Text>
+            <Text style={styles.emptyText}>Start a conversation with friends or create a group chat</Text>
           </View>
         )}
         <View style={styles.listPadding} />
@@ -569,7 +536,7 @@ export default function MessagesScreen() {
       >
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickActionItem}
             onPress={() => {
               setShowNewChatModal(false);
@@ -582,7 +549,7 @@ export default function MessagesScreen() {
             <Text style={styles.quickActionText}>New Group</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickActionItem}
             onPress={() => {
               setShowNewChatModal(false);
@@ -860,7 +827,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  eventAvatar: { backgroundColor: '#000000' },
+  groupAvatar: { backgroundColor: '#1e293b' },
   avatarText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
   chatInfo: { 
     flex: 1, 

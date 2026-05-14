@@ -15,7 +15,7 @@ import BottomTabBar from '../../components/BottomTabBar';
 export default function EditProfileScreen() {
   const router = useRouter();
 
-  // TODO: Load from API / auth context
+  // TODO: Replace with real API data
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');

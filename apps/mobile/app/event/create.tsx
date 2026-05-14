@@ -39,7 +39,7 @@ const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-// TODO: Replace with real contacts from API
+// TODO: Replace with real API data
 const AVAILABLE_CONTACTS: Person[] = [];
 
 export default function CreateEventScreen() {

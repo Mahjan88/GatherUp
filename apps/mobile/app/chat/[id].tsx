@@ -27,13 +27,13 @@ interface Participant {
   avatar: string;
 }
 
-// TODO: Replace with real data from API
 const EVENT_INFO = {
   title: '',
   participantCount: 0,
 };
 
 const PARTICIPANTS: Participant[] = [];
+
 const INITIAL_MESSAGES: Message[] = [];
 
 export default function EventChatScreen() {

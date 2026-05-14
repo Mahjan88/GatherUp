@@ -11,7 +11,6 @@ import { useRouter } from 'expo-router';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-// TODO: Replace with real contacts from API
 const CONTACTS: { id: string; name: string; status: string }[] = [];
 
 // Group contacts by first letter

@@ -109,6 +109,8 @@ export interface EventCardData {
   isPending?: boolean;
   isPast?: boolean;
   attendees?: Person[];
+  chatUnread?: number;
+  isPrivate?: boolean;
 }
 
 export const eventToCardData = (event: Event, userRsvpStatus?: RsvpStatus): EventCardData => ({

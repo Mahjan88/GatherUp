@@ -42,8 +42,7 @@ export default function InviteScreen() {
   const [phone, setPhone] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // TODO: Fetch pending invitations from API
-  // GET /api/events/:eventId/invitations
+  // TODO: Replace with real API data
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
 
   const handleSendEmail = () => {

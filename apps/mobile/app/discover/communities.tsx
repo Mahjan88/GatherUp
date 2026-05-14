@@ -24,12 +24,17 @@ interface CommunityItem {
 const PAGE_SIZE = 5;
 
 // TODO: Replace with real API call
+const ALL_COMMUNITIES: CommunityItem[] = [];
+
+// TODO: Replace with real API call
 // GET /api/communities?nearby=true&limit=5&offset=0
-async function fetchCommunities(_params: {
+async function fetchCommunities(params: {
   limit: number;
   offset: number;
 }): Promise<CommunityItem[]> {
-  return [];
+  // Simulate network delay
+  await new Promise(r => setTimeout(r, 600));
+  return ALL_COMMUNITIES.slice(params.offset, params.offset + params.limit);
 }
 
 export default function SeeAllCommunitiesScreen() {

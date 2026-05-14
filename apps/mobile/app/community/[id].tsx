@@ -51,20 +51,34 @@ export default function CommunityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
-  // TODO: Fetch community data from API using the id param
+  // TODO: Fetch real data from API using the community ID
   const [community, setCommunity] = useState<CommunityDetail | null>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isMember, setIsMember] = useState(false);
   const [notifyOnEvents, setNotifyOnEvents] = useState(true);
 
-  const handleFollow = () => {
-    // TODO: Call API to follow/unfollow community
-    // POST /api/communities/:id/follow or DELETE /api/communities/:id/follow
-    setIsFollowing(!isFollowing);
-  };
-
-  const handleJoin = () => {
-    // TODO: Call API to join community
-    // POST /api/communities/:id/join
+  const handleJoinToggle = () => {
+    if (isMember) {
+      Alert.alert(
+        'Leave Community',
+        'Are you sure you want to leave this community? You will stop receiving notifications for new events.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Leave',
+            style: 'destructive',
+            onPress: () => {
+              // TODO: Call API to leave community
+              // DELETE /api/communities/:id/join
+              setIsMember(false);
+            },
+          },
+        ],
+      );
+    } else {
+      // TODO: Call API to join community
+      // POST /api/communities/:id/join
+      setIsMember(true);
+    }
   };
 
   const handleReport = () => {
@@ -184,34 +198,40 @@ export default function CommunityDetailScreen() {
             </View>
           </View>
 
-          {/* Action Buttons */}
+          {/* Action Button */}
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.joinButton, styles.primaryButton]}
-              onPress={handleJoin}
-            >
-              <Text style={styles.primaryButtonText}>Join Community</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[
-                styles.followButton,
-                isFollowing
-                  ? styles.followingButton
-                  : styles.notFollowingButton,
+                styles.joinButton,
+                isMember ? styles.joinedButton : styles.primaryButton,
               ]}
-              onPress={handleFollow}
+              onPress={handleJoinToggle}
             >
               <Text
-                style={[
-                  styles.followButtonText,
-                  isFollowing
-                    ? styles.followingButtonText
-                    : styles.notFollowingButtonText,
-                ]}
+                style={
+                  isMember
+                    ? styles.joinedButtonText
+                    : styles.primaryButtonText
+                }
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isMember ? 'Joined' : 'Join Community'}
               </Text>
             </TouchableOpacity>
+            {isMember && (
+              <TouchableOpacity
+                style={[
+                  styles.notifyButton,
+                  notifyOnEvents
+                    ? styles.notifyButtonActive
+                    : styles.notifyButtonInactive,
+                ]}
+                onPress={() => setNotifyOnEvents(!notifyOnEvents)}
+              >
+                <Text style={styles.notifyIcon}>
+                  {notifyOnEvents ? '🔔' : '🔕'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Description */}
@@ -418,30 +438,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  followButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
+  joinedButton: {
+    backgroundColor: '#1e293b',
     borderWidth: 1,
-  },
-  notFollowingButton: {
-    backgroundColor: 'transparent',
     borderColor: '#14b8a6',
   },
-  followingButton: {
-    backgroundColor: '#1e293b',
-    borderColor: '#334155',
-  },
-  followButtonText: {
+  joinedButtonText: {
+    color: '#14b8a6',
     fontSize: 15,
     fontWeight: '600',
   },
-  notFollowingButtonText: {
-    color: '#14b8a6',
+  notifyButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  followingButtonText: {
-    color: '#94a3b8',
+  notifyButtonActive: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  notifyButtonInactive: {
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  notifyIcon: {
+    fontSize: 18,
   },
 
   // Sections

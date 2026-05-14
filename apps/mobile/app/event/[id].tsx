@@ -40,7 +40,7 @@ export default function EventDetailScreen() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
-  // TODO: Fetch event data from API using the id param
+  // TODO: Fetch real data from API using the event ID
   const [event, setEvent] = useState<EventDetail | null>(null);
 
   if (!event) {
@@ -106,10 +106,13 @@ export default function EventDetailScreen() {
 
           {/* Action Icons */}
           <View style={styles.actionIcons}>
-            {!event.isGroupChatEnabled && (
+            {event.isGroupChatEnabled && (
                 <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/chat/${id}`)}>
                   <View style={styles.actionCircle}>
                     <Image source={ChatIcon} style={styles.actionIcon} resizeMode="contain" />
+                    <View style={styles.chatBadge}>
+                      <Text style={styles.chatBadgeText}>5</Text>
+                    </View>
                   </View>
                   <Text style={styles.actionLabel}>Group Chat</Text>
                 </TouchableOpacity>
@@ -335,6 +338,25 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 12,
     color: '#94a3b8',
+  },
+  chatBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: '#0f172a',
+  },
+  chatBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   section: {
     marginBottom: 28,

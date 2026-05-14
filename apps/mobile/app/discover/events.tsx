@@ -24,12 +24,17 @@ interface EventItem {
 const PAGE_SIZE = 5;
 
 // TODO: Replace with real API call
+const ALL_EVENTS: EventItem[] = [];
+
+// TODO: Replace with real API call
 // GET /api/events?visibility=public&limit=5&offset=0
-async function fetchEvents(_params: {
+async function fetchEvents(params: {
   limit: number;
   offset: number;
 }): Promise<EventItem[]> {
-  return [];
+  // Simulate network delay
+  await new Promise(r => setTimeout(r, 600));
+  return ALL_EVENTS.slice(params.offset, params.offset + params.limit);
 }
 
 export default function SeeAllEventsScreen() {
