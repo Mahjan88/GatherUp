@@ -32,23 +32,31 @@ export default function EditProfilePage() {
   const [showLocation, setShowLocation] = useState(true);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    // Ignore the result if the user leaves the page before it loads.
+    let cancelled = false;
 
-  const loadProfile = async () => {
-    try {
-      const user = await getCurrentUser();
-      if (!user) {
-        router.push('/login');
-        return;
+    const loadProfile = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (cancelled) return;
+        if (!user) {
+          router.push('/login');
+          return;
+        }
+        // TODO: Fetch full profile from API and populate fields
+        setEmail(user.email || '');
+      } catch {
+        // TODO: Surface load errors to the user
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      // TODO: Fetch full profile from API and populate fields
-      setEmail(user.email || '');
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const handleSave = async () => {
     setError('');
