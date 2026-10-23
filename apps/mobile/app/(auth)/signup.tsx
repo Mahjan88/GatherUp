@@ -9,11 +9,18 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
-  Animated,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { useRouter, Link } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import {
+  Button,
+  Divider,
+  IconButton,
+  Ionicons,
+  ScreenHeader,
+} from '../../components/ui';
+import { BrandMark } from '../../components/Header';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -33,94 +40,77 @@ export default function SignupScreen() {
   const handleSendCode = () => {
     // TODO: Implement actual phone verification
     setShowPhoneVerification(false);
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/explore');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Background orbs */}
-      <View style={styles.bgEffects}>
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-      </View>
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <ScreenHeader showBack />
 
       <View style={styles.content}>
-        {/* Top section — logo + title, vertically centered in available space */}
         <View style={styles.topSection}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={styles.title}>Gather<Text style={styles.titleAccent}>Up</Text></Text>
+          <BrandMark size={36} />
+          <Text style={[typography.title, styles.title]}>
+            Create your account
+          </Text>
+          <Text style={styles.subtitle}>
+            Join events, meet your people and plan the moment.
+          </Text>
         </View>
 
-        {/* Bottom section — buttons pinned to bottom */}
         <View style={styles.bottomSection}>
-          {/* Social Login Buttons — white pill style */}
           <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => handleSocialSignup('apple')}
-              activeOpacity={0.85}
-            >
-              <View style={styles.socialIconContainer}>
-                <FontAwesome5 name="apple" size={20} color="#111" />
-              </View>
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
-              <View style={styles.socialIconSpacer} />
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.socialButton}
               onPress={() => handleSocialSignup('google')}
               activeOpacity={0.85}
             >
-              <View style={styles.socialIconContainer}>
-                <Image
-                  source={require('../../assets/google-logo.png')}
-                  style={{ width: 20, height: 20 }}
-                  resizeMode="contain"
-                />
-              </View>
-              <Text style={styles.socialButtonText}>Continue with Google</Text>
-              <View style={styles.socialIconSpacer} />
+              <Image
+                source={require('../../assets/google-logo.png')}
+                style={styles.socialIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.socialText}>Continue with Google</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => handleSocialSignup('facebook')}
+              onPress={() => handleSocialSignup('apple')}
               activeOpacity={0.85}
             >
-              <View style={styles.socialIconContainer}>
-                <FontAwesome5 name="facebook" size={20} color="#1877F2" />
-              </View>
-              <Text style={styles.socialButtonText}>
-                Continue with Facebook
-              </Text>
-              <View style={styles.socialIconSpacer} />
+              <Ionicons name="logo-apple" size={20} color={colors.text} />
+              <Text style={styles.socialText}>Continue with Apple</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Phone login link */}
-          <TouchableOpacity
-            style={styles.phoneLink}
-            onPress={handlePhoneLogin}
-          >
-            <Text style={styles.phoneLinkIcon}>📞</Text>
-            <Text style={styles.phoneLinkText}>
-              Log in with Phone (existing only)
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.dividerRow}>
+            <Divider style={styles.flex} />
+            <Text style={styles.dividerText}>or</Text>
+            <Divider style={styles.flex} />
+          </View>
 
-          {/* Terms */}
+          <Button
+            label="Continue with Phone"
+            icon="call-outline"
+            variant="outline"
+            fullWidth
+            onPress={handlePhoneLogin}
+          />
+
+          <View style={styles.loginRow}>
+            <Text style={typography.bodySecondary}>
+              Already have an account?
+            </Text>
+            <Link href="/(auth)/login" asChild>
+              <TouchableOpacity hitSlop={8}>
+                <Text style={styles.link}> Log In</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+
           <Text style={styles.termsText}>
             By pressing Continue, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms of Use</Text>
-            {' '}and{' '}
+            <Text style={styles.termsLink}>Terms of Use</Text> and{' '}
             <Text style={styles.termsLink}>Privacy Policy</Text>
           </Text>
         </View>
@@ -131,304 +121,221 @@ export default function SignupScreen() {
         visible={showPhoneVerification}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setShowPhoneVerification(false)}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
         >
-          <SafeAreaView style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowPhoneVerification(false)}
-              >
-                <Text style={styles.closeIcon}>✕</Text>
+          <View style={styles.grabber} />
+          <View style={styles.modalHeader}>
+            <IconButton
+              name="close"
+              size={24}
+              onPress={() => setShowPhoneVerification(false)}
+              accessibilityLabel="Close"
+            />
+            <Text style={styles.modalTitle}>Finish Signup</Text>
+            <View style={styles.modalHeaderSpacer} />
+          </View>
+
+          <View style={styles.verificationContent}>
+            <Text style={typography.title}>Verify your phone number</Text>
+            <Text style={styles.verificationSubtitle}>
+              To keep our community secure and trustworthy, we verify every new
+              account.
+            </Text>
+
+            <Text style={styles.fieldLabel}>Phone Number</Text>
+            <View style={styles.phoneInputContainer}>
+              <TouchableOpacity style={styles.countryCodeButton}>
+                <Text style={styles.countryCodeText}>US {countryCode}</Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={14}
+                  color={colors.textMuted}
+                />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Finish Signup</Text>
-              <View style={styles.closeButton} />
+              <View style={styles.phoneInputDivider} />
+              <TextInput
+                style={styles.phoneInput}
+                placeholder="(555) 123-4567"
+                placeholderTextColor={colors.textMuted}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+              />
             </View>
+          </View>
 
-            {/* Verification Content */}
-            <View style={styles.verificationContent}>
-              <Text style={styles.verificationTitle}>
-                Verify your phone number
-              </Text>
-              <Text style={styles.verificationSubtitle}>
-                To keep our community secure and trustworthy, we verify every
-                new account.
-              </Text>
-
-              {/* Phone Input */}
-              <View style={styles.phoneInputContainer}>
-                <TouchableOpacity style={styles.countryCodeButton}>
-                  <Text style={styles.flagEmoji}>🇺🇸</Text>
-                  <Text style={styles.countryCodeText}>{countryCode}</Text>
-                  <Text style={styles.dropdownIcon}>▼</Text>
-                </TouchableOpacity>
-                <View style={styles.phoneInputDivider} />
-                <View style={styles.phoneInputWrapper}>
-                  <Text style={styles.phoneLabel}>
-                    Phone Number<Text style={styles.required}>*</Text>
-                  </Text>
-                  <TextInput
-                    style={styles.phoneInput}
-                    placeholder="(555) 123-4567"
-                    placeholderTextColor="#6b7280"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
-            </View>
-
-            {/* Send Code Button */}
-            <View style={styles.sendCodeContainer}>
-              <TouchableOpacity
-                style={styles.sendCodeButton}
-                onPress={handleSendCode}
-              >
-                <Text style={styles.sendCodeText}>Send Code</Text>
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
+          <View style={styles.sendCodeContainer}>
+            <Button label="Send Code" fullWidth onPress={handleSendCode} />
+          </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background,
   },
-  bgEffects: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  orb: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  orb1: {
-    width: 260,
-    height: 260,
-    backgroundColor: 'rgba(0, 212, 170, 0.12)',
-    top: -60,
-    left: -80,
-  },
-  orb2: {
-    width: 200,
-    height: 200,
-    backgroundColor: 'rgba(224, 64, 160, 0.10)',
-    top: 60,
-    right: -60,
-  },
-  orb3: {
-    width: 180,
-    height: 180,
-    backgroundColor: 'rgba(64, 128, 255, 0.08)',
-    bottom: 140,
-    left: 40,
+  flex: {
+    flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: GUTTER,
   },
   topSection: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 20,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  logo: {
-    width: 150,
-    height: 150,
+    alignItems: 'flex-start',
+    paddingBottom: spacing.xl,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    letterSpacing: -0.3,
+    marginTop: spacing.xxl,
   },
-  titleAccent: {
-    color: '#FF00FF',
+  subtitle: {
+    ...typography.bodySecondary,
+    marginTop: spacing.xs,
   },
   bottomSection: {
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   buttonsContainer: {
-    gap: 12,
-    marginBottom: 40,
+    gap: spacing.md,
   },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 30,
-    paddingVertical: 16,
-    paddingHorizontal: 50,
+    justifyContent: 'center',
+    gap: 10,
+    height: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  socialIconContainer: {
+  socialIcon: {
     width: 20,
     height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  socialIconSpacer: {
-    width: 20,
-  },
-  socialButtonText: {
-    flex: 1,
-    textAlign: 'center',
-    color: '#111',
-    fontSize: 14,
+  socialText: {
+    fontSize: 15,
     fontWeight: '600',
+    color: colors.text,
   },
-  phoneLink: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: spacing.xl,
+  },
+  dividerText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.lg,
+  },
+  loginRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
-    marginBottom: 50
+    alignItems: 'center',
+    marginTop: spacing.xxl,
   },
-  phoneLinkIcon: {
-    fontSize: 16,
-  },
-  phoneLinkText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+  link: {
     fontSize: 14,
+    fontWeight: '600',
+    color: colors.link,
   },
   termsText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 11,
+    ...typography.caption,
+    color: colors.textMuted,
     textAlign: 'center',
-    lineHeight: 17,
+    lineHeight: 18,
+    marginTop: spacing.xl,
   },
   termsLink: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.textSecondary,
     textDecorationLine: 'underline',
   },
 
-  // Modal Styles
+  // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
   },
-  modalContent: {
-    flex: 1,
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    marginTop: spacing.sm,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
-  closeButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeIcon: {
-    fontSize: 20,
-    color: '#fff',
+  modalHeaderSpacer: {
+    width: 36,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#fff',
+    ...typography.h2,
   },
   verificationContent: {
-    paddingHorizontal: 24,
-    marginTop: 20,
-  },
-  verificationTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12,
+    paddingHorizontal: GUTTER,
+    marginTop: spacing.lg,
   },
   verificationSubtitle: {
-    fontSize: 15,
-    color: '#9ca3af',
-    lineHeight: 22,
-    marginBottom: 32,
+    ...typography.bodySecondary,
+    lineHeight: 21,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xxxl,
+  },
+  fieldLabel: {
+    ...typography.label,
+    marginBottom: spacing.sm,
   },
   phoneInputContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
     borderWidth: 1,
-    borderColor: '#3a3a3a',
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     overflow: 'hidden',
   },
   countryCodeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
     gap: 6,
-  },
-  flagEmoji: {
-    fontSize: 20,
+    height: '100%',
   },
   countryCodeText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  dropdownIcon: {
-    color: '#6b7280',
-    fontSize: 10,
+    ...typography.body,
+    fontWeight: '600',
   },
   phoneInputDivider: {
     width: 1,
-    backgroundColor: '#3a3a3a',
-  },
-  phoneInputWrapper: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  phoneLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginBottom: 2,
-  },
-  required: {
-    color: '#ef4444',
+    height: 24,
+    backgroundColor: colors.border,
   },
   phoneInput: {
-    color: '#fff',
+    flex: 1,
+    paddingHorizontal: 14,
     fontSize: 16,
-    padding: 0,
+    color: colors.text,
   },
   sendCodeContainer: {
     position: 'absolute',
     bottom: 40,
-    left: 24,
-    right: 24,
-  },
-  sendCodeButton: {
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    paddingVertical: 16,
-  },
-  sendCodeText: {
-    color: '#0a0a0a',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    left: GUTTER,
+    right: GUTTER,
   },
 });

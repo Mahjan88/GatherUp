@@ -1,82 +1,141 @@
 import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from '../../components/Header';
 import EventCard, { EventCardData } from '../../components/EventCard';
+import HamburgerMenu from '../../components/HamburgerMenu';
+import {
+  Avatar,
+  Button,
+  Chip,
+  ChipRow,
+  EmptyState,
+  IconButton,
+  IconName,
+  Ionicons,
+  MetaRow,
+  UnderlineTabs,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 // TODO: Replace with real API data
 const HOSTED_EVENTS: EventCardData[] = [];
 
 const ATTENDED_EVENTS: EventCardData[] = [];
 
+// TODO: Replace with real API data (current user profile)
+const PROFILE: {
+  name: string;
+  username: string;
+  bio: string;
+  location: string | null;
+  avatar: string | null;
+  cover: string | null;
+  verified: boolean;
+  followers: number;
+  following: number;
+  interests: { label: string; icon: IconName }[];
+} = {
+  name: 'Set up your profile',
+  username: 'username',
+  bio: 'Tap "Edit Profile" to add your bio',
+  location: null,
+  avatar: null,
+  cover: null,
+  verified: true,
+  followers: 0,
+  following: 0,
+  interests: [
+    { label: 'Hiking', icon: 'walk-outline' },
+    { label: 'Food & Drink', icon: 'restaurant-outline' },
+    { label: 'Photography', icon: 'camera-outline' },
+    { label: 'Music', icon: 'musical-notes-outline' },
+  ],
+};
+
+// TODO: Replace with real API data
+const PHOTOS: { id: string; uri: string }[] = [];
+
+// TODO: Replace with real API data
+const REVIEWS: {
+  id: string;
+  eventTitle: string;
+  rating: number;
+  text: string;
+  date: string;
+}[] = [];
+
 type TabType = 'hosted' | 'attended';
+type ProfileTab = 'photos' | 'events' | 'reviews';
+
+const COVER_HEIGHT = 170;
+const AVATAR_SIZE = 96;
+const GRID_GAP = 4;
+const PHOTO_SIZE =
+  (Dimensions.get('window').width - GUTTER * 2 - GRID_GAP * 2) / 3;
 
 // Helper function to group events by year
-const groupEventsByYear = (events: EventCardData[]): { [year: string]: EventCardData[] } => {
+const groupEventsByYear = (
+  events: EventCardData[]
+): { [year: string]: EventCardData[] } => {
   const grouped: { [year: string]: EventCardData[] } = {};
-  
-  events.forEach(event => {
+
+  events.forEach((event) => {
     const year = event.date.getFullYear().toString();
     if (!grouped[year]) {
       grouped[year] = [];
     }
     grouped[year].push(event);
   });
-  
+
   // Sort events within each year by date (most recent first)
-  Object.keys(grouped).forEach(year => {
+  Object.keys(grouped).forEach((year) => {
     grouped[year].sort((a, b) => b.date.getTime() - a.date.getTime());
   });
-  
+
   return grouped;
 };
 
 // Get sorted years (most recent first)
-const getSortedYears = (grouped: { [year: string]: EventCardData[] }): string[] => {
+const getSortedYears = (grouped: {
+  [year: string]: EventCardData[];
+}): string[] => {
   return Object.keys(grouped).sort((a, b) => parseInt(b) - parseInt(a));
 };
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('hosted');
+  const [profileTab, setProfileTab] = useState<ProfileTab>('photos');
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const eventCount = HOSTED_EVENTS.length + ATTENDED_EVENTS.length;
 
   const renderEmptyHosted = () => (
-    <View style={styles.emptyStateCard}>
-      <View style={styles.emptyStateContent}>
-        <Text style={styles.emptyStateTitle}>Start creating amazing events</Text>
-        <Text style={styles.emptyStateText}>
-          Gather your people. Fuel your passion. Create events that make waves.
-        </Text>
-        <TouchableOpacity 
-          style={styles.startNowButton}
-          onPress={() => router.push('/event/create')}
-        >
-          <Text style={styles.startNowText}>Start now</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    <EmptyState
+      icon="calendar-outline"
+      title="Start creating amazing events"
+      message="Gather your people. Fuel your passion. Create events that make waves."
+      actionLabel="Start now"
+      onAction={() => router.push('/event/create')}
+    />
   );
 
   const renderEmptyAttended = () => (
-    <View style={styles.emptyAttendedContainer}>
-      <Text style={styles.emptyAttendedEmoji}>🎉</Text>
-      <Text style={styles.emptyAttendedTitle}>No events attended yet</Text>
-      <Text style={styles.emptyAttendedText}>
-        Time to get out there and have some fun! Check out events happening near you.
-      </Text>
-      <TouchableOpacity 
-        style={styles.exploreButton}
-        onPress={() => router.push('/(tabs)/home')}
-      >
-        <Text style={styles.exploreButtonText}>Explore Events</Text>
-      </TouchableOpacity>
-    </View>
+    <EmptyState
+      icon="sparkles-outline"
+      title="No events attended yet"
+      message="Time to get out there and have some fun! Check out events happening near you."
+      actionLabel="Explore Events"
+      onAction={() => router.push('/(tabs)/explore')}
+    />
   );
 
   const renderEventsByYear = (events: EventCardData[]) => {
@@ -84,341 +143,363 @@ export default function ProfileScreen() {
     const sortedYears = getSortedYears(groupedEvents);
 
     return (
-      <View style={styles.eventsList}>
-        {sortedYears.map(year => (
+      <View>
+        {sortedYears.map((year) => (
           <View key={year} style={styles.yearSection}>
             <Text style={styles.yearHeader}>{year}</Text>
-            {groupedEvents[year].map(event => (
-              <EventCard key={event.id} event={event} variant="past" />
-            ))}
+            <View style={styles.eventList}>
+              {groupedEvents[year].map((event) => (
+                <EventCard key={event.id} event={event} variant="past" />
+              ))}
+            </View>
           </View>
         ))}
       </View>
     );
   };
 
-  const renderTabContent = () => {
-    if (activeTab === 'hosted') {
-      return HOSTED_EVENTS.length > 0 ? renderEventsByYear(HOSTED_EVENTS) : renderEmptyHosted();
-    } else {
-      return ATTENDED_EVENTS.length > 0 ? renderEventsByYear(ATTENDED_EVENTS) : renderEmptyAttended();
-    }
-  };
+  const renderEvents = () => (
+    <View>
+      <ChipRow
+        options={[
+          { value: 'hosted', label: 'Hosted' },
+          { value: 'attended', label: 'Attended' },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+        style={styles.eventFilter}
+      />
+      {activeTab === 'hosted'
+        ? HOSTED_EVENTS.length > 0
+          ? renderEventsByYear(HOSTED_EVENTS)
+          : renderEmptyHosted()
+        : ATTENDED_EVENTS.length > 0
+          ? renderEventsByYear(ATTENDED_EVENTS)
+          : renderEmptyAttended()}
+    </View>
+  );
+
+  const renderPhotos = () =>
+    PHOTOS.length > 0 ? (
+      <View style={styles.photoGrid}>
+        {PHOTOS.map((photo) => (
+          <Image
+            key={photo.id}
+            source={{ uri: photo.uri }}
+            style={styles.photo}
+          />
+        ))}
+      </View>
+    ) : (
+      <EmptyState
+        icon="images-outline"
+        title="No photos yet"
+        message="Photos you share at events will show up here."
+      />
+    );
+
+  const renderReviews = () =>
+    REVIEWS.length > 0 ? (
+      <View style={styles.reviewList}>
+        {REVIEWS.map((review) => (
+          <View key={review.id} style={styles.reviewCard}>
+            <View style={styles.reviewHeader}>
+              <Text style={typography.label} numberOfLines={1}>
+                {review.eventTitle}
+              </Text>
+              <Text style={typography.caption}>{review.date}</Text>
+            </View>
+            <View style={styles.stars}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Ionicons
+                  key={i}
+                  name={i < review.rating ? 'star' : 'star-outline'}
+                  size={14}
+                  color={colors.warning}
+                />
+              ))}
+            </View>
+            <Text style={typography.bodySecondary}>{review.text}</Text>
+          </View>
+        ))}
+      </View>
+    ) : (
+      <EmptyState
+        icon="star-outline"
+        title="No reviews yet"
+        message="Reviews you leave after attending events will appear here."
+      />
+    );
 
   return (
     <View style={styles.container}>
-      <Header 
-        title="Profile"
-        rightIcon={require('../../assets/Icons/edit_icon.png')}
-        onRightPress={() => router.push('/settings/profile')}
-      />
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarLarge}>
-              <Text style={styles.avatarLargeText}>?</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Cover photo */}
+        <View style={styles.cover}>
+          {PROFILE.cover ? (
+            <Image source={{ uri: PROFILE.cover }} style={styles.coverImage} />
+          ) : (
+            <View style={[styles.coverImage, styles.coverFallback]}>
+              <Ionicons
+                name="image-outline"
+                size={36}
+                color={colors.primarySoft}
+              />
             </View>
-            <TouchableOpacity style={styles.editAvatarButton}>
-              <Text style={styles.editAvatarText}>+</Text>
+          )}
+          <View style={styles.coverActions}>
+            <IconButton
+              name="share-outline"
+              variant="glass"
+              size={20}
+              accessibilityLabel="Share profile"
+            />
+            <IconButton
+              name="settings-outline"
+              variant="glass"
+              size={20}
+              onPress={() => setMenuVisible(true)}
+              accessibilityLabel="Settings"
+            />
+          </View>
+        </View>
+
+        {/* Identity */}
+        <View style={styles.identity}>
+          <View style={styles.avatarRow}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => router.push('/settings/profile')}
+              style={styles.avatarWrap}
+            >
+              <Avatar
+                uri={PROFILE.avatar}
+                name={PROFILE.name}
+                size={AVATAR_SIZE}
+                badge={PROFILE.verified ? 'verified' : undefined}
+                style={styles.avatarRing}
+              />
             </TouchableOpacity>
+            <Button
+              label="Edit Profile"
+              variant="outline"
+              size="sm"
+              onPress={() => router.push('/settings/profile')}
+            />
           </View>
 
-          <Text style={styles.userName}>Set up your profile</Text>
-          <Text style={styles.userHandle}>@username</Text>
-          <Text style={styles.userBio}>
-            Tap "Edit Profile" to add your bio
-          </Text>
+          <Text style={styles.name}>{PROFILE.name}</Text>
+          <Text style={styles.handle}>@{PROFILE.username}</Text>
+          <Text style={styles.bio}>{PROFILE.bio}</Text>
+          <MetaRow icon="location-outline" style={styles.location}>
+            {PROFILE.location ?? 'Add your location'}
+          </MetaRow>
 
-          {/* Stats Row */}
+          {/* Stats */}
           <View style={styles.statsRow}>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{HOSTED_EVENTS.length}</Text>
-              <Text style={styles.statLabel}>Hosted</Text>
+              <Text style={styles.statNumber}>{eventCount}</Text>
+              <Text style={typography.caption}>Events</Text>
             </TouchableOpacity>
+            <View style={styles.statDivider} />
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Followers</Text>
+              <Text style={styles.statNumber}>{PROFILE.following}</Text>
+              <Text style={typography.caption}>Following</Text>
             </TouchableOpacity>
+            <View style={styles.statDivider} />
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Following</Text>
+              <Text style={styles.statNumber}>{PROFILE.followers}</Text>
+              <Text style={typography.caption}>Followers</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.editProfileButton}>
-              <Text style={styles.editProfileText}>Edit Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.shareProfileButton}>
-              <Text style={styles.shareProfileText}>Share</Text>
-            </TouchableOpacity>
+          {/* Interests */}
+          <Text style={styles.sectionTitle}>Interests</Text>
+          <View style={styles.tags}>
+            {PROFILE.interests.map((interest) => (
+              <Chip
+                key={interest.label}
+                label={interest.label}
+                icon={interest.icon}
+                variant="tag"
+              />
+            ))}
           </View>
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'hosted' && styles.tabActive]}
-            onPress={() => setActiveTab('hosted')}
-          >
-            <Text style={[styles.tabText, activeTab === 'hosted' && styles.tabTextActive]}>
-              Hosted Events
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'attended' && styles.tabActive]}
-            onPress={() => setActiveTab('attended')}
-          >
-            <Text style={[styles.tabText, activeTab === 'attended' && styles.tabTextActive]}>
-              Attended
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <UnderlineTabs
+          tabs={[
+            { value: 'photos', label: 'Photos' },
+            { value: 'events', label: 'Events' },
+            { value: 'reviews', label: 'Reviews' },
+          ]}
+          value={profileTab}
+          onChange={setProfileTab}
+        />
 
-        {/* Tab Content */}
-        {renderTabContent()}
+        <View style={styles.tabContent}>
+          {profileTab === 'photos' && renderPhotos()}
+          {profileTab === 'events' && renderEvents()}
+          {profileTab === 'reviews' && renderReviews()}
+        </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      <HamburgerMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#0f172a' 
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  scrollView: { 
-    flex: 1 
+  cover: {
+    height: COVER_HEIGHT,
   },
-  profileHeader: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  coverImage: {
+    width: '100%',
+    height: COVER_HEIGHT,
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  avatarLarge: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#3b82f6',
+  coverFallback: {
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#14b8a6',
   },
-  avatarLargeText: { 
-    color: '#fff', 
-    fontSize: 40, 
-    fontWeight: '600' 
-  },
-  editAvatarButton: {
+  coverActions: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#14b8a6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#0f172a',
+    top: 56,
+    right: GUTTER,
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  editAvatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: -2,
+  identity: {
+    paddingHorizontal: GUTTER,
   },
-  userName: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    color: '#fff', 
-    marginBottom: 2 
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: -AVATAR_SIZE / 2,
+    marginBottom: spacing.md,
   },
-  userHandle: { 
-    fontSize: 15, 
-    color: '#64748b', 
-    marginBottom: 12 
+  avatarWrap: {
+    borderRadius: AVATAR_SIZE / 2,
   },
-  userBio: { 
-    fontSize: 14, 
-    color: '#94a3b8', 
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-    paddingHorizontal: 20,
+  avatarRing: {
+    borderWidth: 4,
+    borderColor: colors.surface,
+  },
+  name: {
+    ...typography.h1,
+  },
+  handle: {
+    ...typography.bodySecondary,
+    marginTop: 2,
+  },
+  bio: {
+    ...typography.body,
+    lineHeight: 21,
+    marginTop: spacing.sm,
+  },
+  location: {
+    marginTop: spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 40,
-    marginBottom: 20,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.divider,
   },
-  statItem: { 
-    alignItems: 'center' 
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
   },
-  statNumber: { 
-    fontSize: 20, 
-    fontWeight: '700', 
-    color: '#fff' 
+  statNumber: {
+    ...typography.h2,
   },
-  statLabel: { 
-    fontSize: 13, 
-    color: '#64748b', 
-    marginTop: 2 
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: colors.border,
   },
-  actionButtons: {
+  sectionTitle: {
+    ...typography.h2,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
+  },
+  tags: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
-  editProfileButton: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
+  tabContent: {
+    paddingTop: spacing.lg,
   },
-  editProfileText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  shareProfileButton: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  shareProfileText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tabsContainer: {
+  photoGrid: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-    marginTop: 10,
+    flexWrap: 'wrap',
+    gap: GRID_GAP,
+    paddingHorizontal: GUTTER,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  photo: {
+    width: PHOTO_SIZE,
+    height: PHOTO_SIZE,
+    borderRadius: radius.sm,
+    backgroundColor: colors.surfaceAlt,
   },
-  tabActive: {
-    borderBottomColor: '#14b8a6',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  tabTextActive: {
-    color: '#fff',
-  },
-  eventsList: {
-    paddingTop: 8,
+  eventFilter: {
+    paddingBottom: spacing.sm,
   },
   yearSection: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   yearHeader: {
-    fontSize: 16,
+    ...typography.caption,
     fontWeight: '700',
-    color: '#64748b',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    paddingHorizontal: GUTTER,
+    paddingVertical: spacing.md,
   },
-
-  // Empty state for hosted events
-  emptyStateCard: {
-    margin: 20,
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: 24,
+  eventList: {
+    paddingHorizontal: GUTTER,
   },
-  emptyStateContent: {
+  reviewList: {
+    paddingHorizontal: GUTTER,
+    gap: spacing.md,
+  },
+  reviewCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-    textAlign: 'center',
+  stars: {
+    flexDirection: 'row',
+    gap: 2,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  startNowButton: {
-    backgroundColor: '#f1f5f9',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-  },
-  startNowText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-
-  // Empty state for attended events
-  emptyAttendedContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyAttendedEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyAttendedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  emptyAttendedText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  exploreButton: {
-    backgroundColor: '#14b8a6',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  exploreButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-  },
-
-  bottomPadding: { 
-    height: 100 
+  bottomPadding: {
+    height: 100,
   },
 });

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
+import {
+  Avatar,
+  Button,
+  ChipRow,
+  EmptyState,
+  Ionicons,
+  SearchBar,
+} from '../../components/ui';
+import {
+  colors,
+  radius,
+  shadows,
+  spacing,
+  typography,
+  GUTTER,
+} from '../../theme';
 
 interface CommunityItem {
   id: string;
@@ -20,6 +36,15 @@ interface CommunityItem {
   cover_image_url: string | null;
   description: string | null;
 }
+
+type CommunityFilter = 'for-you' | 'nearby' | 'popular' | 'new';
+
+const FILTERS: { value: CommunityFilter; label: string }[] = [
+  { value: 'for-you', label: 'For You' },
+  { value: 'nearby', label: 'Nearby' },
+  { value: 'popular', label: 'Popular' },
+  { value: 'new', label: 'New' },
+];
 
 const PAGE_SIZE = 5;
 
@@ -33,8 +58,63 @@ async function fetchCommunities(params: {
   offset: number;
 }): Promise<CommunityItem[]> {
   // Simulate network delay
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise((r) => setTimeout(r, 600));
   return ALL_COMMUNITIES.slice(params.offset, params.offset + params.limit);
+}
+
+const formatCount = (n: number): string =>
+  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : `${n}`;
+
+const AVATAR_SIZE = 52;
+
+function CommunityCard({
+  item,
+  joined,
+  onPress,
+  onJoin,
+}: {
+  item: CommunityItem;
+  joined: boolean;
+  onPress: () => void;
+  onJoin: () => void;
+}) {
+  const meta = [`${formatCount(item.member_count)} members`, item.city]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+      {item.cover_image_url ? (
+        <Image source={{ uri: item.cover_image_url }} style={styles.banner} />
+      ) : (
+        <View style={[styles.banner, styles.bannerFallback]}>
+          <Ionicons name="people-outline" size={28} color={colors.primary} />
+        </View>
+      )}
+      <View style={styles.cardBody}>
+        <View style={styles.cardTop}>
+          <Avatar name={item.name} size={AVATAR_SIZE} style={styles.avatar} />
+          <Button
+            label={joined ? 'Joined' : 'Join'}
+            size="sm"
+            variant={joined ? 'outline' : 'primary'}
+            onPress={onJoin}
+          />
+        </View>
+        <Text style={typography.h3} numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text style={[typography.caption, { marginTop: 2 }]} numberOfLines={1}>
+          {meta}
+        </Text>
+        {!!item.description && (
+          <Text style={styles.description} numberOfLines={2}>
+            {item.description}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 }
 
 export default function SeeAllCommunitiesScreen() {
@@ -44,6 +124,10 @@ export default function SeeAllCommunitiesScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<CommunityFilter>('nearby');
+  // TODO: Replace with real membership state from API
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
 
   // Initial load
   useState(() => {
@@ -72,72 +156,72 @@ export default function SeeAllCommunitiesScreen() {
     }
   }, [offset, loadingMore, hasMore]);
 
+  const toggleJoin = (communityId: string) => {
+    // TODO: Call API POST/DELETE /api/communities/:id/join
+    setJoinedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(communityId)) next.delete(communityId);
+      else next.add(communityId);
+      return next;
+    });
+  };
+
+  // TODO: Move search + filter (For You / Nearby / New) server-side
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = communities.filter(
+      (c) =>
+        !q ||
+        c.name.toLowerCase().includes(q) ||
+        (c.city ?? '').toLowerCase().includes(q)
+    );
+    if (filter === 'popular') {
+      return [...list].sort((a, b) => b.member_count - a.member_count);
+    }
+    return list;
+  }, [communities, query, filter]);
+
   const renderCommunity = ({ item }: { item: CommunityItem }) => (
-    <TouchableOpacity
-      style={styles.communityRow}
+    <CommunityCard
+      item={item}
+      joined={joinedIds.has(item.id)}
       onPress={() => router.push(`/community/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.communityThumb}>
-        {item.cover_image_url ? (
-          <Image
-            source={{ uri: item.cover_image_url }}
-            style={styles.communityThumbImage}
-          />
-        ) : (
-          <Text style={styles.communityThumbText}>
-            {item.name.charAt(0).toUpperCase()}
-          </Text>
-        )}
-      </View>
-      <View style={styles.communityInfo}>
-        <Text style={styles.communityName} numberOfLines={1}>
-          {item.name}
-        </Text>
-        {item.city && (
-          <Text style={styles.communityCity} numberOfLines={1}>
-            {item.city}
-          </Text>
-        )}
-        {item.description && (
-          <Text style={styles.communityDesc} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-        <View style={styles.communityMeta}>
-          <Text style={styles.communityMembers}>
-            {item.member_count} members
-          </Text>
-          <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{item.category}</Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
+      onJoin={() => toggleJoin(item.id)}
+    />
   );
 
   const renderFooter = () => {
     if (loadingMore) {
       return (
         <View style={styles.footerLoader}>
-          <ActivityIndicator color="#14b8a6" />
+          <ActivityIndicator color={colors.primary} />
         </View>
       );
     }
-    if (!hasMore && communities.length > 0) {
-      return (
-        <Text style={styles.endText}>You've reached the end</Text>
-      );
+    if (!hasMore && visible.length > 0) {
+      return <Text style={styles.endText}>You've reached the end</Text>;
     }
     return null;
   };
 
+  const header = (
+    <Header title="Communities Near You" showBack>
+      <SearchBar
+        placeholder="Search communities"
+        value={query}
+        onChangeText={setQuery}
+        style={styles.search}
+      />
+      <ChipRow options={FILTERS} value={filter} onChange={setFilter} />
+    </Header>
+  );
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="Communities Near You" showBack />
+        {header}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#14b8a6" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -145,14 +229,15 @@ export default function SeeAllCommunitiesScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Communities Near You" showBack />
+      {header}
 
-      {communities.length > 0 ? (
+      {visible.length > 0 ? (
         <FlatList
-          data={communities}
+          data={visible}
           keyExtractor={(item) => item.id}
           renderItem={renderCommunity}
           contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
@@ -160,11 +245,11 @@ export default function SeeAllCommunitiesScreen() {
         />
       ) : (
         <View style={styles.centered}>
-          <Text style={styles.emptyEmoji}>🏘️</Text>
-          <Text style={styles.emptyTitle}>No communities found nearby</Text>
-          <Text style={styles.emptyText}>
-            Update your location in settings to discover local communities
-          </Text>
+          <EmptyState
+            icon="people-outline"
+            title="No communities found nearby"
+            message="Update your location in settings to discover local communities"
+          />
         </View>
       )}
     </View>
@@ -174,109 +259,69 @@ export default function SeeAllCommunitiesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
+  },
+  search: {
+    marginHorizontal: GUTTER,
   },
   centered: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingBottom: 80,
   },
   list: {
-    padding: 16,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 100,
   },
-  // Community row (vertical list card)
-  communityRow: {
-    flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 14,
+
+  // Community card
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
     overflow: 'hidden',
-    marginBottom: 12,
+    ...shadows.card,
   },
-  communityThumb: {
-    width: 90,
-    height: 100,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  communityThumbImage: {
+  banner: {
     width: '100%',
-    height: '100%',
+    height: 110,
   },
-  communityThumbText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#14b8a6',
-  },
-  communityInfo: {
-    flex: 1,
-    padding: 12,
+  bannerFallback: {
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  communityName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 2,
+  cardBody: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
   },
-  communityCity: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  communityDesc: {
-    fontSize: 12,
-    color: '#475569',
-    lineHeight: 16,
-    marginBottom: 6,
-  },
-  communityMeta: {
+  cardTop: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: -AVATAR_SIZE / 2,
+    marginBottom: spacing.sm,
   },
-  communityMembers: {
-    fontSize: 11,
-    color: '#475569',
+  avatar: {
+    borderWidth: 3,
+    borderColor: colors.surface,
   },
-  categoryBadge: {
-    backgroundColor: '#334155',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  description: {
+    ...typography.bodySecondary,
+    lineHeight: 20,
+    marginTop: spacing.sm,
   },
-  categoryBadgeText: {
-    fontSize: 10,
-    color: '#94a3b8',
-    textTransform: 'capitalize',
-  },
-  // Footer
+
   footerLoader: {
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
     alignItems: 'center',
   },
   endText: {
+    ...typography.caption,
+    color: colors.textMuted,
     textAlign: 'center',
-    color: '#475569',
-    fontSize: 13,
-    paddingVertical: 16,
-  },
-  // Empty
-  emptyEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 18,
+    paddingVertical: spacing.xl,
   },
 });

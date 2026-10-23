@@ -9,6 +9,8 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography, GUTTER } from '../theme';
 
 const { height } = Dimensions.get('window');
 
@@ -40,35 +42,45 @@ export default function SlideUpModal({
     >
       <View style={styles.modalOverlay}>
         <Pressable style={styles.modalOverlayTouchable} onPress={onClose} />
-        <View style={[
-          styles.modalContainer,
-          { minHeight: height * minHeight, maxHeight: height * maxHeight }
-        ]}>
-          {/* Header with Handle and X button */}
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHandle} />
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
+        <View
+          style={[
+            styles.modalContainer,
+            { minHeight: height * minHeight, maxHeight: height * maxHeight },
+          ]}
+        >
+          {/* Grabber */}
+          <View style={styles.grabberRow}>
+            <View style={styles.grabber} />
           </View>
 
-          {/* Title */}
-          {title && <Text style={styles.modalTitle}>{title}</Text>}
+          {/* Title row with close button */}
+          <View style={styles.titleRow}>
+            <Text style={styles.modalTitle} numberOfLines={1}>
+              {title ?? ''}
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
           {/* Content */}
           {scrollable ? (
             <ScrollView
-              showsVerticalScrollIndicator={true}
+              showsVerticalScrollIndicator={false}
               bounces={true}
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
             >
               {children}
             </ScrollView>
           ) : (
-            <View style={styles.contentContainer}>
-              {children}
-            </View>
+            <View style={styles.contentContainer}>{children}</View>
           )}
         </View>
       </View>
@@ -79,61 +91,55 @@ export default function SlideUpModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalOverlayTouchable: {
     flex: 1,
   },
   modalContainer: {
-    backgroundColor: '#1e293b',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxxl,
   },
-  modalHeader: {
+  grabberRow: {
+    alignItems: 'center',
+    paddingBottom: spacing.md,
+  },
+  grabber: {
+    width: 40,
+    height: 5,
+    borderRadius: radius.pill,
+    backgroundColor: colors.border,
+  },
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 4,
-    paddingBottom: 16,
-    position: 'relative',
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#475569',
-    borderRadius: 2,
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: '300',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+    minHeight: 32,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
+    ...typography.h2,
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: spacing.xl,
   },
   contentContainer: {
     flex: 1,

@@ -1,10 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
+import {
+  ChipRow,
+  Avatar,
+  EmptyState,
+  Ionicons,
+  IconName,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+
+type NotificationType =
+  | 'invite'
+  | 'reminder'
+  | 'update'
+  | 'rsvp'
+  | 'message'
+  | 'follow';
 
 interface Notification {
   id: string;
-  type: 'invite' | 'reminder' | 'update' | 'rsvp';
+  type: NotificationType;
   title: string;
   message: string;
   eventId?: string;
@@ -16,206 +40,215 @@ interface Notification {
   isRead: boolean;
 }
 
+type NotificationFilter = 'all' | 'events' | 'messages' | 'social';
+
+const FILTERS: { value: NotificationFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'events', label: 'Events' },
+  { value: 'messages', label: 'Messages' },
+  { value: 'social', label: 'Social' },
+];
+
+const FILTER_FOR_TYPE: Record<NotificationType, NotificationFilter> = {
+  invite: 'events',
+  reminder: 'events',
+  update: 'events',
+  rsvp: 'events',
+  message: 'messages',
+  follow: 'social',
+};
+
+const TYPE_STYLE: Record<
+  NotificationType,
+  { icon: IconName; fg: string; bg: string }
+> = {
+  invite: { icon: 'mail', fg: colors.info, bg: colors.infoSoft },
+  reminder: {
+    icon: 'notifications',
+    fg: colors.warning,
+    bg: colors.warningSoft,
+  },
+  update: { icon: 'create', fg: colors.primaryDark, bg: colors.primarySoft },
+  rsvp: {
+    icon: 'checkmark-circle',
+    fg: colors.success,
+    bg: colors.successSoft,
+  },
+  message: {
+    icon: 'chatbubble',
+    fg: colors.primaryDark,
+    bg: colors.primarySoft,
+  },
+  follow: {
+    icon: 'person-add',
+    fg: colors.accentOrange,
+    bg: colors.dangerSoft,
+  },
+};
+
 // TODO: Replace with real API data
 const NOTIFICATIONS: Notification[] = [];
 
-export default function NotificationsScreen() {
-  const router = useRouter();
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'invite': return '✉️';
-      case 'reminder': return '⏰';
-      case 'update': return '📝';
-      case 'rsvp': return '✅';
-      default: return '🔔';
-    }
-  };
-
-  const getIconBgColor = (type: string) => {
-    switch (type) {
-      case 'invite': return '#3b82f6';
-      case 'reminder': return '#f97316';
-      case 'update': return '#8b5cf6';
-      case 'rsvp': return '#22c55e';
-      default: return '#64748b';
-    }
-  };
-
-  const renderNotification = (notification: Notification) => (
-    <TouchableOpacity 
-      key={notification.id}
-      style={[styles.notificationCard, !notification.isRead && styles.notificationUnread]}
-      onPress={() => notification.eventId && router.push(`/event/${notification.eventId}`)}
+function NotificationRow({
+  notification,
+  onPress,
+}: {
+  notification: Notification;
+  onPress: () => void;
+}) {
+  const t = TYPE_STYLE[notification.type];
+  return (
+    <TouchableOpacity
+      style={[styles.row, !notification.isRead && styles.rowUnread]}
+      onPress={onPress}
+      activeOpacity={0.7}
     >
-      <View style={styles.notificationLeft}>
-        {notification.fromAvatar ? (
-          <View style={[styles.avatarContainer]}>
-            <View style={[styles.userAvatar, { backgroundColor: getIconBgColor(notification.type) }]}>
-              <Text style={styles.userAvatarText}>{notification.fromAvatar}</Text>
-            </View>
-            <View style={[styles.iconBadge, { backgroundColor: getIconBgColor(notification.type) }]}>
-              <Text style={styles.iconBadgeText}>{getNotificationIcon(notification.type)}</Text>
-            </View>
+      {notification.fromUser || notification.fromAvatar ? (
+        <View>
+          <Avatar
+            uri={notification.fromAvatar}
+            name={notification.fromUser}
+            size={48}
+          />
+          <View style={[styles.typeBadge, { backgroundColor: t.fg }]}>
+            <Ionicons name={t.icon} size={10} color={colors.primaryOn} />
           </View>
-        ) : (
-          <View style={[styles.iconCircle, { backgroundColor: getIconBgColor(notification.type) }]}>
-            <Text style={styles.iconText}>{getNotificationIcon(notification.type)}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.notificationContent}>
-        <View style={styles.notificationHeader}>
-          <Text style={styles.notificationTitle}>{notification.title}</Text>
-          {!notification.isRead && <View style={styles.unreadDot} />}
         </View>
-        <Text style={styles.notificationMessage}>
+      ) : (
+        <View style={[styles.iconCircle, { backgroundColor: t.bg }]}>
+          <Ionicons name={t.icon} size={22} color={t.fg} />
+        </View>
+      )}
+
+      <View style={{ flex: 1 }}>
+        <Text style={styles.text} numberOfLines={3}>
+          <Text style={styles.bold}>
+            {notification.fromUser ?? notification.title}
+          </Text>{' '}
           {notification.message}
-          {notification.eventTitle && (
-            <Text style={styles.eventTitleText}> {notification.eventTitle}</Text>
+          {!!notification.eventTitle && (
+            <Text style={styles.bold}> {notification.eventTitle}</Text>
           )}
         </Text>
-        <Text style={styles.notificationTime}>{notification.time}</Text>
+        <Text style={[typography.caption, styles.time]}>
+          {notification.time}
+        </Text>
       </View>
 
-      {notification.eventImage && (
-        <Image 
-          source={{ uri: notification.eventImage }} 
-          style={styles.eventThumbnail}
-        />
+      {!!notification.eventImage && (
+        <Image source={{ uri: notification.eventImage }} style={styles.thumb} />
       )}
+      <View
+        style={[
+          styles.unreadDot,
+          notification.isRead && { backgroundColor: 'transparent' },
+        ]}
+      />
     </TouchableOpacity>
   );
+}
 
-  const unreadCount = NOTIFICATIONS.filter(n => !n.isRead).length;
+export default function NotificationsScreen() {
+  const router = useRouter();
+  const [filter, setFilter] = useState<NotificationFilter>('all');
+
+  const visible = NOTIFICATIONS.filter(
+    (n) => filter === 'all' || FILTER_FOR_TYPE[n.type] === filter
+  );
+  const newItems = visible.filter((n) => !n.isRead);
+  const earlier = visible.filter((n) => n.isRead);
+  const unreadCount = NOTIFICATIONS.filter((n) => !n.isRead).length;
+
+  const open = (n: Notification) => {
+    // TODO: mark as read via API
+    if (n.eventId) router.push(`/event/${n.eventId}`);
+  };
 
   return (
     <View style={styles.container}>
-      <Header title="Notifications" showBack={true} showNotificationBell={false} />
+      <Header
+        title="Notifications"
+        showBack
+        showNotificationBell={false}
+        rightElement={
+          unreadCount > 0 ? (
+            <TouchableOpacity hitSlop={8}>
+              {/* TODO: mark all read via API */}
+              <Text style={styles.markRead}>Read all</Text>
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
-      {/* Action Bar */}
-      {unreadCount > 0 && (
-        <View style={styles.actionBar}>
-          <TouchableOpacity style={styles.markReadButton}>
-            <Text style={styles.markReadText}>Mark all read</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View>
+        <ChipRow options={FILTERS} value={filter} onChange={setFilter} />
+      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {NOTIFICATIONS.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyTitle}>No notifications yet</Text>
-            <Text style={styles.emptyText}>When you get invites, reminders, or updates they'll show up here</Text>
-          </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {visible.length === 0 ? (
+          <EmptyState
+            icon="notifications-outline"
+            title={
+              filter === 'all' ? 'No notifications yet' : 'Nothing here yet'
+            }
+            message="When you get invites, reminders, or updates they'll show up here."
+          />
         ) : (
           <>
-            {/* New Invites Section */}
-            {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).length > 0 && (
+            {newItems.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>New Invites</Text>
-                {NOTIFICATIONS.filter(n => n.type === 'invite' && !n.isRead).map(renderNotification)}
+                <Text style={styles.sectionTitle}>New</Text>
+                {newItems.map((n) => (
+                  <NotificationRow
+                    key={n.id}
+                    notification={n}
+                    onPress={() => open(n)}
+                  />
+                ))}
               </View>
             )}
-
-            {/* Earlier Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Earlier</Text>
-              {NOTIFICATIONS.filter(n => n.type !== 'invite' || n.isRead).map(renderNotification)}
-            </View>
+            {earlier.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Earlier</Text>
+                {earlier.map((n) => (
+                  <NotificationRow
+                    key={n.id}
+                    notification={n}
+                    onPress={() => open(n)}
+                  />
+                ))}
+              </View>
+            )}
           </>
         )}
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchIcon: { fontSize: 18 },
-  actionBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-  },
-  markReadButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  markReadText: { fontSize: 14, color: '#3b82f6', fontWeight: '500' },
+  container: { flex: 1, backgroundColor: colors.background },
+  markRead: { fontSize: 14, fontWeight: '600', color: colors.link },
   scrollView: { flex: 1 },
-  section: { marginBottom: 24 },
+  scrollContent: { paddingTop: spacing.md, paddingBottom: 100 },
+  section: { marginBottom: spacing.lg },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
-    paddingHorizontal: 20,
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...typography.h3,
+    paddingHorizontal: GUTTER,
+    marginBottom: spacing.xs,
   },
-  notificationCard: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: '#1e293b',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 16,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: GUTTER,
   },
-  notificationUnread: {
-    backgroundColor: '#1e3a5f',
-    borderLeftWidth: 3,
-    borderLeftColor: '#3b82f6',
-  },
-  notificationLeft: { marginRight: 14 },
-  avatarContainer: { position: 'relative' },
-  userAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userAvatarText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  iconBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#0f172a',
-  },
-  iconBadgeText: { fontSize: 10 },
+  rowUnread: { backgroundColor: colors.surfaceMuted },
   iconCircle: {
     width: 48,
     height: 48,
@@ -223,34 +256,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconText: { fontSize: 22 },
-  notificationContent: { flex: 1 },
-  notificationHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  notificationTitle: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  typeBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: { fontSize: 14, lineHeight: 19, color: colors.text },
+  bold: { fontWeight: '700' },
+  time: { marginTop: 3, color: colors.textMuted },
+  thumb: { width: 48, height: 48, borderRadius: radius.sm },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3b82f6',
-    marginLeft: 8,
+    backgroundColor: colors.primary,
   },
-  notificationMessage: { fontSize: 13, color: '#94a3b8', lineHeight: 18 },
-  eventTitleText: { color: '#3b82f6', fontWeight: '500' },
-  notificationTime: { fontSize: 11, color: '#64748b', marginTop: 4 },
-  eventThumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
-    marginLeft: 12,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#fff', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 20 },
-  bottomPadding: { height: 100 },
 });

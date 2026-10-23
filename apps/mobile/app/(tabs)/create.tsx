@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { colors } from '../../theme';
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -9,5 +10,5 @@ export default function CreateScreen() {
     router.replace('/event/create');
   }, []);
 
-  return <View style={{ flex: 1, backgroundColor: '#0f172a' }} />;
+  return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 }

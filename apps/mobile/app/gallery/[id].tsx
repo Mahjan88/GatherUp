@@ -1,21 +1,28 @@
 import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Image,
-  Dimensions 
+  Dimensions,
+  Text,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Header from '../../components/Header';
-import BottomTabBar from '../../components/BottomTabBar';
+import {
+  ChipRow,
+  EmptyState,
+  IconButton,
+  Ionicons,
+  ScreenHeader,
+} from '../../components/ui';
+import { colors, radius, shadows, spacing, GUTTER } from '../../theme';
 
 const { width } = Dimensions.get('window');
-const IMAGE_SIZE = (width - 48) / 3;
+const GRID_GAP = 6;
+const IMAGE_SIZE = (width - GUTTER * 2 - GRID_GAP) / 2;
 
-type TabType = 'photos' | 'videos';
+type TabType = 'all' | 'photos' | 'videos';
 
 interface MediaItem {
   id: string;
@@ -28,170 +35,113 @@ interface MediaItem {
 const PHOTOS: MediaItem[] = [];
 const VIDEOS: MediaItem[] = [];
 
+const FILTERS: { value: TabType; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'photos', label: 'Photos' },
+  { value: 'videos', label: 'Videos' },
+];
+
 export default function GalleryScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [activeTab, setActiveTab] = useState<TabType>('photos');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
 
-  const renderEmptyState = (type: 'photos' | 'videos') => (
-    <View style={styles.emptyState}>
-      <Text style={styles.emptyIcon}>{type === 'photos' ? '📷' : '🎬'}</Text>
-      <Text style={styles.emptyTitle}>
-        {type === 'photos' 
-          ? 'Be the first one to share a photo from this event!'
-          : 'Be the first one to share a video from this event!'}
-      </Text>
-      <TouchableOpacity style={styles.addButtonLarge}>
-        <Text style={styles.addButtonLargeText}>+ Add {type === 'photos' ? 'Photo' : 'Video'}</Text>
-      </TouchableOpacity>
-    </View>
+  const items: { item: MediaItem; type: 'photos' | 'videos' }[] = [
+    ...(activeTab !== 'videos'
+      ? PHOTOS.map((item) => ({ item, type: 'photos' as const }))
+      : []),
+    ...(activeTab !== 'photos'
+      ? VIDEOS.map((item) => ({ item, type: 'videos' as const }))
+      : []),
+  ];
+
+  const renderEmptyState = () => (
+    <EmptyState
+      icon={activeTab === 'videos' ? 'videocam-outline' : 'camera-outline'}
+      title={
+        activeTab === 'videos'
+          ? 'Be the first one to share a video from this event!'
+          : 'Be the first one to share a photo from this event!'
+      }
+    />
   );
-
-  const renderMediaGrid = (items: MediaItem[], type: 'photos' | 'videos') => {
-    if (items.length === 0) {
-      return renderEmptyState(type);
-    }
-
-    return (
-      <View style={styles.mediaGrid}>
-        {items.map(item => (
-          <TouchableOpacity key={item.id} style={styles.mediaItem}>
-            <Image source={{ uri: item.url }} style={styles.mediaImage} />
-            {type === 'videos' && (
-              <View style={styles.playOverlay}>
-                <Text style={styles.playIcon}>▶</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
 
   return (
     <View style={styles.container}>
-      <Header 
-        showBack 
-        rightElement={
-          <TouchableOpacity style={styles.addButton}>
-            <Text style={styles.addButtonText}>+ Add</Text>
-          </TouchableOpacity>
+      <ScreenHeader
+        showBack
+        title="Event Photos"
+        right={
+          // TODO: Implement media search
+          <IconButton name="search" onPress={() => {}} />
         }
-      />
+      >
+        <ChipRow options={FILTERS} value={activeTab} onChange={setActiveTab} />
+      </ScreenHeader>
 
-      {/* Tabs */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'photos' && styles.tabActive]}
-          onPress={() => setActiveTab('photos')}
-        >
-          <Text style={[styles.tabText, activeTab === 'photos' && styles.tabTextActive]}>
-            Photos
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'videos' && styles.tabActive]}
-          onPress={() => setActiveTab('videos')}
-        >
-          <Text style={[styles.tabText, activeTab === 'videos' && styles.tabTextActive]}>
-            Videos
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'photos' 
-          ? renderMediaGrid(PHOTOS, 'photos')
-          : renderMediaGrid(VIDEOS, 'videos')
-        }
-        <View style={{ height: 100 }} />
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+      >
+        {items.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <View style={styles.mediaGrid}>
+            {items.map(({ item, type }) => (
+              <TouchableOpacity
+                key={`${type}-${item.id}`}
+                style={styles.mediaItem}
+                activeOpacity={0.85}
+              >
+                <Image source={{ uri: item.url }} style={styles.mediaImage} />
+                {type === 'videos' && (
+                  <View style={styles.playOverlay}>
+                    <View style={styles.playCircle}>
+                      <Ionicons
+                        name="play"
+                        size={20}
+                        color={colors.textOnImage}
+                      />
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      <BottomTabBar />
+      {/* Floating add pill */}
+      <TouchableOpacity style={styles.addPill} activeOpacity={0.85}>
+        <Ionicons name="add" size={20} color={colors.primaryOn} />
+        <Text style={styles.addPillText}>
+          {activeTab === 'videos' ? 'Add Videos' : 'Add Photos'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a1a' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { flex: 1 },
+  contentInner: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 110,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: { fontSize: 28, color: '#fff', marginTop: -2 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  addButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: '#06b6d4',
-  },
-  tabText: { fontSize: 16, color: '#64748b', fontWeight: '500' },
-  tabTextActive: { color: '#06b6d4' },
-  content: { flex: 1, padding: 16 },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-  },
-  emptyIcon: { fontSize: 64, marginBottom: 20 },
-  emptyTitle: {
-    fontSize: 18,
-    color: '#94a3b8',
-    textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 40,
-    marginBottom: 24,
-  },
-  addButtonLarge: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 28,
-  },
-  addButtonLargeText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: GRID_GAP,
   },
   mediaItem: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: 'hidden',
-    position: 'relative',
+    backgroundColor: colors.surfaceAlt,
   },
   mediaImage: {
     width: '100%',
@@ -203,9 +153,34 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.scrim,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  playIcon: { fontSize: 32, color: '#fff' },
+  playCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPill: {
+    position: 'absolute',
+    bottom: 34,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 48,
+    paddingHorizontal: 22,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    ...shadows.fab,
+  },
+  addPillText: {
+    color: colors.primaryOn,
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

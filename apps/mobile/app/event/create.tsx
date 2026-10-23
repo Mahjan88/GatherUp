@@ -1,16 +1,25 @@
-import { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import { ReactNode, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
-  TextInput,
   Switch,
   ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import PeopleSelector from '../../components/PeopleSelector';
+import {
+  Button,
+  Chip,
+  IconName,
+  Ionicons,
+  ScreenHeader,
+  StepDots,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 import {
   Person,
   AgendaItem,
@@ -27,7 +36,19 @@ import {
 
 type FormPage = 1 | 2 | 3;
 
-const AGENDA_ICONS = ['☕', '💬', '💻', '🎤', '🍕', '🎮', '🎵', '📸', '🎉', '⏰'];
+/** Ionicons names stored on AgendaItem.icon */
+const AGENDA_ICONS: IconName[] = [
+  'cafe-outline',
+  'chatbubbles-outline',
+  'laptop-outline',
+  'mic-outline',
+  'pizza-outline',
+  'game-controller-outline',
+  'musical-notes-outline',
+  'camera-outline',
+  'sparkles-outline',
+  'alarm-outline',
+];
 
 const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'networking', label: 'Networking' },
@@ -39,14 +60,191 @@ const EVENT_CATEGORIES: { value: EventCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+const STEPS: { page: FormPage; label: string }[] = [
+  { page: 1, label: 'Basics' },
+  { page: 2, label: 'Guests & Privacy' },
+  { page: 3, label: 'Advanced' },
+];
+
 // TODO: Replace with real API data
 const AVAILABLE_CONTACTS: Person[] = [];
 
+/* ------------------------------------------------------------------ */
+/* Local form helpers                                                  */
+/* ------------------------------------------------------------------ */
+
+function FieldLabel({
+  children,
+  required,
+  optional,
+}: {
+  children: ReactNode;
+  required?: boolean;
+  optional?: boolean;
+}) {
+  return (
+    <Text style={styles.inputLabel}>
+      {children}
+      {required && <Text style={styles.requiredAsterisk}> *</Text>}
+      {optional && <Text style={styles.optionalText}> (optional)</Text>}
+    </Text>
+  );
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
+  return <Text style={styles.sectionHeader}>{children}</Text>;
+}
+
+function ToggleRow({
+  label,
+  hint,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  hint?: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
+  return (
+    <View style={styles.inlineToggle}>
+      <View style={styles.toggleInfo}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        {!!hint && <Text style={styles.toggleHint}>{hint}</Text>}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.border, true: colors.primary }}
+        thumbColor={colors.surface}
+        ios_backgroundColor={colors.border}
+      />
+    </View>
+  );
+}
+
+function RadioGroup<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.radioGroup}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <TouchableOpacity
+            key={o.value}
+            style={[styles.radioOption, active && styles.radioOptionActive]}
+            onPress={() => onChange(o.value)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[styles.radioCircle, active && styles.radioCircleActive]}
+            >
+              {active && <View style={styles.radioCircleInner} />}
+            </View>
+            <Text style={styles.radioText}>{o.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function OptionCards<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; title: string; hint: string; icon: IconName }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <View style={styles.privacyOptions}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <TouchableOpacity
+            key={o.value}
+            style={[styles.privacyOption, active && styles.privacyOptionActive]}
+            onPress={() => onChange(o.value)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.privacyIcon,
+                active && { backgroundColor: colors.primary },
+              ]}
+            >
+              <Ionicons
+                name={o.icon}
+                size={18}
+                color={active ? colors.primaryOn : colors.textSecondary}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  styles.privacyOptionTitle,
+                  active && styles.privacyOptionTitleActive,
+                ]}
+              >
+                {o.title}
+              </Text>
+              <Text style={styles.privacyOptionHint}>{o.hint}</Text>
+            </View>
+            {active && (
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.primary}
+              />
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function CheckRow({
+  label,
+  checked,
+  onPress,
+}: {
+  label: string;
+  checked: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.checkboxOption}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.checkbox, checked && styles.checkboxActive]}>
+        {checked && (
+          <Ionicons name="checkmark" size={14} color={colors.primaryOn} />
+        )}
+      </View>
+      <Text style={styles.checkboxText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
 export default function CreateEventScreen() {
   const router = useRouter();
-  
+
   const [currentPage, setCurrentPage] = useState<FormPage>(1);
-  
+
   // A. Event Basics
   const [title, setTitle] = useState('');
   const [tagline, setTagline] = useState('');
@@ -68,10 +266,12 @@ export default function CreateEventScreen() {
   const [virtualLink, setVirtualLink] = useState('');
 
   // Organizer & Series
-  const [organizerType, setOrganizerType] = useState<'user' | 'community'>('user');
+  const [organizerType, setOrganizerType] = useState<'user' | 'community'>(
+    'user'
+  );
   const [communityId, setCommunityId] = useState('');
   const [seriesId, setSeriesId] = useState('');
-  
+
   // C. Guests & Privacy
   const [eventPrivacy, setEventPrivacy] = useState<EventPrivacy>('public');
   const [coHosts, setCoHosts] = useState<Person[]>([]);
@@ -81,17 +281,20 @@ export default function CreateEventScreen() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteSearch, setInviteSearch] = useState('');
   const [allowInviteOthers, setAllowInviteOthers] = useState(false);
-  const [guestListVisibility, setGuestListVisibility] = useState<GuestListVisibility>('attendees');
+  const [guestListVisibility, setGuestListVisibility] =
+    useState<GuestListVisibility>('attendees');
   const [rsvpRequired, setRsvpRequired] = useState(true);
   const [capacityLimit, setCapacityLimit] = useState('');
   const [rsvpOption, setRsvpOption] = useState<RsvpOption>('three-way');
   const [rsvpDeadline, setRsvpDeadline] = useState('');
-  
+
   // F. Chat & Sharing
   const [chatEnabled, setChatEnabled] = useState(true);
   const [whoCanChat, setWhoCanChat] = useState<ChatPermission>('attendees');
-  const [whoCanPostMedia, setWhoCanPostMedia] = useState<MediaPermission>('attendees');
-  const [whoCanUpload, setWhoCanUpload] = useState<UploadPermission>('attendees');
+  const [whoCanPostMedia, setWhoCanPostMedia] =
+    useState<MediaPermission>('attendees');
+  const [whoCanUpload, setWhoCanUpload] =
+    useState<UploadPermission>('attendees');
 
   // H. Notifications & Reminders
   const [reminder24h, setReminder24h] = useState(true);
@@ -104,7 +307,7 @@ export default function CreateEventScreen() {
   const [showAddAgenda, setShowAddAgenda] = useState(false);
   const [newAgendaTime, setNewAgendaTime] = useState('');
   const [newAgendaTitle, setNewAgendaTitle] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('☕');
+  const [selectedIcon, setSelectedIcon] = useState<string>(AGENDA_ICONS[0]);
   const [whatToBring, setWhatToBring] = useState('');
   const [dressCode, setDressCode] = useState('');
   const [accessibilityNotes, setAccessibilityNotes] = useState('');
@@ -115,30 +318,31 @@ export default function CreateEventScreen() {
 
   // J. Reviews & Feedback
   const [feedbackEnabled, setFeedbackEnabled] = useState(true);
-  const [feedbackVisibility, setFeedbackVisibility] = useState<FeedbackVisibility>('attendees_only');
+  const [feedbackVisibility, setFeedbackVisibility] =
+    useState<FeedbackVisibility>('attendees_only');
 
   const toggleCoHost = (person: Person) => {
-    if (coHosts.some(c => c.id === person.id)) {
-      setCoHosts(coHosts.filter(c => c.id !== person.id));
+    if (coHosts.some((c) => c.id === person.id)) {
+      setCoHosts(coHosts.filter((c) => c.id !== person.id));
     } else {
       setCoHosts([...coHosts, person]);
     }
   };
 
   const removeCoHost = (id: string) => {
-    setCoHosts(coHosts.filter(c => c.id !== id));
+    setCoHosts(coHosts.filter((c) => c.id !== id));
   };
 
   const toggleInvitedPerson = (person: Person) => {
-    if (invitedPeople.some(p => p.id === person.id)) {
-      setInvitedPeople(invitedPeople.filter(p => p.id !== person.id));
+    if (invitedPeople.some((p) => p.id === person.id)) {
+      setInvitedPeople(invitedPeople.filter((p) => p.id !== person.id));
     } else {
       setInvitedPeople([...invitedPeople, person]);
     }
   };
 
   const removeInvitedPerson = (id: string) => {
-    setInvitedPeople(invitedPeople.filter(p => p.id !== id));
+    setInvitedPeople(invitedPeople.filter((p) => p.id !== id));
   };
 
   const addAgendaItem = () => {
@@ -152,12 +356,12 @@ export default function CreateEventScreen() {
     setAgendaItems([...agendaItems, newItem]);
     setNewAgendaTime('');
     setNewAgendaTitle('');
-    setSelectedIcon('☕');
+    setSelectedIcon(AGENDA_ICONS[0]);
     setShowAddAgenda(false);
   };
 
   const removeAgendaItem = (id: string) => {
-    setAgendaItems(agendaItems.filter(item => item.id !== id));
+    setAgendaItems(agendaItems.filter((item) => item.id !== id));
   };
 
   const handleNext = () => {
@@ -168,100 +372,106 @@ export default function CreateEventScreen() {
     }
   };
 
-  const renderPageTabs = () => (
-    <View style={styles.tabsContainer}>
-      <View style={styles.tabsWrapper}>
-        <TouchableOpacity
-          style={[styles.tab, currentPage === 1 && styles.tabActive]}
-          onPress={() => setCurrentPage(1)}
-        >
-          <Text style={[styles.tabText, currentPage === 1 && styles.tabTextActive]}>
-            Basics
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, currentPage === 2 && styles.tabActive]}
-          onPress={() => setCurrentPage(2)}
-        >
-          <Text style={[styles.tabText, currentPage === 2 && styles.tabTextActive]}>
-            Guests & Privacy
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, currentPage === 3 && styles.tabActive]}
-          onPress={() => setCurrentPage(3)}
-        >
-          <Text style={[styles.tabText, currentPage === 3 && styles.tabTextActive]}>
-            Advanced Settings
-          </Text>
-        </TouchableOpacity>
+  const renderStepper = () => (
+    <View style={styles.stepper}>
+      <StepDots total={STEPS.length} current={currentPage - 1} />
+      <View style={styles.stepLabels}>
+        {STEPS.map((step) => (
+          <TouchableOpacity
+            key={step.page}
+            onPress={() => setCurrentPage(step.page)}
+            hitSlop={6}
+          >
+            <Text
+              style={[
+                styles.stepLabel,
+                currentPage === step.page && styles.stepLabelActive,
+              ]}
+            >
+              {step.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
 
   const renderPage1 = () => (
     <>
-      <Text style={styles.sectionHeader}>Event Basics</Text>
+      <SectionTitle>Event Basics</SectionTitle>
 
-      <TouchableOpacity style={styles.coverPhotoBox}>
-        <Text style={styles.coverPhotoIcon}>📷</Text>
-        <Text style={styles.coverPhotoText}>Add Cover Photo</Text>
+      {/* TODO: Hook up image picker to set coverImage */}
+      <TouchableOpacity activeOpacity={0.9} style={styles.coverPhotoBox}>
+        {coverImage ? (
+          <ImageBackground
+            source={{ uri: coverImage }}
+            style={styles.coverPhotoInner}
+            imageStyle={{ borderRadius: radius.lg }}
+          >
+            <View style={styles.coverPill}>
+              <Ionicons
+                name="camera-outline"
+                size={16}
+                color={colors.textOnImage}
+              />
+              <Text style={styles.coverPillText}>Change Cover Photo</Text>
+            </View>
+          </ImageBackground>
+        ) : (
+          <View style={styles.coverPhotoInner}>
+            <Ionicons name="image-outline" size={36} color={colors.textMuted} />
+            <View style={[styles.coverPill, { marginTop: spacing.md }]}>
+              <Ionicons
+                name="camera-outline"
+                size={16}
+                color={colors.textOnImage}
+              />
+              <Text style={styles.coverPillText}>Add Cover Photo</Text>
+            </View>
+          </View>
+        )}
       </TouchableOpacity>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Event Title <Text style={styles.requiredAsterisk}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Give your event a name"
-          placeholderTextColor="#64748b"
-          value={title}
-          onChangeText={setTitle}
-        />
-      </View>
+      <FieldLabel required>Event Title</FieldLabel>
+      <TextField
+        placeholder="Give your event a name"
+        value={title}
+        onChangeText={setTitle}
+      />
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Tagline</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="A short catchy subtitle"
-          placeholderTextColor="#64748b"
-          value={tagline}
-          onChangeText={setTagline}
-        />
-      </View>
+      <FieldLabel>Tagline</FieldLabel>
+      <TextField
+        placeholder="A short catchy subtitle"
+        value={tagline}
+        onChangeText={setTagline}
+      />
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Description <Text style={styles.requiredAsterisk}>*</Text></Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Tell people about your event"
-          placeholderTextColor="#64748b"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={4}
-        />
-      </View>
+      <FieldLabel required>Description</FieldLabel>
+      <TextField
+        placeholder="Tell people about your event"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+        numberOfLines={4}
+      />
 
-      <Text style={styles.sectionHeader}>When & Where</Text>
+      <SectionTitle>When & Where</SectionTitle>
 
       <View style={styles.dateTimeRow}>
         <View style={styles.dateTimeField}>
-          <Text style={styles.inputLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
-          <TextInput
-            style={styles.input}
+          <FieldLabel required>Start Date</FieldLabel>
+          <TextField
+            icon="calendar-outline"
             placeholder="MM/DD/YYYY"
-            placeholderTextColor="#64748b"
             value={startDate}
             onChangeText={setStartDate}
           />
         </View>
         <View style={styles.dateTimeField}>
-          <Text style={styles.inputLabel}>Start Time <Text style={styles.requiredAsterisk}>*</Text></Text>
-          <TextInput
-            style={styles.input}
+          <FieldLabel required>Start Time</FieldLabel>
+          <TextField
+            icon="time-outline"
             placeholder="HH:MM"
-            placeholderTextColor="#64748b"
             value={startTime}
             onChangeText={setStartTime}
           />
@@ -270,131 +480,101 @@ export default function CreateEventScreen() {
 
       <View style={styles.dateTimeRow}>
         <View style={styles.dateTimeField}>
-          <Text style={styles.inputLabel}>End Date</Text>
-          <TextInput
-            style={styles.input}
+          <FieldLabel>End Date</FieldLabel>
+          <TextField
+            icon="calendar-outline"
             placeholder="MM/DD/YYYY"
-            placeholderTextColor="#64748b"
             value={endDate}
             onChangeText={setEndDate}
           />
         </View>
         <View style={styles.dateTimeField}>
-          <Text style={styles.inputLabel}>End Time</Text>
-          <TextInput
-            style={styles.input}
+          <FieldLabel>End Time</FieldLabel>
+          <TextField
+            icon="time-outline"
             placeholder="HH:MM"
-            placeholderTextColor="#64748b"
             value={endTime}
             onChangeText={setEndTime}
           />
         </View>
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Timezone</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., America/New_York"
-          placeholderTextColor="#64748b"
-          value={timezone}
-          onChangeText={setTimezone}
-        />
-      </View>
+      <FieldLabel>Timezone</FieldLabel>
+      <TextField
+        icon="globe-outline"
+        placeholder="e.g., America/New_York"
+        value={timezone}
+        onChangeText={setTimezone}
+      />
 
-      <View style={styles.inlineToggle}>
-        <View style={styles.toggleInfo}>
-          <Text style={styles.toggleLabel}>Online Event</Text>
-          <Text style={styles.toggleHint}>This event takes place virtually</Text>
-        </View>
-        <Switch
-          value={isOnline}
-          onValueChange={setIsOnline}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
-        />
-      </View>
+      <ToggleRow
+        label="Online Event"
+        hint="This event takes place virtually"
+        value={isOnline}
+        onValueChange={setIsOnline}
+      />
 
       {isOnline && (
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Meeting Link</Text>
-          <TextInput
-            style={styles.input}
+        <>
+          <FieldLabel>Meeting Link</FieldLabel>
+          <TextField
+            icon="videocam-outline"
             placeholder="https://zoom.us/j/..."
-            placeholderTextColor="#64748b"
             value={virtualLink}
             onChangeText={setVirtualLink}
             autoCapitalize="none"
           />
-        </View>
+        </>
       )}
 
       {!isOnline && (
         <>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Venue Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Rooftop Lounge, Main Hall"
-              placeholderTextColor="#64748b"
-              value={location}
-              onChangeText={setLocation}
-            />
-          </View>
+          <FieldLabel>Venue Name</FieldLabel>
+          <TextField
+            icon="business-outline"
+            placeholder="e.g., Rooftop Lounge, Main Hall"
+            value={location}
+            onChangeText={setLocation}
+          />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Where's your event?"
-              placeholderTextColor="#64748b"
-              value={address}
-              onChangeText={setAddress}
-            />
-          </View>
+          <FieldLabel>Address</FieldLabel>
+          <TextField
+            icon="location-outline"
+            placeholder="Where's your event?"
+            value={address}
+            onChangeText={setAddress}
+          />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>City / Region</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="San Francisco, CA"
-              placeholderTextColor="#64748b"
-              value={cityRegion}
-              onChangeText={setCityRegion}
-            />
-          </View>
+          <FieldLabel>City / Region</FieldLabel>
+          <TextField
+            icon="map-outline"
+            placeholder="San Francisco, CA"
+            value={cityRegion}
+            onChangeText={setCityRegion}
+          />
         </>
       )}
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Category</Text>
+        <FieldLabel>Category</FieldLabel>
         <View style={styles.categoryPills}>
-          {EVENT_CATEGORIES.map(cat => (
-            <TouchableOpacity
+          {EVENT_CATEGORIES.map((cat) => (
+            <Chip
               key={cat.value}
-              style={[styles.categoryPill, category === cat.value && styles.categoryPillActive]}
+              label={cat.label}
+              selected={category === cat.value}
               onPress={() => setCategory(cat.value)}
-            >
-              <Text style={[styles.categoryPillText, category === cat.value && styles.categoryPillTextActive]}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
+            />
           ))}
         </View>
       </View>
 
-      <View style={styles.inlineToggle}>
-        <View style={styles.toggleInfo}>
-          <Text style={styles.toggleLabel}>Add Agenda</Text>
-          <Text style={styles.toggleHint}>Create a schedule for your event</Text>
-        </View>
-        <Switch
-          value={hasAgenda}
-          onValueChange={setHasAgenda}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
-        />
-      </View>
+      <ToggleRow
+        label="Add Agenda"
+        hint="Create a schedule for your event"
+        value={hasAgenda}
+        onValueChange={setHasAgenda}
+      />
 
       {hasAgenda && (
         <View style={[styles.agendaSection, styles.indentedSection]}>
@@ -402,17 +582,27 @@ export default function CreateEventScreen() {
             <View key={item.id} style={styles.agendaItem}>
               <View style={styles.agendaTimeline}>
                 <View style={styles.agendaDot} />
-                {index < agendaItems.length - 1 && <View style={styles.agendaLine} />}
+                {index < agendaItems.length - 1 && (
+                  <View style={styles.agendaLine} />
+                )}
               </View>
               <View style={styles.agendaIconBox}>
-                <Text style={styles.agendaIcon}>{item.icon}</Text>
+                <Ionicons
+                  name={item.icon as IconName}
+                  size={18}
+                  color={colors.primary}
+                />
               </View>
               <View style={styles.agendaContent}>
                 <Text style={styles.agendaTime}>{item.time}</Text>
                 <Text style={styles.agendaTitle}>{item.title}</Text>
               </View>
-              <TouchableOpacity style={styles.removeButton} onPress={() => removeAgendaItem(item.id)}>
-                <Text style={styles.removeIcon}>✕</Text>
+              <TouchableOpacity
+                style={styles.removeButton}
+                onPress={() => removeAgendaItem(item.id)}
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
           ))}
@@ -420,51 +610,66 @@ export default function CreateEventScreen() {
           {showAddAgenda ? (
             <View style={styles.addAgendaForm}>
               <View style={styles.agendaFormRow}>
-                <TextInput
-                  style={[styles.input, styles.timeInput]}
+                <TextField
+                  containerStyle={[styles.timeInput, styles.noMargin]}
                   placeholder="10:00 AM"
-                  placeholderTextColor="#64748b"
                   value={newAgendaTime}
                   onChangeText={setNewAgendaTime}
                 />
-                <TextInput
-                  style={[styles.input, styles.titleInput]}
+                <TextField
+                  containerStyle={[styles.titleInput, styles.noMargin]}
                   placeholder="Activity title"
-                  placeholderTextColor="#64748b"
                   value={newAgendaTitle}
                   onChangeText={setNewAgendaTitle}
                 />
               </View>
               <View style={styles.iconPicker}>
-                {AGENDA_ICONS.map(icon => (
-                  <TouchableOpacity
-                    key={icon}
-                    style={[styles.iconOption, selectedIcon === icon && styles.iconOptionActive]}
-                    onPress={() => setSelectedIcon(icon)}
-                  >
-                    <Text style={styles.iconText}>{icon}</Text>
-                  </TouchableOpacity>
-                ))}
+                {AGENDA_ICONS.map((icon) => {
+                  const active = selectedIcon === icon;
+                  return (
+                    <TouchableOpacity
+                      key={icon}
+                      style={[
+                        styles.iconOption,
+                        active && styles.iconOptionActive,
+                      ]}
+                      onPress={() => setSelectedIcon(icon)}
+                    >
+                      <Ionicons
+                        name={icon}
+                        size={18}
+                        color={active ? colors.primaryOn : colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
               <View style={styles.agendaFormButtons}>
-                <TouchableOpacity
-                  style={styles.cancelAgendaButton}
+                <Button
+                  label="Cancel"
+                  variant="ghost"
+                  size="md"
+                  style={{ flex: 1 }}
                   onPress={() => {
                     setShowAddAgenda(false);
                     setNewAgendaTime('');
                     setNewAgendaTitle('');
                   }}
-                >
-                  <Text style={styles.cancelAgendaText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.addAgendaButton} onPress={addAgendaItem}>
-                  <Text style={styles.addAgendaText}>Add Item</Text>
-                </TouchableOpacity>
+                />
+                <Button
+                  label="Add Item"
+                  size="md"
+                  style={{ flex: 1 }}
+                  onPress={addAgendaItem}
+                />
               </View>
             </View>
           ) : (
-            <TouchableOpacity style={styles.addAgendaItemButton} onPress={() => setShowAddAgenda(true)}>
-              <Text style={styles.addAgendaItemIcon}>+</Text>
+            <TouchableOpacity
+              style={styles.addAgendaItemButton}
+              onPress={() => setShowAddAgenda(true)}
+            >
+              <Ionicons name="add" size={18} color={colors.primary} />
               <Text style={styles.addAgendaItemText}>Add Agenda Item</Text>
             </TouchableOpacity>
           )}
@@ -475,58 +680,52 @@ export default function CreateEventScreen() {
 
   const renderPage2 = () => (
     <>
-      <Text style={styles.sectionHeader}>Hosting As</Text>
+      <SectionTitle>Hosting As</SectionTitle>
 
       <View style={styles.inputGroup}>
-        <View style={styles.privacyOptions}>
-          <TouchableOpacity
-            style={[styles.privacyOption, organizerType === 'user' && styles.privacyOptionActive]}
-            onPress={() => setOrganizerType('user')}
-          >
-            <Text style={[styles.privacyOptionTitle, organizerType === 'user' && styles.privacyOptionTitleActive]}>
-              Myself
-            </Text>
-            <Text style={styles.privacyOptionHint}>Host as your personal profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.privacyOption, organizerType === 'community' && styles.privacyOptionActive]}
-            onPress={() => setOrganizerType('community')}
-          >
-            <Text style={[styles.privacyOptionTitle, organizerType === 'community' && styles.privacyOptionTitleActive]}>
-              A Community
-            </Text>
-            <Text style={styles.privacyOptionHint}>Host on behalf of a community</Text>
-          </TouchableOpacity>
-        </View>
+        <OptionCards
+          value={organizerType}
+          onChange={setOrganizerType}
+          options={[
+            {
+              value: 'user',
+              title: 'Myself',
+              hint: 'Host as your personal profile',
+              icon: 'person-outline',
+            },
+            {
+              value: 'community',
+              title: 'A Community',
+              hint: 'Host on behalf of a community',
+              icon: 'people-outline',
+            },
+          ]}
+        />
       </View>
 
       {organizerType === 'community' && (
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Select Community</Text>
-          <TextInput
-            style={styles.input}
+        <>
+          <FieldLabel>Select Community</FieldLabel>
+          <TextField
+            icon="people-outline"
             placeholder="Choose a community..."
-            placeholderTextColor="#64748b"
             value={communityId}
             onChangeText={setCommunityId}
           />
           {/* TODO: Replace with a proper picker from user's communities */}
-        </View>
+        </>
       )}
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Part of a Series <Text style={{ color: '#64748b', fontWeight: '400' }}>(optional)</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Standalone event"
-          placeholderTextColor="#64748b"
-          value={seriesId}
-          onChangeText={setSeriesId}
-        />
-        {/* TODO: Replace with a proper picker from user's series */}
-      </View>
+      <FieldLabel optional>Part of a Series</FieldLabel>
+      <TextField
+        icon="repeat-outline"
+        placeholder="Standalone event"
+        value={seriesId}
+        onChangeText={setSeriesId}
+      />
+      {/* TODO: Replace with a proper picker from user's series */}
 
-      <Text style={styles.sectionHeader}>Guests & Privacy</Text>
+      <SectionTitle>Guests & Privacy</SectionTitle>
 
       <PeopleSelector
         label="Co-Hosts"
@@ -565,187 +764,127 @@ export default function CreateEventScreen() {
       />
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Event Privacy <Text style={styles.requiredAsterisk}>*</Text></Text>
-        <View style={styles.privacyOptions}>
-          <TouchableOpacity
-            style={[styles.privacyOption, eventPrivacy === 'public' && styles.privacyOptionActive]}
-            onPress={() => setEventPrivacy('public')}
-          >
-            <Text style={[styles.privacyOptionTitle, eventPrivacy === 'public' && styles.privacyOptionTitleActive]}>
-              Public
-            </Text>
-            <Text style={styles.privacyOptionHint}>Discoverable by anyone</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.privacyOption, eventPrivacy === 'private' && styles.privacyOptionActive]}
-            onPress={() => setEventPrivacy('private')}
-          >
-            <Text style={[styles.privacyOptionTitle, eventPrivacy === 'private' && styles.privacyOptionTitleActive]}>
-              Private (Link)
-            </Text>
-            <Text style={styles.privacyOptionHint}>Only people with the link</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.privacyOption, eventPrivacy === 'invite-only' && styles.privacyOptionActive]}
-            onPress={() => setEventPrivacy('invite-only')}
-          >
-            <Text style={[styles.privacyOptionTitle, eventPrivacy === 'invite-only' && styles.privacyOptionTitleActive]}>
-              Invite Only
-            </Text>
-            <Text style={styles.privacyOptionHint}>Only invited guests</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.inlineToggle}>
-        <Text style={styles.toggleLabel}>Allow invitees to invite others</Text>
-        <Switch
-          value={allowInviteOthers}
-          onValueChange={setAllowInviteOthers}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
+        <FieldLabel required>Event Privacy</FieldLabel>
+        <OptionCards
+          value={eventPrivacy}
+          onChange={setEventPrivacy}
+          options={[
+            {
+              value: 'public',
+              title: 'Public',
+              hint: 'Discoverable by anyone',
+              icon: 'globe-outline',
+            },
+            {
+              value: 'private',
+              title: 'Private (Link)',
+              hint: 'Only people with the link',
+              icon: 'link-outline',
+            },
+            {
+              value: 'invite-only',
+              title: 'Invite Only',
+              hint: 'Only invited guests',
+              icon: 'lock-closed-outline',
+            },
+          ]}
         />
       </View>
+
+      <ToggleRow
+        label="Allow invitees to invite others"
+        value={allowInviteOthers}
+        onValueChange={setAllowInviteOthers}
+      />
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Guest List Visibility</Text>
-        <View style={styles.radioGroup}>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setGuestListVisibility('everyone')}>
-            <View style={[styles.radioCircle, guestListVisibility === 'everyone' && styles.radioCircleActive]}>
-              {guestListVisibility === 'everyone' && <View style={styles.radioCircleInner} />}
-            </View>
-            <Text style={styles.radioText}>Everyone</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setGuestListVisibility('attendees')}>
-            <View style={[styles.radioCircle, guestListVisibility === 'attendees' && styles.radioCircleActive]}>
-              {guestListVisibility === 'attendees' && <View style={styles.radioCircleInner} />}
-            </View>
-            <Text style={styles.radioText}>Attendees only</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setGuestListVisibility('hidden')}>
-            <View style={[styles.radioCircle, guestListVisibility === 'hidden' && styles.radioCircleActive]}>
-              {guestListVisibility === 'hidden' && <View style={styles.radioCircleInner} />}
-            </View>
-            <Text style={styles.radioText}>Hidden</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.inlineToggle}>
-        <Text style={styles.toggleLabel}>RSVP Required</Text>
-        <Switch
-          value={rsvpRequired}
-          onValueChange={setRsvpRequired}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
+        <FieldLabel>Guest List Visibility</FieldLabel>
+        <RadioGroup
+          value={guestListVisibility}
+          onChange={setGuestListVisibility}
+          options={[
+            { value: 'everyone', label: 'Everyone' },
+            { value: 'attendees', label: 'Attendees only' },
+            { value: 'hidden', label: 'Hidden' },
+          ]}
         />
       </View>
+
+      <ToggleRow
+        label="RSVP Required"
+        value={rsvpRequired}
+        onValueChange={setRsvpRequired}
+      />
 
       {rsvpRequired && (
         <View style={styles.indentedSection}>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>RSVP Options</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setRsvpOption('three-way')}>
-                <View style={[styles.radioCircle, rsvpOption === 'three-way' && styles.radioCircleActive]}>
-                  {rsvpOption === 'three-way' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Going / Maybe / Not Going</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setRsvpOption('two-way')}>
-                <View style={[styles.radioCircle, rsvpOption === 'two-way' && styles.radioCircleActive]}>
-                  {rsvpOption === 'two-way' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Going / Not Going</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>RSVP Deadline</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="MM/DD/YYYY"
-              placeholderTextColor="#64748b"
-              value={rsvpDeadline}
-              onChangeText={setRsvpDeadline}
+            <FieldLabel>RSVP Options</FieldLabel>
+            <RadioGroup
+              value={rsvpOption}
+              onChange={setRsvpOption}
+              options={[
+                { value: 'three-way', label: 'Going / Maybe / Not Going' },
+                { value: 'two-way', label: 'Going / Not Going' },
+              ]}
             />
           </View>
+
+          <FieldLabel>RSVP Deadline</FieldLabel>
+          <TextField
+            icon="calendar-outline"
+            placeholder="MM/DD/YYYY"
+            value={rsvpDeadline}
+            onChangeText={setRsvpDeadline}
+          />
         </View>
       )}
 
-      <Text style={styles.sectionHeader}>Chat & Sharing</Text>
+      <SectionTitle>Chat & Sharing</SectionTitle>
 
-      <View style={styles.inlineToggle}>
-        <Text style={styles.toggleLabel}>Event Chat Enabled</Text>
-        <Switch
-          value={chatEnabled}
-          onValueChange={setChatEnabled}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
-        />
-      </View>
+      <ToggleRow
+        label="Event Chat Enabled"
+        value={chatEnabled}
+        onValueChange={setChatEnabled}
+      />
 
       {chatEnabled && (
         <View style={styles.indentedSection}>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Who can chat</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanChat('hosts')}>
-                <View style={[styles.radioCircle, whoCanChat === 'hosts' && styles.radioCircleActive]}>
-                  {whoCanChat === 'hosts' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Only Hosts</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanChat('attendees')}>
-                <View style={[styles.radioCircle, whoCanChat === 'attendees' && styles.radioCircleActive]}>
-                  {whoCanChat === 'attendees' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Attendees</Text>
-              </TouchableOpacity>
-            </View>
+            <FieldLabel>Who can chat</FieldLabel>
+            <RadioGroup
+              value={whoCanChat}
+              onChange={setWhoCanChat}
+              options={[
+                { value: 'hosts', label: 'Only Hosts' },
+                { value: 'attendees', label: 'Attendees' },
+              ]}
+            />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Who can post media</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanPostMedia('hosts')}>
-                <View style={[styles.radioCircle, whoCanPostMedia === 'hosts' && styles.radioCircleActive]}>
-                  {whoCanPostMedia === 'hosts' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Hosts</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanPostMedia('attendees')}>
-                <View style={[styles.radioCircle, whoCanPostMedia === 'attendees' && styles.radioCircleActive]}>
-                  {whoCanPostMedia === 'attendees' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Attendees</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanPostMedia('everyone')}>
-                <View style={[styles.radioCircle, whoCanPostMedia === 'everyone' && styles.radioCircleActive]}>
-                  {whoCanPostMedia === 'everyone' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Everyone</Text>
-              </TouchableOpacity>
-            </View>
+            <FieldLabel>Who can post media</FieldLabel>
+            <RadioGroup
+              value={whoCanPostMedia}
+              onChange={setWhoCanPostMedia}
+              options={[
+                { value: 'hosts', label: 'Hosts' },
+                { value: 'attendees', label: 'Attendees' },
+                { value: 'everyone', label: 'Everyone' },
+              ]}
+            />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Who can upload</Text>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanUpload('attendees')}>
-                <View style={[styles.radioCircle, whoCanUpload === 'attendees' && styles.radioCircleActive]}>
-                  {whoCanUpload === 'attendees' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Attendees only</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setWhoCanUpload('hosts')}>
-                <View style={[styles.radioCircle, whoCanUpload === 'hosts' && styles.radioCircleActive]}>
-                  {whoCanUpload === 'hosts' && <View style={styles.radioCircleInner} />}
-                </View>
-                <Text style={styles.radioText}>Hosts only</Text>
-              </TouchableOpacity>
-            </View>
+            <FieldLabel>Who can upload</FieldLabel>
+            <RadioGroup
+              value={whoCanUpload}
+              onChange={setWhoCanUpload}
+              options={[
+                { value: 'attendees', label: 'Attendees only' },
+                { value: 'hosts', label: 'Hosts only' },
+              ]}
+            />
           </View>
         </View>
       )}
@@ -754,30 +893,24 @@ export default function CreateEventScreen() {
 
   const renderPage3 = () => (
     <>
-      <Text style={styles.sectionHeader}>Advanced Settings</Text>
+      <SectionTitle>Advanced Settings</SectionTitle>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Cost / Tickets</Text>
-        <View style={styles.radioGroup}>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setTicketType('free')}>
-            <View style={[styles.radioCircle, ticketType === 'free' && styles.radioCircleActive]}>
-              {ticketType === 'free' && <View style={styles.radioCircleInner} />}
-            </View>
-            <Text style={styles.radioText}>Free</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.radioOption} onPress={() => setTicketType('paid')}>
-            <View style={[styles.radioCircle, ticketType === 'paid' && styles.radioCircleActive]}>
-              {ticketType === 'paid' && <View style={styles.radioCircleInner} />}
-            </View>
-            <Text style={styles.radioText}>Paid</Text>
-          </TouchableOpacity>
-        </View>
+        <FieldLabel>Cost / Tickets</FieldLabel>
+        <RadioGroup
+          value={ticketType}
+          onChange={setTicketType}
+          options={[
+            { value: 'free', label: 'Free' },
+            { value: 'paid', label: 'Paid' },
+          ]}
+        />
         {ticketType === 'paid' && (
-          <View style={styles.indentedSection}>
-            <TextInput
-              style={[styles.input, { marginTop: 8 }]}
+          <View style={[styles.indentedSection, { marginTop: spacing.sm }]}>
+            <TextField
+              containerStyle={styles.noMargin}
+              icon="cash-outline"
               placeholder="Enter ticket price..."
-              placeholderTextColor="#64748b"
               value={ticketPrice}
               onChangeText={setTicketPrice}
               keyboardType="numeric"
@@ -786,130 +919,90 @@ export default function CreateEventScreen() {
         )}
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Capacity Limit</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Leave empty for unlimited"
-          placeholderTextColor="#64748b"
-          value={capacityLimit}
-          onChangeText={setCapacityLimit}
-          keyboardType="numeric"
-        />
-      </View>
+      <FieldLabel>Capacity Limit</FieldLabel>
+      <TextField
+        icon="people-outline"
+        placeholder="Leave empty for unlimited"
+        value={capacityLimit}
+        onChangeText={setCapacityLimit}
+        keyboardType="numeric"
+      />
+
+      <FieldLabel>Age Restriction</FieldLabel>
+      <TextField
+        placeholder="e.g., 18+, 21+, All ages..."
+        value={ageRestriction}
+        onChangeText={setAgeRestriction}
+      />
+
+      <FieldLabel>What to Bring</FieldLabel>
+      <TextField
+        placeholder="Items guests should bring..."
+        value={whatToBring}
+        onChangeText={setWhatToBring}
+      />
+
+      <FieldLabel>Dress Code</FieldLabel>
+      <TextField
+        placeholder="e.g., Casual, Formal, Costume..."
+        value={dressCode}
+        onChangeText={setDressCode}
+      />
+
+      <FieldLabel>Accessibility Notes</FieldLabel>
+      <TextField
+        placeholder="Wheelchair access, parking info..."
+        value={accessibilityNotes}
+        onChangeText={setAccessibilityNotes}
+      />
+
+      <FieldLabel>Cancellation Policy</FieldLabel>
+      <TextField
+        placeholder="Describe your cancellation and refund policy..."
+        value={cancellationPolicy}
+        onChangeText={setCancellationPolicy}
+        multiline
+        numberOfLines={3}
+      />
+
+      <SectionTitle>Notifications & Reminders</SectionTitle>
 
       <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Age Restriction</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., 18+, 21+, All ages..."
-          placeholderTextColor="#64748b"
-          value={ageRestriction}
-          onChangeText={setAgeRestriction}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>What to Bring</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Items guests should bring..."
-          placeholderTextColor="#64748b"
-          value={whatToBring}
-          onChangeText={setWhatToBring}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Dress Code</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., Casual, Formal, Costume..."
-          placeholderTextColor="#64748b"
-          value={dressCode}
-          onChangeText={setDressCode}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Accessibility Notes</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Wheelchair access, parking info..."
-          placeholderTextColor="#64748b"
-          value={accessibilityNotes}
-          onChangeText={setAccessibilityNotes}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Cancellation Policy</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Describe your cancellation and refund policy..."
-          placeholderTextColor="#64748b"
-          value={cancellationPolicy}
-          onChangeText={setCancellationPolicy}
-          multiline
-          numberOfLines={3}
-        />
-      </View>
-
-      <Text style={styles.sectionHeader}>Notifications & Reminders</Text>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>Reminders</Text>
+        <FieldLabel>Reminders</FieldLabel>
         <View style={styles.checkboxGroup}>
-          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder24h(!reminder24h)}>
-            <View style={[styles.checkbox, reminder24h && styles.checkboxActive]}>
-              {reminder24h && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxText}>24h before</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.checkboxOption} onPress={() => setReminder1h(!reminder1h)}>
-            <View style={[styles.checkbox, reminder1h && styles.checkboxActive]}>
-              {reminder1h && <Text style={styles.checkmark}>✓</Text>}
-            </View>
-            <Text style={styles.checkboxText}>1h before</Text>
-          </TouchableOpacity>
+          <CheckRow
+            label="24h before"
+            checked={reminder24h}
+            onPress={() => setReminder24h(!reminder24h)}
+          />
+          <CheckRow
+            label="1h before"
+            checked={reminder1h}
+            onPress={() => setReminder1h(!reminder1h)}
+          />
         </View>
       </View>
 
-      <Text style={styles.sectionHeader}>Reviews & Feedback</Text>
+      <SectionTitle>Reviews & Feedback</SectionTitle>
 
-      <View style={styles.inlineToggle}>
-        <Text style={styles.toggleLabel}>Feedback Enabled</Text>
-        <Switch
-          value={feedbackEnabled}
-          onValueChange={setFeedbackEnabled}
-          trackColor={{ false: '#334155', true: '#14b8a6' }}
-          thumbColor="#fff"
-        />
-      </View>
+      <ToggleRow
+        label="Feedback Enabled"
+        value={feedbackEnabled}
+        onValueChange={setFeedbackEnabled}
+      />
 
       {feedbackEnabled && (
         <View style={[styles.inputGroup, styles.indentedSection]}>
-          <Text style={styles.inputLabel}>Feedback Visibility</Text>
-          <View style={styles.radioGroup}>
-            <TouchableOpacity style={styles.radioOption} onPress={() => setFeedbackVisibility('public')}>
-              <View style={[styles.radioCircle, feedbackVisibility === 'public' && styles.radioCircleActive]}>
-                {feedbackVisibility === 'public' && <View style={styles.radioCircleInner} />}
-              </View>
-              <Text style={styles.radioText}>Public</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.radioOption} onPress={() => setFeedbackVisibility('attendees_only')}>
-              <View style={[styles.radioCircle, feedbackVisibility === 'attendees_only' && styles.radioCircleActive]}>
-                {feedbackVisibility === 'attendees_only' && <View style={styles.radioCircleInner} />}
-              </View>
-              <Text style={styles.radioText}>Attendees Only</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.radioOption} onPress={() => setFeedbackVisibility('host_only')}>
-              <View style={[styles.radioCircle, feedbackVisibility === 'host_only' && styles.radioCircleActive]}>
-                {feedbackVisibility === 'host_only' && <View style={styles.radioCircleInner} />}
-              </View>
-              <Text style={styles.radioText}>Host Only</Text>
-            </TouchableOpacity>
-          </View>
+          <FieldLabel>Feedback Visibility</FieldLabel>
+          <RadioGroup
+            value={feedbackVisibility}
+            onChange={setFeedbackVisibility}
+            options={[
+              { value: 'public', label: 'Public' },
+              { value: 'attendees_only', label: 'Attendees Only' },
+              { value: 'host_only', label: 'Host Only' },
+            ]}
+          />
         </View>
       )}
     </>
@@ -917,9 +1010,20 @@ export default function CreateEventScreen() {
 
   return (
     <View style={styles.container}>
-      {renderPageTabs()}
+      <ScreenHeader
+        title="Create Event"
+        leftLabel="Cancel"
+        onLeftPress={() => router.back()}
+      >
+        {renderStepper()}
+      </ScreenHeader>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {currentPage === 1 && renderPage1()}
         {currentPage === 2 && renderPage2()}
         {currentPage === 3 && renderPage3()}
@@ -927,11 +1031,11 @@ export default function CreateEventScreen() {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>
-            {currentPage === 3 ? 'Create Event' : 'Next'}
-          </Text>
-        </TouchableOpacity>
+        <Button
+          label={currentPage === 3 ? 'Create Event' : 'Next'}
+          onPress={handleNext}
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -940,313 +1044,278 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
   },
-  tabsContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  tabsWrapper: {
-    flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 25,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
+  stepper: {
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 22,
+    gap: spacing.sm,
   },
-  tabActive: {
-    backgroundColor: '#334155',
+  stepLabels: {
+    flexDirection: 'row',
+    gap: spacing.lg,
   },
-  tabText: {
-    fontSize: 13,
+  stepLabel: {
+    fontSize: 12,
     fontWeight: '500',
-    color: '#94a3b8',
+    color: colors.textMuted,
   },
-  tabTextActive: {
-    color: '#fff',
+  stepLabelActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   content: {
     flex: 1,
-    padding: 16,
+  },
+  contentInner: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
   },
   sectionHeader: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 8,
-    marginBottom: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    ...typography.h2,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   indentedSection: {
-    marginLeft: 16,
-    paddingLeft: 12,
+    marginLeft: spacing.xs,
+    paddingLeft: spacing.md,
     borderLeftWidth: 2,
-    borderLeftColor: '#334155',
+    borderLeftColor: colors.primarySoft,
   },
   inputLabel: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 8,
-    fontWeight: '500',
+    ...typography.label,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
   },
   requiredAsterisk: {
-    color: '#ef4444',
+    color: colors.danger,
   },
-  input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
+  optionalText: {
+    color: colors.textMuted,
+    fontWeight: '400',
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+  noMargin: {
+    marginBottom: 0,
   },
   coverPhotoBox: {
-    height: 100,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
+    height: 180,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    marginBottom: spacing.xl,
+    overflow: 'hidden',
+  },
+  coverPhotoInner: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
-    marginBottom: 16,
   },
-  coverPhotoIcon: {
-    fontSize: 24,
-    marginBottom: 4,
+  coverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: colors.overlay,
   },
-  coverPhotoText: {
+  coverPillText: {
+    color: colors.textOnImage,
     fontSize: 13,
-    color: '#94a3b8',
+    fontWeight: '600',
   },
   inlineToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
   },
   toggleLabel: {
-    fontSize: 14,
-    color: '#fff',
+    ...typography.label,
   },
   toggleInfo: {
     flex: 1,
   },
   toggleHint: {
-    fontSize: 12,
-    color: '#64748b',
+    ...typography.caption,
     marginTop: 2,
   },
   dateTimeRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
   },
   dateTimeField: {
     flex: 1,
   },
   privacyOptions: {
-    gap: 10,
+    gap: spacing.sm,
   },
   privacyOption: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.md,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   privacyOptionActive: {
-    borderColor: '#14b8a6',
-    backgroundColor: '#0f2a2a',
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  privacyIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   privacyOptionTitle: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
+    ...typography.label,
   },
   privacyOptionTitleActive: {
-    color: '#14b8a6',
+    color: colors.primaryDark,
   },
   privacyOptionHint: {
-    fontSize: 12,
-    color: '#64748b',
+    ...typography.caption,
     marginTop: 2,
   },
   radioGroup: {
-    gap: 8,
+    gap: spacing.sm,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 12,
-    gap: 10,
+    gap: spacing.md,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  radioOptionActive: {
+    borderColor: colors.primary,
   },
   radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#64748b',
+    borderColor: colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioCircleActive: {
-    borderColor: '#14b8a6',
+    borderColor: colors.primary,
   },
   radioCircleInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#14b8a6',
+    backgroundColor: colors.primary,
   },
   radioText: {
-    fontSize: 13,
-    color: '#fff',
+    ...typography.body,
   },
   checkboxGroup: {
-    gap: 8,
+    gap: spacing.sm,
   },
   checkboxOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#64748b',
+    borderColor: colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: spacing.md,
   },
   checkboxActive: {
-    backgroundColor: '#14b8a6',
-    borderColor: '#14b8a6',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   checkboxText: {
-    fontSize: 13,
-    color: '#fff',
+    ...typography.body,
   },
   categoryPills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  categoryPillActive: {
-    backgroundColor: '#14b8a6',
-    borderColor: '#14b8a6',
-  },
-  categoryPillText: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  categoryPillTextActive: {
-    color: '#fff',
-    fontWeight: '500',
+    gap: spacing.sm,
   },
   agendaSection: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   agendaItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   agendaTimeline: {
     width: 20,
     alignItems: 'center',
-    paddingTop: 10,
+    paddingTop: 12,
   },
   agendaDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#14b8a6',
+    backgroundColor: colors.primary,
   },
   agendaLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#334155',
+    backgroundColor: colors.border,
     marginTop: 4,
     minHeight: 30,
   },
   agendaIconBox: {
     width: 36,
     height: 36,
-    borderRadius: 8,
-    backgroundColor: '#1e293b',
+    borderRadius: radius.sm + 2,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
-  agendaIcon: {
-    fontSize: 16,
-  },
   agendaContent: {
     flex: 1,
-    paddingTop: 2,
+    paddingTop: 1,
   },
   agendaTime: {
-    fontSize: 11,
-    color: '#94a3b8',
+    ...typography.caption,
     marginBottom: 2,
   },
   agendaTitle: {
-    fontSize: 13,
-    color: '#fff',
-    fontWeight: '500',
+    ...typography.label,
   },
   removeButton: {
     padding: 6,
   },
-  removeIcon: {
-    fontSize: 12,
-    color: '#64748b',
-  },
   addAgendaForm: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
     padding: 14,
-    gap: 10,
+    gap: spacing.md,
   },
   agendaFormRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: spacing.sm,
   },
   timeInput: {
     flex: 1,
@@ -1260,88 +1329,49 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconOption: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#334155',
+    width: 38,
+    height: 38,
+    borderRadius: radius.sm + 2,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconOptionActive: {
-    backgroundColor: '#14b8a6',
-  },
-  iconText: {
-    fontSize: 16,
+    backgroundColor: colors.primary,
   },
   agendaFormButtons: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  cancelAgendaButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-  },
-  cancelAgendaText: {
-    color: '#94a3b8',
-    fontSize: 13,
-  },
-  addAgendaButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#14b8a6',
-    alignItems: 'center',
-  },
-  addAgendaText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    gap: spacing.sm,
   },
   addAgendaItemButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 12,
+    gap: 6,
+    height: 48,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.primary,
     borderStyle: 'dashed',
   },
-  addAgendaItemIcon: {
-    fontSize: 16,
-    color: '#14b8a6',
-    marginRight: 6,
-  },
   addAgendaItemText: {
-    fontSize: 13,
-    color: '#14b8a6',
-    fontWeight: '500',
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
   },
   bottomPadding: {
-    height: 100,
+    height: 110,
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
     paddingBottom: 34,
-    backgroundColor: '#0f172a',
-  },
-  nextButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  nextButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 });

@@ -1,9 +1,31 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
+import { IconButton, EmptyState, Ionicons } from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 interface CalendarEvent {
   id: string;
@@ -12,220 +34,230 @@ interface CalendarEvent {
   host: string;
 }
 
-// TODO: Replace with real data from API
+// TODO: Replace with real data from API (keyed by day of the visible month)
 const EVENTS_BY_DATE: Record<number, CalendarEvent[]> = {};
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const today = new Date();
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [selectedDay, setSelectedDay] = useState(today.getDate());
 
-  const getDaysInMonth = () => {
-    const days = [];
-    for (let i = 1; i <= 31; i++) {
-      days.push(i);
-    }
-    return days;
+  const visible = useMemo(
+    () => new Date(today.getFullYear(), today.getMonth() + monthOffset, 1),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthOffset]
+  );
+  const year = visible.getFullYear();
+  const month = visible.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Monday-first leading blanks
+  const leading = (visible.getDay() + 6) % 7;
+  const cells: (number | null)[] = [
+    ...Array.from({ length: leading }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const isToday = (day: number) => monthOffset === 0 && day === today.getDate();
+  const hasEvents = (day: number) => !!EVENTS_BY_DATE[day];
+
+  const changeMonth = (delta: number) => {
+    setMonthOffset((o) => o + delta);
+    setSelectedDay(1);
   };
 
-  const hasEvents = (day: number) => !!EVENTS_BY_DATE[day];
+  const dayEvents = EVENTS_BY_DATE[selectedDay];
 
   return (
     <View style={styles.container}>
-      <Header title="Calendar" showBack={true} onBack={() => router.push('/')} />
+      <Header title="Calendar" showBack />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Month Header */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Month header */}
         <View style={styles.monthHeader}>
-          <TouchableOpacity>
-            <Text style={styles.monthNav}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.monthTitle}>January 2026</Text>
-          <TouchableOpacity>
-            <Text style={styles.monthNav}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Days of Week */}
-        <View style={styles.weekDays}>
-          {DAYS_OF_WEEK.map(day => (
-            <Text key={day} style={styles.weekDayText}>{day}</Text>
-          ))}
-        </View>
-
-        {/* Calendar Grid */}
-        <View style={styles.calendarGrid}>
-          {getDaysInMonth().map(day => (
-            <TouchableOpacity
-              key={day}
-              style={[
-                styles.calendarDay,
-                selectedDay === day && styles.calendarDaySelected,
-              ]}
-              onPress={() => setSelectedDay(day)}
-            >
-              <Text style={[
-                styles.calendarDayText,
-                selectedDay === day && styles.calendarDayTextSelected,
-              ]}>
-                {day}
-              </Text>
-              {hasEvents(day) && <View style={styles.eventDot} />}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Selected Day Events */}
-        <View style={styles.eventsSection}>
-          <Text style={styles.eventsSectionTitle}>
-            Events on Jan {selectedDay}
+          <IconButton
+            name="chevron-back"
+            variant="filled"
+            size={18}
+            onPress={() => changeMonth(-1)}
+            accessibilityLabel="Previous month"
+          />
+          <Text style={typography.h2}>
+            {MONTH_NAMES[month]} {year}
           </Text>
-          
-          {EVENTS_BY_DATE[selectedDay] ? (
-            EVENTS_BY_DATE[selectedDay].map(event => (
+          <IconButton
+            name="chevron-forward"
+            variant="filled"
+            size={18}
+            onPress={() => changeMonth(1)}
+            accessibilityLabel="Next month"
+          />
+        </View>
+
+        {/* Days of week */}
+        <View style={styles.weekDays}>
+          {DAYS_OF_WEEK.map((day) => (
+            <Text key={day} style={styles.weekDayText}>
+              {day}
+            </Text>
+          ))}
+        </View>
+
+        {/* Grid */}
+        <View style={styles.calendarGrid}>
+          {cells.map((day, i) => {
+            if (day === null) {
+              return <View key={`blank-${i}`} style={styles.calendarDay} />;
+            }
+            const selected = selectedDay === day;
+            return (
+              <TouchableOpacity
+                key={day}
+                style={styles.calendarDay}
+                onPress={() => setSelectedDay(day)}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.dayCircle,
+                    isToday(day) && !selected && styles.dayCircleToday,
+                    selected && styles.dayCircleSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.calendarDayText,
+                      isToday(day) && styles.calendarDayTextToday,
+                      selected && styles.calendarDayTextSelected,
+                    ]}
+                  >
+                    {day}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.eventDot,
+                    !hasEvents(day) && { backgroundColor: 'transparent' },
+                  ]}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Selected day events */}
+        <View style={styles.eventsSection}>
+          <Text style={[typography.h2, { marginBottom: spacing.md }]}>
+            {MONTH_NAMES[month].slice(0, 3)} {selectedDay}
+          </Text>
+
+          {dayEvents ? (
+            dayEvents.map((event) => (
               <TouchableOpacity
                 key={event.id}
                 style={styles.eventItem}
                 onPress={() => router.push(`/event/${event.id}`)}
+                activeOpacity={0.8}
               >
                 <View style={styles.eventTime}>
                   <Text style={styles.eventTimeText}>{event.time}</Text>
                 </View>
-                <View style={styles.eventInfo}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  <Text style={styles.eventHost}>by {event.host}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={typography.h3} numberOfLines={1}>
+                    {event.title}
+                  </Text>
+                  <Text style={[typography.caption, { marginTop: 2 }]}>
+                    Hosted by {event.host}
+                  </Text>
                 </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textMuted}
+                />
               </TouchableOpacity>
             ))
           ) : (
-            <View style={styles.noEvents}>
-              <Text style={styles.noEventsText}>No events on this day</Text>
-            </View>
+            <EmptyState
+              icon="calendar-clear-outline"
+              title="No events on this day"
+              message="Pick another date or find something new to do."
+              actionLabel="Explore events"
+              onAction={() => router.push('/(tabs)/explore')}
+            />
           )}
         </View>
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f172a',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: GUTTER, paddingBottom: 100 },
   monthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  monthNav: {
-    fontSize: 28,
-    color: '#3b82f6',
-  },
-  monthTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  weekDays: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
+  weekDays: { flexDirection: 'row', marginBottom: spacing.sm },
   weekDayText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calendarDay: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  dayCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  calendarDaySelected: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 20,
-  },
-  calendarDayText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  calendarDayTextSelected: {
-    fontWeight: '700',
-  },
+  dayCircleToday: { backgroundColor: colors.primarySoft },
+  dayCircleSelected: { backgroundColor: colors.primary },
+  calendarDayText: { fontSize: 15, fontWeight: '500', color: colors.text },
+  calendarDayTextToday: { color: colors.primaryDark, fontWeight: '700' },
+  calendarDayTextSelected: { color: colors.primaryOn, fontWeight: '700' },
   eventDot: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: 3,
-    backgroundColor: '#3b82f6',
-    marginTop: 4,
+    backgroundColor: colors.primary,
+    marginTop: 3,
   },
   eventsSection: {
-    marginTop: 24,
-  },
-  eventsSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 16,
+    marginTop: spacing.xxl,
+    paddingTop: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
   eventItem: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
   eventTime: {
-    backgroundColor: '#334155',
-    borderRadius: 8,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    marginRight: 12,
-    alignSelf: 'flex-start',
   },
-  eventTimeText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  eventInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  eventTitle: {
-    fontSize: 15,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  eventHost: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  noEvents: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-  },
-  noEventsText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  bottomPadding: {
-    height: 100,
-  },
+  eventTimeText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
 });

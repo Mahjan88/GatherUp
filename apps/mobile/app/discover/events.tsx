@@ -1,15 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  Image,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
+import EventCard, { EventCardData } from '../../components/EventCard';
+import { ChipRow, EmptyState, SearchBar } from '../../components/ui';
+import { colors, spacing, typography, GUTTER } from '../../theme';
 
 interface EventItem {
   id: string;
@@ -20,6 +20,16 @@ interface EventItem {
   category: string;
   member_count: number;
 }
+
+type TimeFilter = 'all' | 'today' | 'week' | 'weekend' | 'month';
+
+const TIME_FILTERS: { value: TimeFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This Week' },
+  { value: 'weekend', label: 'This Weekend' },
+  { value: 'month', label: 'This Month' },
+];
 
 const PAGE_SIZE = 5;
 
@@ -33,17 +43,61 @@ async function fetchEvents(params: {
   offset: number;
 }): Promise<EventItem[]> {
   // Simulate network delay
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise((r) => setTimeout(r, 600));
   return ALL_EVENTS.slice(params.offset, params.offset + params.limit);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Client-side time window filter until the API supports it. */
+function matchesTime(date: Date, filter: TimeFilter): boolean {
+  if (filter === 'all') return true;
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const t = date.getTime();
+  if (filter === 'today') {
+    return t >= startOfToday.getTime() && t < startOfToday.getTime() + DAY_MS;
+  }
+  if (filter === 'week') {
+    return (
+      t >= startOfToday.getTime() && t < startOfToday.getTime() + 7 * DAY_MS
+    );
+  }
+  if (filter === 'weekend') {
+    const daysToSat = (6 - now.getDay() + 7) % 7;
+    const sat = startOfToday.getTime() + daysToSat * DAY_MS;
+    return t >= sat && t < sat + 2 * DAY_MS;
+  }
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+}
+
+const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+
+const toCardData = (item: EventItem): EventCardData => ({
+  id: item.id,
+  title: item.title,
+  image: item.cover_image_url ?? '',
+  date: new Date(item.start_time),
+  location: item.location ?? '',
+  hostName: '',
+  rsvpStatus: 'none',
+});
+
 export default function SeeAllEventsScreen() {
-  const router = useRouter();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [query, setQuery] = useState('');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
   // Initial load
   useState(() => {
@@ -72,81 +126,65 @@ export default function SeeAllEventsScreen() {
     }
   }, [offset, loadingMore, hasMore]);
 
+  // TODO: Move search + time filtering server-side
+  const visibleEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return events.filter(
+      (e) =>
+        matchesTime(new Date(e.start_time), timeFilter) &&
+        (!q ||
+          e.title.toLowerCase().includes(q) ||
+          (e.location ?? '').toLowerCase().includes(q))
+    );
+  }, [events, query, timeFilter]);
+
   const renderEvent = ({ item }: { item: EventItem }) => (
-    <TouchableOpacity
-      style={styles.eventRow}
-      onPress={() => router.push(`/event/${item.id}`)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.eventThumb}>
-        {item.cover_image_url ? (
-          <Image
-            source={{ uri: item.cover_image_url }}
-            style={styles.eventThumbImage}
-          />
-        ) : (
-          <Text style={styles.eventThumbPlaceholder}>📅</Text>
-        )}
-      </View>
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventDate}>
-          {new Date(item.start_time).toLocaleDateString(undefined, {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-          })}
-          {' · '}
-          {new Date(item.start_time).toLocaleTimeString(undefined, {
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
-        </Text>
-        <Text style={styles.eventTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        {item.location && (
-          <Text style={styles.eventLocation} numberOfLines={1}>
-            {item.location}
-          </Text>
-        )}
-        <View style={styles.eventMeta}>
-          {item.category !== 'other' && (
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>{item.category}</Text>
-            </View>
-          )}
-          {item.member_count > 0 && (
-            <Text style={styles.eventGoing}>
-              {item.member_count} going
-            </Text>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
+    <EventCard
+      event={toCardData(item)}
+      variant="feature"
+      category={
+        item.category !== 'other' ? capitalize(item.category) : undefined
+      }
+      goingCount={item.member_count}
+    />
   );
 
   const renderFooter = () => {
     if (loadingMore) {
       return (
         <View style={styles.footerLoader}>
-          <ActivityIndicator color="#14b8a6" />
+          <ActivityIndicator color={colors.primary} />
         </View>
       );
     }
-    if (!hasMore && events.length > 0) {
-      return (
-        <Text style={styles.endText}>You've reached the end</Text>
-      );
+    if (!hasMore && visibleEvents.length > 0) {
+      return <Text style={styles.endText}>You've reached the end</Text>;
     }
     return null;
   };
 
+  const header = (
+    <Header title="Events Near You" showBack>
+      <SearchBar
+        placeholder="Search events"
+        value={query}
+        onChangeText={setQuery}
+        style={styles.search}
+      />
+      <ChipRow
+        options={TIME_FILTERS}
+        value={timeFilter}
+        onChange={setTimeFilter}
+      />
+    </Header>
+  );
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="Events Near You" showBack />
+        {header}
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#14b8a6" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     );
@@ -154,14 +192,15 @@ export default function SeeAllEventsScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Events Near You" showBack />
+      {header}
 
-      {events.length > 0 ? (
+      {visibleEvents.length > 0 ? (
         <FlatList
-          data={events}
+          data={visibleEvents}
           keyExtractor={(item) => item.id}
           renderItem={renderEvent}
           contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ height: spacing.lg }} />}
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
@@ -169,11 +208,11 @@ export default function SeeAllEventsScreen() {
         />
       ) : (
         <View style={styles.centered}>
-          <Text style={styles.emptyEmoji}>📅</Text>
-          <Text style={styles.emptyTitle}>No events found</Text>
-          <Text style={styles.emptyText}>
-            Try a different time range or check back later
-          </Text>
+          <EmptyState
+            icon="calendar-outline"
+            title="No events found"
+            message="Try a different time range or check back later"
+          />
         </View>
       )}
     </View>
@@ -183,108 +222,29 @@ export default function SeeAllEventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
+  },
+  search: {
+    marginHorizontal: GUTTER,
   },
   centered: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingBottom: 80,
   },
   list: {
-    padding: 16,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 100,
   },
-  // Event row (vertical list card)
-  eventRow: {
-    flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  eventThumb: {
-    width: 100,
-    height: 110,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  eventThumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  eventThumbPlaceholder: {
-    fontSize: 28,
-  },
-  eventInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  eventDate: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#14b8a6',
-    marginBottom: 4,
-  },
-  eventTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  eventLocation: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  eventMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryBadge: {
-    backgroundColor: '#334155',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  categoryBadgeText: {
-    fontSize: 10,
-    color: '#94a3b8',
-    textTransform: 'capitalize',
-  },
-  eventGoing: {
-    fontSize: 10,
-    color: '#475569',
-  },
-  // Footer
   footerLoader: {
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
     alignItems: 'center',
   },
   endText: {
+    ...typography.caption,
+    color: colors.textMuted,
     textAlign: 'center',
-    color: '#475569',
-    fontSize: 13,
-    paddingVertical: 16,
-  },
-  // Empty
-  emptyEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 18,
+    paddingVertical: spacing.xl,
   },
 });

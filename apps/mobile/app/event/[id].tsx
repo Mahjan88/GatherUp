@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, Linking } from 'react-native';
+import { ReactNode, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Linking,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import BottomTabBar from '../../components/BottomTabBar';
 import SlideUpModal from '../../components/SlideUpModal';
-
-// Import icons (512px for high-DPI quality)
-const GalleryIcon = require('../../assets/Icons/media_gallery_icon.png');
-const ChatIcon = require('../../assets/Icons/group_chat_icon.png');
-const LocationIcon = require('../../assets/Icons/location_icon.png');
-
-const { width, height } = Dimensions.get('window');
+import {
+  Avatar,
+  AvatarStack,
+  Button,
+  EmptyState,
+  IconButton,
+  Ionicons,
+  IconName,
+  ScreenHeader,
+  UnderlineTabs,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 // TODO: Replace with real data fetched from API using the event ID
 
@@ -18,6 +30,9 @@ interface EventDetail {
   id: string;
   title: string;
   organizer: string;
+  organizerAvatar?: string;
+  organizerVerified?: boolean;
+  communityName?: string;
   image: string;
   description: string;
   date: string;
@@ -29,9 +44,39 @@ interface EventDetail {
   isPrivate: boolean;
   isFree: boolean;
   isGroupChatEnabled?: boolean;
+  category?: string;
+  tags?: string[];
+  goingCount?: number;
+  spotsLeft?: number;
   friendsAttending: { id: string; name: string; avatar: string }[];
   mutualFriends: number;
   agenda: { time: string; title: string }[];
+}
+
+type DetailTab = 'about' | 'chat' | 'photos' | 'attendees';
+type RsvpState = 'none' | 'going';
+
+const HERO_HEIGHT = 260;
+
+/** Icon + content line used for the location / date / category rows. */
+function DetailMetaRow({
+  icon,
+  children,
+  onPress,
+}: {
+  icon: IconName;
+  children: ReactNode;
+  onPress?: () => void;
+}) {
+  const Wrapper: any = onPress ? TouchableOpacity : View;
+  return (
+    <Wrapper style={styles.metaRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.metaIcon}>
+        <Ionicons name={icon} size={18} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>{children}</View>
+    </Wrapper>
+  );
 }
 
 export default function EventDetailScreen() {
@@ -39,6 +84,11 @@ export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<DetailTab>('about');
+  const [saved, setSaved] = useState(false);
+  const [following, setFollowing] = useState(false);
+  // TODO: Wire RSVP to the API
+  const [rsvp, setRsvp] = useState<RsvpState>('none');
 
   // TODO: Fetch real data from API using the event ID
   const [event, setEvent] = useState<EventDetail | null>(null);
@@ -46,16 +96,13 @@ export default function EventDetailScreen() {
   if (!event) {
     return (
       <View style={styles.container}>
-        <View style={styles.emptyState}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push('/')}
-          >
-            <Text style={styles.backButtonText}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.emptyStateIcon}>📅</Text>
-          <Text style={styles.emptyStateTitle}>Event not found</Text>
-          <Text style={styles.emptyStateText}>This event may have been removed or is no longer available.</Text>
+        <ScreenHeader showBack onBack={() => router.push('/(tabs)/explore')} />
+        <View style={styles.emptyWrap}>
+          <EmptyState
+            icon="calendar-outline"
+            title="Event not found"
+            message="This event may have been removed or is no longer available."
+          />
         </View>
       </View>
     );
@@ -69,9 +116,46 @@ export default function EventDetailScreen() {
     Linking.openURL(url);
   };
 
+  const tabs: { value: DetailTab; label: string }[] = [
+    { value: 'about', label: 'About' },
+    ...(event.isGroupChatEnabled
+      ? [{ value: 'chat' as DetailTab, label: 'Chat' }]
+      : []),
+    { value: 'photos', label: 'Photos' },
+    { value: 'attendees', label: 'Attendees' },
+  ];
+
+  const handleTabChange = (tab: DetailTab) => {
+    if (tab === 'chat') {
+      router.push(`/chat/${id}`);
+      return;
+    }
+    if (tab === 'photos') {
+      router.push(`/gallery/${id}`);
+      return;
+    }
+    setActiveTab(tab);
+  };
+
+  const goingCount = event.goingCount ?? event.friendsAttending.length;
+  const goingLabel = [
+    `${goingCount} going`,
+    event.spotsLeft != null ? `${event.spotsLeft} spots left` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const categoryLine = [event.category, ...(event.tags ?? [])]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
+      >
         {/* Hero Image */}
         <View style={styles.heroContainer}>
           <Image
@@ -79,119 +163,212 @@ export default function EventDetailScreen() {
             style={styles.heroImage}
             resizeMode="cover"
           />
-
-          {/* Back Button */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.push('/')}
-          >
-            <Text style={styles.backButtonText}>‹</Text>
-          </TouchableOpacity>
+          <View style={styles.heroActions}>
+            <IconButton
+              name="chevron-back"
+              variant="glass"
+              onPress={() => router.push('/(tabs)/explore')}
+              accessibilityLabel="Back"
+            />
+            <View style={styles.heroActionsRight}>
+              <IconButton
+                name="share-outline"
+                variant="glass"
+                size={20}
+                // TODO: Implement share
+                onPress={() => {}}
+                accessibilityLabel="Share"
+              />
+              <IconButton
+                name={saved ? 'bookmark' : 'bookmark-outline'}
+                variant="glass"
+                size={20}
+                onPress={() => setSaved((s) => !s)}
+                accessibilityLabel="Save"
+              />
+            </View>
+          </View>
 
           {/* Private Event Badge */}
           {event.isPrivate && (
             <View style={styles.privateBadge}>
+              <Ionicons name="lock-closed" size={12} color={colors.primaryOn} />
               <Text style={styles.privateBadgeText}>Private Event</Text>
             </View>
           )}
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Event Title */}
+        {/* Content sheet */}
+        <View style={styles.sheet}>
+          <Text style={styles.dateLine}>
+            {`${event.date} · ${event.time}`.toUpperCase()}
+          </Text>
           <Text style={styles.eventTitle}>{event.title}</Text>
-          
-          {/* Date & Time */}
-          <Text style={styles.dateTime}>{event.date} • {event.time}</Text>
 
-          {/* Action Icons */}
-          <View style={styles.actionIcons}>
-            {event.isGroupChatEnabled && (
-                <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/chat/${id}`)}>
-                  <View style={styles.actionCircle}>
-                    <Image source={ChatIcon} style={styles.actionIcon} resizeMode="contain" />
-                    <View style={styles.chatBadge}>
-                      <Text style={styles.chatBadgeText}>5</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.actionLabel}>Group Chat</Text>
-                </TouchableOpacity>
-            )}
-            
-            <TouchableOpacity style={styles.actionItem} onPress={() => router.push(`/gallery/${id}`)}>
-              <View style={styles.actionCircle}>
-                <Image source={GalleryIcon} style={styles.actionIcon} resizeMode="contain" />
-              </View>
-              <Text style={styles.actionLabel}>Gallery</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.actionItem} onPress={() => setShowLocationModal(true)}>
-              <View style={styles.actionCircle}>
-                <Image source={LocationIcon} style={styles.actionIcon} resizeMode="contain" />
-              </View>
-              <Text style={styles.actionLabel}>Location</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Event Description */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Event Description</Text>
-            <Text style={styles.descriptionText} numberOfLines={5}>
-              {event.description}
-            </Text>
-            <TouchableOpacity onPress={() => setShowDescriptionModal(true)}>
-              <Text style={styles.seeMoreText}>See More</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Who's Going */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Who's Going</Text>
-            <View style={styles.attendeesRow}>
-              <View style={styles.avatarsStack}>
-                {event.friendsAttending.map((friend, index) => (
-                  <Image 
-                    key={friend.id}
-                    source={{ uri: friend.avatar }}
-                    style={[styles.attendeeAvatar, { marginLeft: index > 0 ? -12 : 0, zIndex: 3 - index }]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.attendeesText}>{event.mutualFriends} mutual friends are going</Text>
+          {/* Host row */}
+          <View style={styles.hostRow}>
+            <Avatar
+              uri={event.organizerAvatar}
+              name={event.organizer}
+              size={44}
+              badge={event.organizerVerified ? 'verified' : undefined}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.hostName} numberOfLines={1}>
+                Hosted by {event.organizer}
+              </Text>
+              {!!event.communityName && (
+                <Text style={typography.caption} numberOfLines={1}>
+                  {event.communityName}
+                </Text>
+              )}
             </View>
+            <Button
+              label={following ? 'Following' : 'Follow'}
+              variant={following ? 'soft' : 'outline'}
+              size="sm"
+              onPress={() => setFollowing((f) => !f)}
+            />
           </View>
 
-          {/* Agenda */}
-          {event.agenda.length > 0 && (
+          {/* Meta rows */}
+          <View style={styles.metaList}>
+            <DetailMetaRow
+              icon="location-outline"
+              onPress={() => setShowLocationModal(true)}
+            >
+              <Text style={styles.metaTitle} numberOfLines={1}>
+                {event.location}
+              </Text>
+              <View style={styles.metaSubRow}>
+                <Text
+                  style={[typography.caption, { flexShrink: 1 }]}
+                  numberOfLines={1}
+                >
+                  {event.city}
+                </Text>
+                <TouchableOpacity onPress={openInMaps} hitSlop={8}>
+                  <Text style={styles.link}>Get Directions</Text>
+                </TouchableOpacity>
+              </View>
+            </DetailMetaRow>
+
+            <DetailMetaRow icon="calendar-outline">
+              <Text style={styles.metaTitle}>{event.date}</Text>
+              <Text style={typography.caption}>{event.time}</Text>
+            </DetailMetaRow>
+
+            {!!categoryLine && (
+              <DetailMetaRow icon="pricetag-outline">
+                <Text style={styles.metaTitle} numberOfLines={1}>
+                  {categoryLine}
+                </Text>
+                {event.isFree && (
+                  <Text style={typography.caption}>Free event</Text>
+                )}
+              </DetailMetaRow>
+            )}
+          </View>
+
+          {/* Going */}
+          <View style={styles.goingRow}>
+            <AvatarStack
+              people={event.friendsAttending.map((f) => ({
+                uri: f.avatar,
+                name: f.name,
+              }))}
+              size={28}
+              max={4}
+              label={goingLabel}
+            />
+          </View>
+        </View>
+
+        <UnderlineTabs
+          tabs={tabs}
+          value={activeTab}
+          onChange={handleTabChange}
+        />
+
+        <View style={styles.tabContent}>
+          {activeTab === 'about' && (
+            <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Agenda</Text>
-                <View style={styles.agendaList}>
+                <Text style={styles.sectionTitle}>About this event</Text>
+                <Text style={styles.descriptionText} numberOfLines={5}>
+                  {event.description}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowDescriptionModal(true)}
+                  hitSlop={8}
+                >
+                  <Text style={[styles.link, { marginTop: spacing.sm }]}>
+                    See More
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Agenda */}
+              {event.agenda.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Agenda</Text>
                   {event.agenda.map((item, index) => (
                     <View key={index} style={styles.agendaItem}>
-                      <View style={styles.agendaTimeline}>
-                        <View style={styles.agendaLine} />
-                      </View>
-                      <Text style={styles.agendaText}>
-                        <Text style={styles.agendaTime}>{item.time}: </Text>
-                        {item.title}
-                      </Text>
+                      <View style={styles.agendaDot} />
+                      <Text style={styles.agendaTime}>{item.time}</Text>
+                      <Text style={styles.agendaText}>{item.title}</Text>
                     </View>
                   ))}
                 </View>
-              </View>
+              )}
+            </>
           )}
 
-          <View style={styles.bottomPadding} />
+          {activeTab === 'attendees' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Who's Going</Text>
+              <Text style={[typography.bodySecondary, { marginBottom: 12 }]}>
+                {event.mutualFriends} mutual friends are going
+              </Text>
+              {event.friendsAttending.map((friend) => (
+                <View key={friend.id} style={styles.attendeeRow}>
+                  <Avatar uri={friend.avatar} name={friend.name} size={44} />
+                  <Text style={styles.hostName}>{friend.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 
-      {/* Bottom Tab Bar */}
-      <BottomTabBar 
-        middleButton={{
-          label: 'RSVP',
-          onPress: () => {},
-        }}
-      />
+      {/* Sticky bottom CTA */}
+      <View style={styles.bottomBar}>
+        {rsvp === 'going' ? (
+          <View style={styles.bottomRow}>
+            <Button
+              label="You're Going"
+              variant="outline"
+              icon="checkmark-circle"
+              onPress={() => setRsvp('none')}
+              style={{ flex: 1 }}
+            />
+            {event.isGroupChatEnabled && (
+              <Button
+                label="Chat"
+                variant="soft"
+                icon="chatbubbles-outline"
+                onPress={() => router.push(`/chat/${id}`)}
+              />
+            )}
+          </View>
+        ) : (
+          <Button
+            label="Join Event"
+            fullWidth
+            onPress={() => setRsvp('going')}
+          />
+        )}
+      </View>
 
       {/* Location Modal */}
       <SlideUpModal
@@ -201,38 +378,41 @@ export default function EventDetailScreen() {
         minHeight={0.45}
         maxHeight={0.6}
       >
-        {/* Location Header */}
         <View style={styles.locationHeader}>
           <View style={styles.locationIconCircle}>
-            <Image source={LocationIcon} style={styles.locationModalIcon} resizeMode="contain" />
+            <Ionicons name="location" size={24} color={colors.primary} />
           </View>
           <View style={styles.locationInfo}>
             <Text style={styles.locationName}>{event.location}</Text>
-            <Text style={styles.locationAddress}>{event.address}</Text>
-            <Text style={styles.locationCity}>{event.city}</Text>
+            <Text style={typography.bodySecondary}>{event.address}</Text>
+            <Text style={typography.bodySecondary}>{event.city}</Text>
           </View>
         </View>
 
-        {/* Map Preview */}
         <TouchableOpacity style={styles.mapContainer} onPress={openInMaps}>
-          <Image 
+          <Image
             source={{ uri: staticMapUrl }}
             style={styles.mapPreview}
             resizeMode="cover"
           />
-          <View style={styles.mapPinOverlay}>
-            <Text style={styles.mapPinEmoji}>📍</Text>
+          <View style={styles.mapPinOverlay} pointerEvents="none">
+            <Ionicons name="location" size={32} color={colors.danger} />
           </View>
         </TouchableOpacity>
 
-        {/* Actions */}
         <View style={styles.locationActions}>
-          <TouchableOpacity style={styles.openMapsButton} onPress={openInMaps}>
-            <Text style={styles.openMapsText}>Open in Maps</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.copyAddressButton}>
-            <Text style={styles.copyAddressText}>Copy Address</Text>
-          </TouchableOpacity>
+          <Button
+            label="Open in Maps"
+            icon="navigate-outline"
+            onPress={openInMaps}
+            style={{ flex: 1 }}
+          />
+          <Button
+            label="Copy Address"
+            variant="outline"
+            icon="copy-outline"
+            style={{ flex: 1 }}
+          />
         </View>
       </SlideUpModal>
 
@@ -249,252 +429,210 @@ export default function EventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#0f172a',
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  scrollView: { 
+  scrollView: {
     flex: 1,
   },
-  heroContainer: { 
-    height: 280, 
-    position: 'relative',
+  emptyWrap: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  heroImage: { 
-    width: '100%', 
+
+  heroContainer: {
+    height: HERO_HEIGHT,
+    backgroundColor: colors.surfaceAlt,
+  },
+  heroImage: {
+    width: '100%',
     height: '100%',
+  },
+  heroActions: {
+    position: 'absolute',
+    top: 56,
+    left: GUTTER - 4,
+    right: GUTTER - 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  heroActionsRight: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   privateBadge: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    backgroundColor: '#14b8a6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    bottom: 32,
+    left: GUTTER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
   },
   privateBadgeText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: colors.primaryOn,
+    fontSize: 12,
+    fontWeight: '700',
   },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  sheet: {
+    marginTop: -radius.xl,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    backgroundColor: colors.background,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '300',
-    marginTop: -2,
+  dateLine: {
+    ...typography.overline,
+    marginBottom: 6,
   },
-  content: { 
-    flex: 1, 
-    paddingHorizontal: 20,
-    paddingTop: 24,
+  eventTitle: {
+    ...typography.h1,
+    marginBottom: spacing.lg,
   },
-  eventTitle: { 
-    fontSize: 28, 
-    fontWeight: '700', 
-    color: '#fff',
-    marginBottom: 8,
-  },
-  dateTime: {
-    fontSize: 16,
-    color: '#94a3b8',
-    marginBottom: 24,
-  },
-  actionIcons: {
+
+  hostRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: 32,
-    marginBottom: 32,
-  },
-  actionItem: {
     alignItems: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
-  actionCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: '#14b8a6',
+  hostName: {
+    ...typography.h3,
+  },
+
+  metaList: {
+    paddingTop: spacing.lg,
+    gap: spacing.lg,
+  },
+  metaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
+    gap: spacing.md,
   },
-  actionIcon: {
+  metaIcon: {
     width: 36,
     height: 36,
-    tintColor: '#14b8a6',
-  },
-  actionLabel: {
-    fontSize: 12,
-    color: '#94a3b8',
-  },
-  chatBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: radius.sm + 2,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderWidth: 2,
-    borderColor: '#0f172a',
   },
-  chatBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
+  metaTitle: {
+    ...typography.label,
   },
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12,
-  },
-  descriptionText: {
-    fontSize: 15,
-    color: '#94a3b8',
-    lineHeight: 24,
-  },
-  seeMoreText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#14b8a6',
-    marginTop: 8,
-  },
-  attendeesRow: {
+  metaSubRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.sm,
+    marginTop: 2,
   },
-  avatarsStack: {
-    flexDirection: 'row',
+  link: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.link,
   },
-  attendeeAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#0f172a',
+
+  goingRow: {
+    marginTop: spacing.xl,
   },
-  attendeesText: {
-    fontSize: 14,
-    color: '#94a3b8',
+
+  tabContent: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.xl,
   },
-  agendaList: {
-    paddingLeft: 8,
+  section: {
+    marginBottom: spacing.xxl,
+  },
+  sectionTitle: {
+    ...typography.h2,
+    marginBottom: spacing.sm,
+  },
+  descriptionText: {
+    ...typography.bodySecondary,
+    lineHeight: 22,
   },
   agendaItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  agendaTimeline: {
-    width: 20,
     alignItems: 'center',
-    paddingTop: 8,
+    gap: spacing.sm,
+    paddingVertical: 8,
   },
-  agendaLine: {
-    width: 3,
-    height: 20,
-    backgroundColor: '#14b8a6',
-    borderRadius: 2,
-  },
-  agendaText: {
-    fontSize: 15,
-    color: '#fff',
-    flex: 1,
-    paddingTop: 4,
+  agendaDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
   },
   agendaTime: {
-    color: '#94a3b8',
+    ...typography.label,
+    color: colors.textSecondary,
+    minWidth: 72,
   },
-  bottomPadding: {
-    height: 120,
-  },
-  emptyState: {
+  agendaText: {
+    ...typography.body,
     flex: 1,
+  },
+  attendeeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
+    paddingBottom: 34,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
+  bottomRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  
+
   // Location Modal Content Styles
   locationHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   locationIconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-  },
-  locationModalIcon: {
-    width: 40,
-    height: 40,
-    tintColor: '#14b8a6',
   },
   locationInfo: {
     flex: 1,
   },
   locationName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
+    ...typography.h2,
     marginBottom: 4,
-  },
-  locationAddress: {
-    fontSize: 15,
-    color: '#94a3b8',
-    marginBottom: 2,
-  },
-  locationCity: {
-    fontSize: 15,
-    color: '#94a3b8',
   },
   mapContainer: {
     height: 180,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: 'hidden',
-    marginBottom: 20,
-    position: 'relative',
-    backgroundColor: '#e5e7eb',
+    marginBottom: spacing.xl,
+    backgroundColor: colors.surfaceAlt,
   },
   mapPreview: {
     width: '100%',
@@ -504,45 +642,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    marginTop: -20,
-    marginLeft: -15,
-  },
-  mapPinEmoji: {
-    fontSize: 32,
+    marginTop: -32,
+    marginLeft: -16,
   },
   locationActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  openMapsButton: {
-    flex: 1,
-    backgroundColor: '#14b8a6',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  openMapsText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  copyAddressButton: {
-    flex: 1,
-    backgroundColor: '#334155',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  copyAddressText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Description Modal Content Styles
   descriptionModalText: {
-    fontSize: 16,
-    color: '#e2e8f0',
-    lineHeight: 26,
+    ...typography.body,
+    lineHeight: 24,
   },
 });

@@ -1,97 +1,109 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+/**
+ * @deprecated The app now uses the Expo Router `Tabs` bar defined in
+ * `app/(tabs)/_layout.tsx`. This component mirrors that bar visually so any
+ * remaining callers render consistently. Prefer a sticky bottom CTA on pushed
+ * screens instead of rendering this.
+ */
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-
-// Import icons
-const HomeIcon = require('../assets/Icons/home_icon.png');
-const CalendarIcon = require('../assets/Icons/calendar_icon.png');
-const ChatIcon = require('../assets/Icons/message_icon.png');
-const NotificationIcon = require('../assets/Icons/notification_icon.png');
+import { Ionicons, IconName, Button } from './ui';
+import { colors, spacing } from '../theme';
 
 interface BottomTabBarProps {
+  /** Optional inline action rendered between the tabs (legacy, e.g. RSVP). */
   middleButton?: {
     label: string;
     onPress: () => void;
   };
+  /** Legacy: hides the middle action. */
   hideMiddleButton?: boolean;
 }
 
-export default function BottomTabBar({ middleButton, hideMiddleButton }: BottomTabBarProps) {
+const TABS: {
+  label: string;
+  route: string;
+  icon: IconName;
+  activeIcon: IconName;
+}[] = [
+  {
+    label: 'Explore',
+    route: '/explore',
+    icon: 'compass-outline',
+    activeIcon: 'compass',
+  },
+  {
+    label: 'My Events',
+    route: '/my-events',
+    icon: 'calendar-outline',
+    activeIcon: 'calendar',
+  },
+  {
+    label: 'Communities',
+    route: '/communities',
+    icon: 'people-outline',
+    activeIcon: 'people',
+  },
+  {
+    label: 'Chats',
+    route: '/messages',
+    icon: 'chatbubble-ellipses-outline',
+    activeIcon: 'chatbubble-ellipses',
+  },
+  {
+    label: 'Profile',
+    route: '/profile',
+    icon: 'person-outline',
+    activeIcon: 'person',
+  },
+];
+
+export default function BottomTabBar({
+  middleButton,
+  hideMiddleButton,
+}: BottomTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isActive = (path: string) => {
-    if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
-    return false;
+  const isActive = (path: string) => pathname.startsWith(path);
+
+  const renderTab = (tab: (typeof TABS)[number]) => {
+    const active = isActive(tab.route);
+    const color = active ? colors.primary : colors.textMuted;
+    return (
+      <TouchableOpacity
+        key={tab.route}
+        style={styles.tabItem}
+        onPress={() => router.push(tab.route as any)}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: active }}
+      >
+        <Ionicons
+          name={active ? tab.activeIcon : tab.icon}
+          size={24}
+          color={color}
+        />
+        <Text style={[styles.tabLabel, { color }]} numberOfLines={1}>
+          {tab.label}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
-  const handleCreatePress = () => {
-    router.push('/event/create');
-  };
+  const showMiddle = !!middleButton && !hideMiddleButton;
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={styles.tabItem} 
-        onPress={() => router.push('/')}
-      >
-        <Image 
-          source={HomeIcon} 
-          style={[styles.tabIcon, isActive('/') && styles.tabIconActive]} 
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.tabItem}
-        onPress={() => router.push('/calendar')}
-      >
-        <Image
-          source={CalendarIcon}
-          style={[styles.tabIcon, isActive('/calendar') && styles.tabIconActive]}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-
-      {!hideMiddleButton && (
-        middleButton ? (
-          <TouchableOpacity 
-            style={styles.middleButtonCustom}
+      {TABS.slice(0, 2).map(renderTab)}
+      {showMiddle && middleButton && (
+        <View style={styles.middle}>
+          <Button
+            label={middleButton.label}
             onPress={middleButton.onPress}
-          >
-            <Text style={styles.middleButtonText}>{middleButton.label}</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity 
-            style={styles.middleButton}
-            onPress={handleCreatePress}
-          >
-            <Text style={styles.middleButtonIcon}>+</Text>
-          </TouchableOpacity>
-        )
+            size="sm"
+          />
+        </View>
       )}
-
-      <TouchableOpacity 
-        style={styles.tabItem}
-        onPress={() => router.push('/messages')}
-      >
-        <Image 
-          source={ChatIcon} 
-          style={[styles.chatIcon, isActive('/messages') && styles.chatIconActive]} 
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.tabItem}
-        onPress={() => router.push('/notifications')}
-      >
-        <Image 
-          source={NotificationIcon} 
-          style={[styles.tabIcon, isActive('/notifications') && styles.tabIconActive]} 
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
+      {TABS.slice(2).map(renderTab)}
     </View>
   );
 }
@@ -102,74 +114,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    height: 84,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#0f172a',
-    paddingTop: 12,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
+    alignItems: 'flex-start',
+    backgroundColor: colors.surface,
+    paddingTop: spacing.sm,
+    paddingBottom: 26,
     borderTopWidth: 1,
-    borderTopColor: '#1e293b',
+    borderTopColor: colors.border,
   },
   tabItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 50,
-    height: 40,
+    gap: 2,
   },
-  tabIcon: { 
-    width: 26,
-    height: 26,
-    tintColor: '#64748b',
-  },
-  tabIconActive: {
-    width: 30,
-    height: 30,
-    tintColor: '#14b8a6',
-  },
-  chatIcon: {
-    width: 30,
-    height: 30,
-    tintColor: '#64748b',
-  },
-  chatIconActive: {
-    width: 34,
-    height: 34,
-    tintColor: '#14b8a6',
-  },
-  middleButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#14b8a6',
+  tabLabel: { fontSize: 11, fontWeight: '600' },
+  middle: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -10,
-    shadowColor: '#14b8a6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  middleButtonIcon: {
-    fontSize: 26,
-    color: '#0f172a',
-    fontWeight: '300',
-    marginTop: -2,
-  },
-  middleButtonCustom: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#14b8a6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 22,
-    marginTop: -10,
-  },
-  middleButtonText: { 
-    fontSize: 14, 
-    fontWeight: '700', 
-    color: '#14b8a6',
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
   },
 });

@@ -1,16 +1,84 @@
-import { useState } from 'react';
+import { Children, Fragment, ReactNode, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
-import BottomTabBar from '../../components/BottomTabBar';
+import {
+  Avatar,
+  Button,
+  Chip,
+  Divider,
+  IconName,
+  Ionicons,
+  ListRow,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+
+const INTEREST_OPTIONS: { label: string; icon: IconName }[] = [
+  { label: 'Hiking', icon: 'walk-outline' },
+  { label: 'Food & Drink', icon: 'restaurant-outline' },
+  { label: 'Sports', icon: 'basketball-outline' },
+  { label: 'Music', icon: 'musical-notes-outline' },
+  { label: 'Arts', icon: 'color-palette-outline' },
+  { label: 'Tech', icon: 'laptop-outline' },
+  { label: 'Photography', icon: 'camera-outline' },
+  { label: 'Fitness', icon: 'barbell-outline' },
+  { label: 'Games', icon: 'game-controller-outline' },
+  { label: 'Travel', icon: 'airplane-outline' },
+];
+
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.formSection}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </View>
+  );
+}
+
+function SettingsGroup({ children }: { children: ReactNode }) {
+  const rows = Children.toArray(children);
+  return (
+    <View style={styles.group}>
+      {rows.map((row, i) => (
+        <Fragment key={i}>
+          {i > 0 && <Divider style={styles.rowDivider} />}
+          {row}
+        </Fragment>
+      ))}
+    </View>
+  );
+}
+
+function SettingSwitch({
+  value,
+  onValueChange,
+}: {
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+}) {
+  return (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: colors.border, true: colors.primary }}
+      thumbColor={colors.surface}
+    />
+  );
+}
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -26,6 +94,8 @@ export default function EditProfileScreen() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
+  // TODO: Persist interests via API
+  const [interests, setInterests] = useState<string[]>([]);
 
   // Privacy settings (stored in privacy_settings JSONB)
   const [profilePublic, setProfilePublic] = useState(true);
@@ -33,310 +103,264 @@ export default function EditProfileScreen() {
   const [showPhone, setShowPhone] = useState(false);
   const [showLocation, setShowLocation] = useState(true);
 
+  const toggleInterest = (label: string) => {
+    setInterests((prev) =>
+      prev.includes(label) ? prev.filter((i) => i !== label) : [...prev, label]
+    );
+  };
+
   const handleSave = () => {
     // TODO: Call API to update user profile
     router.back();
   };
 
+  const displayName = [firstName, lastName].filter(Boolean).join(' ');
+
   return (
     <View style={styles.container}>
       <Header showBack title="Edit Profile" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity style={styles.avatarLarge}>
-            <Text style={styles.avatarText}>?</Text>
+          <TouchableOpacity activeOpacity={0.85} style={styles.avatarWrap}>
+            <Avatar name={displayName || '?'} size={96} />
+            <View style={styles.cameraBadge}>
+              <Ionicons name="camera" size={16} color={colors.primaryOn} />
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity hitSlop={8}>
             <Text style={styles.changePhotoText}>Change photo</Text>
           </TouchableOpacity>
         </View>
 
         {/* Basic Info */}
-        <Text style={styles.sectionHeader}>Basic info</Text>
-
-        <View style={styles.fieldRow}>
-          <View style={styles.fieldHalf}>
-            <Text style={styles.fieldLabel}>
-              First name <Text style={styles.required}>*</Text>
-            </Text>
-            <TextInput
-              style={styles.input}
+        <FormSection title="Basic info">
+          <View style={styles.fieldRow}>
+            <TextField
+              label="First name *"
               placeholder="First name"
-              placeholderTextColor="#64748b"
               value={firstName}
               onChangeText={setFirstName}
+              containerStyle={styles.fieldHalf}
             />
-          </View>
-          <View style={styles.fieldHalf}>
-            <Text style={styles.fieldLabel}>Last name</Text>
-            <TextInput
-              style={styles.input}
+            <TextField
+              label="Last name"
               placeholder="Last name"
-              placeholderTextColor="#64748b"
               value={lastName}
               onChangeText={setLastName}
+              containerStyle={styles.fieldHalf}
             />
           </View>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Username</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label="Username"
             placeholder="@username"
-            placeholderTextColor="#64748b"
+            icon="at-outline"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
           />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Tagline</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label="Tagline"
             placeholder="A short intro about you"
-            placeholderTextColor="#64748b"
             value={tagline}
             onChangeText={setTagline}
           />
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Bio</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
+          <TextField
+            label="Bio"
             placeholder="Tell people about yourself"
-            placeholderTextColor="#64748b"
             value={bio}
             onChangeText={setBio}
             multiline
             numberOfLines={4}
           />
-        </View>
+        </FormSection>
+
+        {/* Interests */}
+        <FormSection title="Interests">
+          <View style={styles.chips}>
+            {INTEREST_OPTIONS.map((opt) => (
+              <Chip
+                key={opt.label}
+                label={opt.label}
+                icon={opt.icon}
+                variant="tag"
+                selected={interests.includes(opt.label)}
+                onPress={() => toggleInterest(opt.label)}
+              />
+            ))}
+          </View>
+        </FormSection>
 
         {/* Contact */}
-        <Text style={styles.sectionHeader}>Contact</Text>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Email</Text>
-          <TextInput
-            style={[styles.input, styles.inputDisabled]}
+        <FormSection title="Contact">
+          <TextField
+            label="Email"
+            icon="mail-outline"
             value={email}
+            onChangeText={setEmail}
             editable={false}
             placeholder="Managed by your account"
-            placeholderTextColor="#475569"
+            hint="Email is linked to your login and cannot be changed here"
           />
-          <Text style={styles.fieldHint}>
-            Email is linked to your login and cannot be changed here
-          </Text>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Phone</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label="Phone"
+            icon="call-outline"
             placeholder="+1 (555) 000-0000"
-            placeholderTextColor="#64748b"
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
           />
-        </View>
+        </FormSection>
 
         {/* Location */}
-        <Text style={styles.sectionHeader}>Location</Text>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>City</Text>
-          <TextInput
-            style={styles.input}
+        <FormSection title="Location">
+          <TextField
+            label="City"
+            icon="location-outline"
             placeholder="San Francisco"
-            placeholderTextColor="#64748b"
             value={city}
             onChangeText={setCity}
           />
-        </View>
-
-        <View style={styles.fieldRow}>
-          <View style={styles.fieldHalf}>
-            <Text style={styles.fieldLabel}>State</Text>
-            <TextInput
-              style={styles.input}
+          <View style={styles.fieldRow}>
+            <TextField
+              label="State"
               placeholder="CA"
-              placeholderTextColor="#64748b"
               value={state}
               onChangeText={setState}
+              containerStyle={styles.fieldHalf}
             />
-          </View>
-          <View style={styles.fieldHalf}>
-            <Text style={styles.fieldLabel}>Country</Text>
-            <TextInput
-              style={styles.input}
+            <TextField
+              label="Country"
               placeholder="United States"
-              placeholderTextColor="#64748b"
               value={country}
               onChangeText={setCountry}
+              containerStyle={styles.fieldHalf}
             />
           </View>
-        </View>
+        </FormSection>
 
         {/* Privacy */}
-        <Text style={styles.sectionHeader}>Privacy</Text>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleLabel}>Public profile</Text>
-            <Text style={styles.toggleHint}>
-              Others can find you in search
-            </Text>
-          </View>
-          <Switch
-            value={profilePublic}
-            onValueChange={setProfilePublic}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
-            thumbColor="#fff"
-          />
-        </View>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleLabel}>Show email</Text>
-            <Text style={styles.toggleHint}>
-              Visible on your profile
-            </Text>
-          </View>
-          <Switch
-            value={showEmail}
-            onValueChange={setShowEmail}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
-            thumbColor="#fff"
-          />
-        </View>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleLabel}>Show phone</Text>
-            <Text style={styles.toggleHint}>
-              Visible on your profile
-            </Text>
-          </View>
-          <Switch
-            value={showPhone}
-            onValueChange={setShowPhone}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
-            thumbColor="#fff"
-          />
-        </View>
-
-        <View style={styles.toggleRow}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleLabel}>Show location</Text>
-            <Text style={styles.toggleHint}>
-              City visible on your profile
-            </Text>
-          </View>
-          <Switch
-            value={showLocation}
-            onValueChange={setShowLocation}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
-            thumbColor="#fff"
-          />
-        </View>
-
-        {/* Save button */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save changes</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 100 }} />
+        <FormSection title="Privacy">
+          <SettingsGroup>
+            <ListRow
+              icon="globe-outline"
+              title="Public profile"
+              subtitle="Others can find you in search"
+              style={styles.row}
+              right={
+                <SettingSwitch
+                  value={profilePublic}
+                  onValueChange={setProfilePublic}
+                />
+              }
+            />
+            <ListRow
+              icon="mail-outline"
+              title="Show email"
+              subtitle="Visible on your profile"
+              style={styles.row}
+              right={
+                <SettingSwitch value={showEmail} onValueChange={setShowEmail} />
+              }
+            />
+            <ListRow
+              icon="call-outline"
+              title="Show phone"
+              subtitle="Visible on your profile"
+              style={styles.row}
+              right={
+                <SettingSwitch value={showPhone} onValueChange={setShowPhone} />
+              }
+            />
+            <ListRow
+              icon="location-outline"
+              title="Show location"
+              subtitle="City visible on your profile"
+              style={styles.row}
+              right={
+                <SettingSwitch
+                  value={showLocation}
+                  onValueChange={setShowLocation}
+                />
+              }
+            />
+          </SettingsGroup>
+        </FormSection>
       </ScrollView>
-      <BottomTabBar />
+
+      {/* Sticky save */}
+      <View style={styles.bottomBar}>
+        <Button label="Save" onPress={handleSave} fullWidth />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
-  content: { flex: 1, padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { flex: 1 },
+  contentInner: { paddingHorizontal: GUTTER, paddingBottom: 110 },
   avatarSection: {
     alignItems: 'center',
-    paddingVertical: 20,
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
   },
-  avatarLarge: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#334155',
+  avatarWrap: { position: 'relative' },
+  cameraBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    borderWidth: 3,
+    borderColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
   },
-  avatarText: { color: '#94a3b8', fontSize: 32, fontWeight: '600' },
-  changePhotoText: { fontSize: 14, color: '#14b8a6', fontWeight: '500' },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginTop: 16,
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+  changePhotoText: { fontSize: 14, fontWeight: '600', color: colors.link },
+  formSection: { marginTop: spacing.lg },
+  sectionTitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: spacing.md,
   },
-  fieldGroup: { marginBottom: 16 },
-  fieldRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
+  fieldRow: { flexDirection: 'row', gap: spacing.md },
   fieldHalf: { flex: 1 },
-  fieldLabel: {
-    fontSize: 13,
-    color: '#94a3b8',
-    marginBottom: 6,
-    fontWeight: '500',
-  },
-  required: { color: '#ef4444' },
-  fieldHint: {
-    fontSize: 12,
-    color: '#475569',
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
-  },
-  inputDisabled: {
-    opacity: 0.6,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  toggleRow: {
+  chips: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  toggleInfo: { flex: 1, marginRight: 12 },
-  toggleLabel: { fontSize: 14, color: '#fff', fontWeight: '500' },
-  toggleHint: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  saveButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
+  group: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  row: { paddingHorizontal: spacing.lg },
+  rowDivider: { marginLeft: 62 },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
+    paddingBottom: 34,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
 });

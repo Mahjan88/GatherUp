@@ -10,6 +10,21 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Header from '../../components/Header';
+import EventCard, { EventCardData } from '../../components/EventCard';
+import {
+  Avatar,
+  Badge,
+  Button,
+  EmptyState,
+  IconButton,
+  IconName,
+  Ionicons,
+  ListRow,
+  MetaRow,
+  SectionHeader,
+  UnderlineTabs,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 type CommunityCategory =
   | 'networking'
@@ -21,6 +36,8 @@ type CommunityCategory =
   | 'other';
 
 type Visibility = 'public' | 'private';
+
+type CommunityTab = 'events' | 'series' | 'members' | 'about';
 
 interface CommunityDetail {
   id: string;
@@ -47,6 +64,26 @@ const CATEGORY_LABELS: Record<CommunityCategory, string> = {
   other: 'Other',
 };
 
+const TABS: { value: CommunityTab; label: string }[] = [
+  { value: 'events', label: 'Events' },
+  { value: 'series', label: 'Series' },
+  { value: 'members', label: 'Members' },
+  { value: 'about', label: 'About' },
+];
+
+const formatCount = (n: number): string =>
+  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K` : `${n}`;
+
+/** Light grey placeholder block used while sections are TODO. */
+function Placeholder({ icon, text }: { icon: IconName; text: string }) {
+  return (
+    <View style={styles.placeholder}>
+      <Ionicons name={icon} size={22} color={colors.textMuted} />
+      <Text style={typography.bodySecondary}>{text}</Text>
+    </View>
+  );
+}
+
 export default function CommunityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -55,6 +92,11 @@ export default function CommunityDetailScreen() {
   const [community, setCommunity] = useState<CommunityDetail | null>(null);
   const [isMember, setIsMember] = useState(false);
   const [notifyOnEvents, setNotifyOnEvents] = useState(true);
+  // TODO: Wire to community follows API (POST/DELETE /api/communities/:id/follow)
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [tab, setTab] = useState<CommunityTab>('events');
+  // TODO: Fetch upcoming events for this community from the API
+  const upcomingEvents: EventCardData[] = [];
 
   const handleJoinToggle = () => {
     if (isMember) {
@@ -72,7 +114,7 @@ export default function CommunityDetailScreen() {
               setIsMember(false);
             },
           },
-        ],
+        ]
       );
     } else {
       // TODO: Call API to join community
@@ -95,7 +137,7 @@ export default function CommunityDetailScreen() {
             // POST /api/reports with body: { target_type: 'community', target_id: id }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -113,7 +155,7 @@ export default function CommunityDetailScreen() {
             router.back();
           },
         },
-      ],
+      ]
     );
   };
 
@@ -121,449 +163,327 @@ export default function CommunityDetailScreen() {
   if (!community) {
     return (
       <View style={styles.container}>
-        <View style={styles.emptyState}>
-          <TouchableOpacity
-            style={styles.heroBackButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.heroBackText}>&#x2039;</Text>
-          </TouchableOpacity>
-          <Text style={styles.emptyStateIcon}>👥</Text>
-          <Text style={styles.emptyStateTitle}>Community not found</Text>
-          <Text style={styles.emptyStateText}>
-            This community may have been removed or is no longer available.
-          </Text>
+        <Header showBack title="Community" />
+        <View style={styles.centered}>
+          <EmptyState
+            icon="people-outline"
+            title="Community not found"
+            message="This community may have been removed or is no longer available."
+          />
         </View>
       </View>
     );
   }
 
+  const memberLine = [
+    `${formatCount(community.member_count)} ${
+      community.member_count === 1 ? 'member' : 'members'
+    }`,
+    community.city,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Cover Image */}
-        <View style={styles.heroContainer}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Banner */}
+        <View style={styles.banner}>
           {community.cover_image_url ? (
             <Image
               source={{ uri: community.cover_image_url }}
-              style={styles.heroImage}
+              style={styles.bannerImage}
               resizeMode="cover"
             />
           ) : (
-            <View style={styles.heroPlaceholder}>
-              <Text style={styles.heroPlaceholderIcon}>👥</Text>
+            <View style={[styles.bannerImage, styles.bannerFallback]}>
+              <Ionicons name="people" size={40} color={colors.primary} />
             </View>
           )}
-
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.heroBackButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.heroBackText}>&#x2039;</Text>
-          </TouchableOpacity>
-
-          {/* Visibility Badge */}
-          <View style={styles.visibilityBadge}>
-            <Text style={styles.visibilityBadgeText}>
-              {community.visibility === 'private' ? 'Private' : 'Public'}
-            </Text>
+          <View style={styles.bannerActions}>
+            <IconButton
+              name="chevron-back"
+              variant="glass"
+              onPress={() => router.back()}
+              accessibilityLabel="Back"
+            />
+            <IconButton
+              name="share-outline"
+              variant="glass"
+              size={20}
+              accessibilityLabel="Share"
+              // TODO: Share community link
+            />
           </View>
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Name */}
-          <Text style={styles.communityName}>{community.name}</Text>
+        {/* Identity */}
+        <View style={styles.identity}>
+          <Avatar
+            name={community.name}
+            size={AVATAR_SIZE}
+            style={styles.avatar}
+          />
 
-          {/* Meta Row: category, city, members */}
-          <View style={styles.metaRow}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryBadgeText}>
-                {CATEGORY_LABELS[community.category]}
-              </Text>
-            </View>
-            {community.city && (
-              <Text style={styles.metaText}>{community.city}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={2}>
+              {community.name}
+            </Text>
+            {community.visibility === 'private' && (
+              <Badge label="Private" tone="neutral" icon="lock-closed" />
             )}
           </View>
+          <Text style={typography.bodySecondary}>{memberLine}</Text>
+          <MetaRow icon="pricetag-outline" style={{ marginTop: spacing.sm }}>
+            {CATEGORY_LABELS[community.category]}
+          </MetaRow>
 
-          {/* Member Count */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{community.member_count}</Text>
-              <Text style={styles.statLabel}>
-                {community.member_count === 1 ? 'Member' : 'Members'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Action Button */}
+          {/* Actions */}
           <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[
-                styles.joinButton,
-                isMember ? styles.joinedButton : styles.primaryButton,
-              ]}
+            <Button
+              label={isMember ? 'Joined' : 'Join'}
+              variant={isMember ? 'outline' : 'primary'}
+              icon={isMember ? 'checkmark' : undefined}
+              size="md"
               onPress={handleJoinToggle}
-            >
-              <Text
-                style={
-                  isMember
-                    ? styles.joinedButtonText
-                    : styles.primaryButtonText
-                }
-              >
-                {isMember ? 'Joined' : 'Join Community'}
-              </Text>
-            </TouchableOpacity>
+              style={{ flex: 1 }}
+            />
+            <Button
+              label={isFollowing ? 'Following' : 'Follow'}
+              variant="outline"
+              size="md"
+              onPress={() => setIsFollowing(!isFollowing)}
+              style={{ flex: 1 }}
+            />
             {isMember && (
-              <TouchableOpacity
-                style={[
-                  styles.notifyButton,
-                  notifyOnEvents
-                    ? styles.notifyButtonActive
-                    : styles.notifyButtonInactive,
-                ]}
+              <IconButton
+                name={
+                  notifyOnEvents ? 'notifications' : 'notifications-off-outline'
+                }
+                variant="filled"
+                size={20}
+                color={notifyOnEvents ? colors.primary : colors.textSecondary}
                 onPress={() => setNotifyOnEvents(!notifyOnEvents)}
-              >
-                <Text style={styles.notifyIcon}>
-                  {notifyOnEvents ? '🔔' : '🔕'}
-                </Text>
-              </TouchableOpacity>
+                style={styles.notifyBtn}
+                accessibilityLabel="Toggle event notifications"
+              />
             )}
           </View>
 
-          {/* Description */}
-          {community.description && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>About</Text>
-              <Text style={styles.descriptionText}>
-                {community.description}
-              </Text>
-            </View>
+          {!!community.description && (
+            <Text style={styles.description} numberOfLines={3}>
+              {community.description}
+            </Text>
+          )}
+        </View>
+
+        <UnderlineTabs
+          tabs={TABS}
+          value={tab}
+          onChange={setTab}
+          style={{ marginTop: spacing.lg }}
+        />
+
+        <View style={styles.tabBody}>
+          {tab === 'events' && (
+            <>
+              <SectionHeader title="Upcoming Events" onAction={() => {}} />
+              {upcomingEvents.length > 0 ? (
+                <View style={{ paddingHorizontal: GUTTER }}>
+                  {upcomingEvents.map((e) => (
+                    <EventCard key={e.id} event={e} variant="row" />
+                  ))}
+                </View>
+              ) : (
+                <Placeholder
+                  icon="calendar-outline"
+                  text="Upcoming events will appear here"
+                />
+              )}
+            </>
           )}
 
-          {/* Members Section (TODO) */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Members</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.todoPlaceholder}>
-              <Text style={styles.todoIcon}>👥</Text>
-              <Text style={styles.todoText}>
-                Member list will appear here
-              </Text>
-            </View>
-          </View>
+          {tab === 'series' && (
+            <>
+              <SectionHeader title="Event Series" />
+              <Placeholder
+                icon="repeat-outline"
+                text="Event series will appear here"
+              />
+            </>
+          )}
 
-          {/* Upcoming Events Section (TODO) */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Upcoming Events</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.todoPlaceholder}>
-              <Text style={styles.todoIcon}>📅</Text>
-              <Text style={styles.todoText}>
-                Upcoming events will appear here
-              </Text>
-            </View>
-          </View>
+          {tab === 'members' && (
+            <>
+              <SectionHeader title="Members" onAction={() => {}} />
+              <Placeholder
+                icon="people-outline"
+                text="Member list will appear here"
+              />
+            </>
+          )}
 
-          {/* Report / Block */}
-          <View style={styles.safetySection}>
-            <TouchableOpacity
-              style={styles.safetyButton}
-              onPress={handleReport}
-            >
-              <Text style={styles.safetyButtonText}>Report Community</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.safetyButton}
-              onPress={handleBlock}
-            >
-              <Text style={[styles.safetyButtonText, styles.blockText]}>
-                Block Community
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {tab === 'about' && (
+            <>
+              <SectionHeader title="About" />
+              <View style={{ paddingHorizontal: GUTTER }}>
+                {community.description ? (
+                  <Text style={styles.aboutText}>{community.description}</Text>
+                ) : (
+                  <Text style={typography.bodySecondary}>
+                    No description yet.
+                  </Text>
+                )}
+                <View style={styles.aboutMeta}>
+                  <MetaRow icon="pricetag-outline">
+                    {CATEGORY_LABELS[community.category]}
+                  </MetaRow>
+                  {!!community.city && (
+                    <MetaRow icon="location-outline">{community.city}</MetaRow>
+                  )}
+                  <MetaRow
+                    icon={
+                      community.visibility === 'private'
+                        ? 'lock-closed-outline'
+                        : 'globe-outline'
+                    }
+                  >
+                    {community.visibility === 'private'
+                      ? 'Private community'
+                      : 'Public community'}
+                  </MetaRow>
+                </View>
+              </View>
 
-          <View style={styles.bottomPadding} />
+              {/* Report / Block */}
+              <View style={styles.safety}>
+                <ListRow
+                  icon="flag-outline"
+                  title="Report Community"
+                  onPress={handleReport}
+                  destructive
+                  showChevron={false}
+                />
+                <ListRow
+                  icon="ban-outline"
+                  title="Block Community"
+                  onPress={handleBlock}
+                  destructive
+                  showChevron={false}
+                />
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
   );
 }
 
+const BANNER_HEIGHT = 200;
+const AVATAR_SIZE = 72;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
   },
-
-  // Hero / Cover Image
-  heroContainer: {
-    height: 220,
-    position: 'relative',
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 80,
   },
-  heroImage: {
+
+  // Banner
+  banner: {
+    height: BANNER_HEIGHT,
+  },
+  bannerImage: {
     width: '100%',
     height: '100%',
   },
-  heroPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#1e293b',
+  bannerFallback: {
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroPlaceholderIcon: {
-    fontSize: 48,
-  },
-  heroBackButton: {
+  bannerActions: {
     position: 'absolute',
-    top: 50,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroBackText: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '300',
-    marginTop: -2,
-  },
-  visibilityBadge: {
-    position: 'absolute',
-    bottom: 16,
-    left: 20,
-    backgroundColor: '#14b8a6',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  visibilityBadgeText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  // Content
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  communityName: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-  },
-  categoryBadge: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  categoryBadgeText: {
-    fontSize: 12,
-    color: '#14b8a6',
-    fontWeight: '500',
-  },
-  metaText: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 20,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#94a3b8',
-  },
-
-  // Action Buttons
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 28,
-  },
-  joinButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#14b8a6',
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  joinedButton: {
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#14b8a6',
-  },
-  joinedButtonText: {
-    color: '#14b8a6',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  notifyButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notifyButtonActive: {
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  notifyButtonInactive: {
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  notifyIcon: {
-    fontSize: 18,
-  },
-
-  // Sections
-  section: {
-    marginBottom: 28,
-  },
-  sectionHeaderRow: {
+    top: 56,
+    left: GUTTER,
+    right: GUTTER,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 12,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#14b8a6',
-    marginBottom: 12,
-  },
-  descriptionText: {
-    fontSize: 15,
-    color: '#94a3b8',
-    lineHeight: 24,
   },
 
-  // TODO Placeholders
-  todoPlaceholder: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 24,
+  // Identity
+  identity: {
+    paddingHorizontal: GUTTER,
+  },
+  avatar: {
+    marginTop: -AVATAR_SIZE / 2,
+    borderWidth: 3,
+    borderColor: colors.surface,
+    marginBottom: spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  todoIcon: {
-    fontSize: 28,
-    marginBottom: 8,
+  name: {
+    ...typography.h1,
+    flexShrink: 1,
   },
-  todoText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-
-  // Safety / Report / Block
-  safetySection: {
-    marginBottom: 16,
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
+    marginTop: spacing.lg,
   },
-  safetyButton: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
+  notifyBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
   },
-  safetyButtonText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    fontWeight: '500',
-  },
-  blockText: {
-    color: '#ef4444',
+  description: {
+    ...typography.bodySecondary,
+    lineHeight: 21,
+    marginTop: spacing.lg,
   },
 
-  // Empty State
-  emptyState: {
-    flex: 1,
+  // Tabs
+  tabBody: {
+    paddingTop: spacing.xl,
+  },
+  placeholder: {
+    marginHorizontal: GUTTER,
+    paddingVertical: spacing.xxl,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
+    gap: spacing.sm,
   },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+  aboutText: {
+    ...typography.body,
+    lineHeight: 22,
+    color: colors.textSecondary,
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
+  aboutMeta: {
+    gap: 10,
+    marginTop: spacing.lg,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-
-  bottomPadding: {
-    height: 40,
+  safety: {
+    marginTop: spacing.xxl,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 });

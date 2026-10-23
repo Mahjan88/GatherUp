@@ -5,23 +5,50 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import {
+  Avatar,
+  Divider,
+  EmptyState,
+  ListRow,
+  ScreenHeader,
+  SearchBar,
+} from '../components/ui';
+import { colors, radius, spacing, GUTTER } from '../theme';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const CONTACTS: { id: string; name: string; status: string }[] = [];
 
 // Group contacts by first letter
-const groupedContacts = CONTACTS.reduce((acc, contact) => {
-  const letter = contact.name[0].toUpperCase();
-  if (!acc[letter]) {
-    acc[letter] = [];
-  }
-  acc[letter].push(contact);
-  return acc;
-}, {} as Record<string, typeof CONTACTS>);
+const groupedContacts = CONTACTS.reduce(
+  (acc, contact) => {
+    const letter = contact.name[0].toUpperCase();
+    if (!acc[letter]) {
+      acc[letter] = [];
+    }
+    acc[letter].push(contact);
+    return acc;
+  },
+  {} as Record<string, typeof CONTACTS>
+);
+
+function ContactRow({
+  contact,
+}: {
+  contact: { id: string; name: string; status: string };
+}) {
+  return (
+    <ListRow
+      left={<Avatar name={contact.name} size={44} />}
+      title={contact.name}
+      subtitle={contact.status}
+      onPress={() => {}}
+      showChevron={false}
+    />
+  );
+}
 
 export default function ComposeScreen() {
   const router = useRouter();
@@ -35,93 +62,80 @@ export default function ComposeScreen() {
 
   const renderContactList = () => {
     if (filteredContacts) {
+      if (filteredContacts.length === 0) {
+        return (
+          <EmptyState
+            icon="search-outline"
+            title="No contacts found"
+            message="Try a different name."
+          />
+        );
+      }
       return filteredContacts.map((contact) => (
-        <TouchableOpacity key={contact.id} style={styles.contactItem}>
-          <View style={styles.contactAvatar}>
-            <Text style={styles.contactAvatarText}>{contact.name[0]}</Text>
-          </View>
-          <View style={styles.contactInfo}>
-            <Text style={styles.contactName}>{contact.name}</Text>
-            <Text style={styles.contactStatus}>{contact.status}</Text>
-          </View>
-        </TouchableOpacity>
+        <ContactRow key={contact.id} contact={contact} />
       ));
     }
 
-    return Object.keys(groupedContacts)
-      .sort()
-      .map((letter) => (
-        <View key={letter}>
-          <Text style={styles.sectionHeader}>{letter}</Text>
-          {groupedContacts[letter].map((contact) => (
-            <TouchableOpacity key={contact.id} style={styles.contactItem}>
-              <View style={styles.contactAvatar}>
-                <Text style={styles.contactAvatarText}>{contact.name[0]}</Text>
-              </View>
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>{contact.name}</Text>
-                <Text style={styles.contactStatus}>{contact.status}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      ));
+    const letters = Object.keys(groupedContacts).sort();
+    if (letters.length === 0) {
+      return (
+        <EmptyState
+          icon="people-outline"
+          title="No contacts yet"
+          message="People you follow or meet at events will show up here."
+        />
+      );
+    }
+
+    return letters.map((letter) => (
+      <View key={letter}>
+        <Text style={styles.sectionHeader}>{letter}</Text>
+        {groupedContacts[letter].map((contact) => (
+          <ContactRow key={contact.id} contact={contact} />
+        ))}
+      </View>
+    ));
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-          <Text style={styles.closeIcon}>✕</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Message</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
+      <ScreenHeader
+        title="New Message"
+        leftLabel="Cancel"
+        onLeftPress={() => router.back()}
+      >
+        <SearchBar
           placeholder="Search"
-          placeholderTextColor="#8e8e93"
           value={searchQuery}
           onChangeText={setSearchQuery}
+          style={styles.search}
         />
-      </View>
+      </ScreenHeader>
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionItem}>
-          <View style={styles.quickActionIcon}>
-            <Text style={styles.quickActionEmoji}>👥</Text>
-          </View>
-          <Text style={styles.quickActionText}>New Group</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.quickActionItem}>
-          <View style={styles.quickActionIcon}>
-            <Text style={styles.quickActionEmoji}>➕</Text>
-          </View>
-          <Text style={styles.quickActionText}>New Contact</Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.quickActionItem}>
-          <View style={styles.quickActionIcon}>
-            <Text style={styles.quickActionEmoji}>📢</Text>
-          </View>
-          <Text style={styles.quickActionText}>New Channel</Text>
-        </TouchableOpacity>
+        <ListRow icon="people-outline" title="New Group" onPress={() => {}} />
+        <Divider style={styles.quickDivider} />
+        <ListRow
+          icon="person-add-outline"
+          title="New Contact"
+          onPress={() => {}}
+        />
+        <Divider style={styles.quickDivider} />
+        <ListRow
+          icon="megaphone-outline"
+          title="New Channel"
+          onPress={() => {}}
+        />
       </View>
 
       {/* Contact List */}
       <View style={styles.contactListContainer}>
-        <ScrollView style={styles.contactList}>
+        <ScrollView
+          style={styles.contactList}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
           {renderContactList()}
         </ScrollView>
 
@@ -132,7 +146,7 @@ export default function ComposeScreen() {
               <Text
                 style={[
                   styles.alphabetLetter,
-                  groupedContacts[letter] && styles.alphabetLetterActive,
+                  !!groupedContacts[letter] && styles.alphabetLetterActive,
                 ]}
               >
                 {letter}
@@ -148,87 +162,21 @@ export default function ComposeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#2c2c2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeIcon: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  headerTitle: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  headerSpacer: {
-    width: 36,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1c1c1e',
-    marginHorizontal: 16,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#ffffff',
-    fontSize: 16,
+  search: {
+    marginHorizontal: GUTTER,
   },
   quickActions: {
-    backgroundColor: '#1c1c1e',
-    marginHorizontal: 16,
-    borderRadius: 10,
-    marginBottom: 16,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    overflow: 'hidden',
   },
-  quickActionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  quickActionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  quickActionEmoji: {
-    fontSize: 18,
-  },
-  quickActionText: {
-    color: '#3b82f6',
-    fontSize: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#2c2c2e',
-    marginLeft: 60,
+  quickDivider: {
+    marginLeft: GUTTER + 34 + spacing.md,
   },
   contactListContainer: {
     flex: 1,
@@ -238,49 +186,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionHeader: {
-    color: '#8e8e93',
-    fontSize: 14,
-    fontWeight: '600',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#000000',
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  contactAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  contactAvatarText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  contactInfo: {
-    flex: 1,
-  },
-  contactName: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  contactStatus: {
-    color: '#8e8e93',
-    fontSize: 14,
-    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.4,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
   },
   alphabetIndex: {
     width: 20,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -288,11 +204,11 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   alphabetLetter: {
-    color: '#3b82f6',
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: '600',
   },
   alphabetLetterActive: {
-    color: '#3b82f6',
+    color: colors.primary,
   },
 });
