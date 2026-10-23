@@ -1,5 +1,4 @@
-import { pgTable, uuid, timestamp, primaryKey, check } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { pgTable, uuid, timestamp, primaryKey } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 
 export const userFollows = pgTable(

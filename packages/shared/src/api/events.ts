@@ -26,6 +26,8 @@ export async function getEvent(id: string) {
       `
       *,
       host:users!events_host_id_fkey(*),
+      community:communities(id, name),
+      series:event_series(id, title),
       members:event_members(count)
     `
     )

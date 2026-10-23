@@ -1,8 +1,35 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { Children, Fragment, ReactNode, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '../../components/Header';
-import BottomTabBar from '../../components/BottomTabBar';
+import { Divider, ListRow } from '../../components/ui';
+import { colors, radius, spacing, typography } from '../../theme';
+
+function SettingsSection({
+  title,
+  footer,
+  children,
+}: {
+  title?: string;
+  footer?: string;
+  children: ReactNode;
+}) {
+  const rows = Children.toArray(children);
+  return (
+    <View style={styles.sectionWrap}>
+      {!!title && <Text style={styles.sectionTitle}>{title}</Text>}
+      <View style={styles.section}>
+        {rows.map((row, i) => (
+          <Fragment key={i}>
+            {i > 0 && <Divider style={styles.rowDivider} />}
+            {row}
+          </Fragment>
+        ))}
+      </View>
+      {!!footer && <Text style={styles.sectionFooter}>{footer}</Text>}
+    </View>
+  );
+}
 
 export default function DataStorageSettingsScreen() {
   const router = useRouter();
@@ -10,133 +37,120 @@ export default function DataStorageSettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Header showBack />
+      <Header showBack title="Data and Storage" />
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Media Auto-Download */}
-        <Text style={styles.sectionLabel}>MEDIA AUTO-DOWNLOAD</Text>
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Photos</Text>
-            <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>Wi-Fi and Cellular</Text>
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Audio</Text>
-            <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>Wi-Fi</Text>
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Videos</Text>
-            <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>Wi-Fi</Text>
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Documents</Text>
-            <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>Wi-Fi</Text>
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <SettingsSection title="Media Auto-Download">
+          <ListRow
+            icon="image-outline"
+            title="Photos"
+            value="Wi-Fi and Cellular"
+            onPress={() => {}}
+            style={styles.row}
+          />
+          <ListRow
+            icon="mic-outline"
+            title="Audio"
+            value="Wi-Fi"
+            onPress={() => {}}
+            style={styles.row}
+          />
+          <ListRow
+            icon="videocam-outline"
+            title="Videos"
+            value="Wi-Fi"
+            onPress={() => {}}
+            style={styles.row}
+          />
+          <ListRow
+            icon="document-outline"
+            title="Documents"
+            value="Wi-Fi"
+            onPress={() => {}}
+            style={styles.row}
+          />
+        </SettingsSection>
 
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Reset Auto-Download Settings</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.hint}>
-          Voice Messages are always automatically downloaded for the best communication experience.
-        </Text>
+        <SettingsSection footer="Voice Messages are always automatically downloaded for the best communication experience.">
+          <ListRow
+            icon="refresh-outline"
+            title="Reset Auto-Download Settings"
+            onPress={() => {}}
+            showChevron={false}
+            style={styles.row}
+          />
+        </SettingsSection>
 
         {/* Call Settings */}
-        <Text style={styles.sectionLabel}>CALL SETTINGS</Text>
-        <View style={styles.section}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Low Data Usage</Text>
-            <Switch
-              value={lowDataUsage}
-              onValueChange={setLowDataUsage}
-              trackColor={{ false: '#e5e5ea', true: '#34c759' }}
-            />
-          </View>
-        </View>
-        <Text style={styles.hint}>
-          Lower the amount of data used during a call on cellular.
-        </Text>
+        <SettingsSection
+          title="Call Settings"
+          footer="Lower the amount of data used during a call on cellular."
+        >
+          <ListRow
+            icon="cellular-outline"
+            title="Low Data Usage"
+            style={styles.row}
+            right={
+              <Switch
+                value={lowDataUsage}
+                onValueChange={setLowDataUsage}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            }
+          />
+        </SettingsSection>
 
         {/* Usage */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Network Usage</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.rowLabel}>Storage Usage</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 100 }} />
+        <SettingsSection title="Usage">
+          <ListRow
+            icon="stats-chart-outline"
+            title="Network Usage"
+            onPress={() => {}}
+            style={styles.row}
+          />
+          <ListRow
+            icon="server-outline"
+            title="Storage Usage"
+            onPress={() => {}}
+            style={styles.row}
+          />
+        </SettingsSection>
       </ScrollView>
-      <BottomTabBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f7f7f7',
-    paddingTop: 50,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#c8c8c8',
-  },
-  backButton: { flexDirection: 'row', alignItems: 'center', width: 100 },
-  backIcon: { fontSize: 32, color: '#007aff', marginTop: -4 },
-  backText: { fontSize: 17, color: '#007aff' },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
-  headerPlaceholder: { width: 100 },
+  container: { flex: 1, backgroundColor: colors.surfaceAlt },
   content: { flex: 1 },
-  sectionLabel: {
-    fontSize: 13,
-    color: '#8e8e93',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
+  contentInner: { paddingTop: spacing.sm, paddingBottom: 100 },
+  sectionWrap: { marginTop: spacing.lg, paddingHorizontal: spacing.lg },
+  sectionTitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
-  section: { backgroundColor: '#fff' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  section: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
   },
-  rowLabel: { fontSize: 16, color: '#000' },
-  rowRight: { flexDirection: 'row', alignItems: 'center' },
-  rowValue: { fontSize: 16, color: '#8e8e93', marginRight: 4 },
-  chevron: { fontSize: 22, color: '#c7c7cc' },
-  divider: { height: 0.5, backgroundColor: '#e5e5ea', marginLeft: 16 },
-  hint: {
-    fontSize: 13,
-    color: '#8e8e93',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 20,
+  row: { paddingHorizontal: spacing.lg },
+  rowDivider: { marginLeft: 62 },
+  sectionFooter: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.xs,
+    lineHeight: 17,
   },
 });

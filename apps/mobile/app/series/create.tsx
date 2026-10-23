@@ -5,11 +5,18 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
-  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from '../../components/Header';
+import {
+  Button,
+  Chip,
+  IconName,
+  Ionicons,
+  ScreenHeader,
+  SelectField,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 type SeriesCategory =
   | 'networking'
@@ -41,6 +48,62 @@ const RECURRENCE_OPTIONS: { value: RecurrenceHint; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+/** Bold field label with optional required marker. */
+function FieldLabel({
+  children,
+  required,
+}: {
+  children: string;
+  required?: boolean;
+}) {
+  return (
+    <Text style={styles.fieldLabel}>
+      {children}
+      {required && <Text style={styles.required}> *</Text>}
+    </Text>
+  );
+}
+
+/** Selectable card with radio indicator, icon, title and hint. */
+function OptionCard({
+  icon,
+  title,
+  hint,
+  selected,
+  onPress,
+}: {
+  icon: IconName;
+  title: string;
+  hint: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.option, selected && styles.optionActive]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.optionIcon, selected && styles.optionIconActive]}>
+        <Ionicons
+          name={icon}
+          size={18}
+          color={selected ? colors.primary : colors.textSecondary}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={typography.label}>{title}</Text>
+        <Text style={[typography.caption, { marginTop: 2 }]}>{hint}</Text>
+      </View>
+      <Ionicons
+        name={selected ? 'radio-button-on' : 'radio-button-off'}
+        size={22}
+        color={selected ? colors.primary : colors.textMuted}
+      />
+    </TouchableOpacity>
+  );
+}
+
 export default function CreateSeriesScreen() {
   const router = useRouter();
 
@@ -50,12 +113,12 @@ export default function CreateSeriesScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<SeriesCategory>('other');
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
-  const [organizerType, setOrganizerType] =
-    useState<OrganizerType>('user');
+  const [organizerType, setOrganizerType] = useState<OrganizerType>('user');
   const [communityId, setCommunityId] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<Visibility>('public');
-  const [recurrenceHint, setRecurrenceHint] =
-    useState<RecurrenceHint | null>(null);
+  const [recurrenceHint, setRecurrenceHint] = useState<RecurrenceHint | null>(
+    null
+  );
 
   const handleTitleChange = (text: string) => {
     setTitle(text);
@@ -78,323 +141,154 @@ export default function CreateSeriesScreen() {
 
   return (
     <View style={styles.container}>
-      <Header
-        title="Create Event Series"
-        showBack
-        showLogo={false}
-        showHamburger={false}
-      />
+      <ScreenHeader leftLabel="Cancel" title="Create Series" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.sectionTitle}>Series Basics</Text>
+
         {/* Cover Image */}
-        <TouchableOpacity style={styles.coverPhotoBox}>
-          <Text style={styles.coverPhotoIcon}>📷</Text>
-          <Text style={styles.coverPhotoText}>Add Cover Image</Text>
+        <TouchableOpacity style={styles.coverBox} activeOpacity={0.85}>
+          <Ionicons name="image-outline" size={34} color={colors.textMuted} />
+          <View style={styles.coverPill}>
+            <Ionicons name="camera-outline" size={16} color={colors.text} />
+            <Text style={styles.coverPillText}>Add Cover Photo</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Title */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Title <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Give your series a title"
-            placeholderTextColor="#64748b"
-            value={title}
-            onChangeText={handleTitleChange}
-          />
-        </View>
+        <FieldLabel required>Series Title</FieldLabel>
+        <TextField
+          placeholder="Give your series a title"
+          value={title}
+          onChangeText={handleTitleChange}
+        />
 
         {/* Slug */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Slug</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="url-friendly-name"
-            placeholderTextColor="#64748b"
-            value={slug}
-            onChangeText={setSlug}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hintText}>
-            Used in the series URL. Letters, numbers, and hyphens only.
-          </Text>
-        </View>
+        <FieldLabel>Slug</FieldLabel>
+        <TextField
+          icon="link-outline"
+          placeholder="url-friendly-name"
+          value={slug}
+          onChangeText={setSlug}
+          autoCapitalize="none"
+          autoCorrect={false}
+          hint="Used in the series URL. Letters, numbers, and hyphens only."
+        />
 
         {/* Description */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="What is this event series about?"
-            placeholderTextColor="#64748b"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-        </View>
+        <FieldLabel>Description</FieldLabel>
+        <TextField
+          placeholder="What is this event series about?"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+        />
 
         {/* Category */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Category <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.categoryPills}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.value}
-                style={[
-                  styles.categoryPill,
-                  category === cat.value && styles.categoryPillActive,
-                ]}
-                onPress={() => setCategory(cat.value)}
-              >
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    category === cat.value && styles.categoryPillTextActive,
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <FieldLabel required>Category</FieldLabel>
+        <View style={styles.chipWrap}>
+          {CATEGORIES.map((cat) => (
+            <Chip
+              key={cat.value}
+              label={cat.label}
+              selected={category === cat.value}
+              onPress={() => setCategory(cat.value)}
+            />
+          ))}
         </View>
 
         {/* Organizer Type */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Organizer <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.privacyOptions}>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                organizerType === 'user' && styles.privacyOptionActive,
-              ]}
-              onPress={() => {
-                setOrganizerType('user');
-                setCommunityId(null);
-              }}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    organizerType === 'user' && styles.radioCircleActive,
-                  ]}
-                >
-                  {organizerType === 'user' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      organizerType === 'user' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Myself
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    You are the organizer of this series
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                organizerType === 'community' &&
-                  styles.privacyOptionActive,
-              ]}
-              onPress={() => setOrganizerType('community')}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    organizerType === 'community' &&
-                      styles.radioCircleActive,
-                  ]}
-                >
-                  {organizerType === 'community' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      organizerType === 'community' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Community
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    Organize this series under a community
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
+        <FieldLabel required>Organizer</FieldLabel>
+        <View style={styles.optionGroup}>
+          <OptionCard
+            icon="person-outline"
+            title="Myself"
+            hint="You are the organizer of this series"
+            selected={organizerType === 'user'}
+            onPress={() => {
+              setOrganizerType('user');
+              setCommunityId(null);
+            }}
+          />
+          <OptionCard
+            icon="people-outline"
+            title="Community"
+            hint="Organize this series under a community"
+            selected={organizerType === 'community'}
+            onPress={() => setOrganizerType('community')}
+          />
         </View>
 
         {/* Community Picker (shown when organizer_type = 'community') */}
         {organizerType === 'community' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Community <Text style={styles.requiredAsterisk}>*</Text>
-            </Text>
-            <TouchableOpacity style={styles.pickerPlaceholder}>
-              <Text style={styles.pickerPlaceholderText}>
-                {communityId
-                  ? 'Community selected'
-                  : 'Select a community...'}
-              </Text>
-              <Text style={styles.pickerChevron}>&#x203A;</Text>
-            </TouchableOpacity>
-            <Text style={styles.hintText}>
+          <>
+            <FieldLabel required>Community</FieldLabel>
+            <SelectField
+              icon="people-outline"
+              value={communityId ? 'Community selected' : null}
+              placeholder="Select a community..."
+            />
+            <Text style={styles.hint}>
               Choose a community you manage to organize this series under.
             </Text>
-          </View>
+          </>
         )}
 
         {/* Visibility */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Visibility <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.privacyOptions}>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                visibility === 'public' && styles.privacyOptionActive,
-              ]}
-              onPress={() => setVisibility('public')}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    visibility === 'public' && styles.radioCircleActive,
-                  ]}
-                >
-                  {visibility === 'public' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      visibility === 'public' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Public
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    Anyone can see and subscribe to this series
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                visibility === 'private' && styles.privacyOptionActive,
-              ]}
-              onPress={() => setVisibility('private')}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    visibility === 'private' && styles.radioCircleActive,
-                  ]}
-                >
-                  {visibility === 'private' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      visibility === 'private' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Private
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    Only invited users can see this series
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
+        <FieldLabel required>Visibility</FieldLabel>
+        <View style={styles.optionGroup}>
+          <OptionCard
+            icon="globe-outline"
+            title="Public"
+            hint="Anyone can see and subscribe to this series"
+            selected={visibility === 'public'}
+            onPress={() => setVisibility('public')}
+          />
+          <OptionCard
+            icon="lock-closed-outline"
+            title="Private"
+            hint="Only invited users can see this series"
+            selected={visibility === 'private'}
+            onPress={() => setVisibility('private')}
+          />
         </View>
 
         {/* Recurrence Hint */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Recurrence</Text>
-          <View style={styles.categoryPills}>
-            {RECURRENCE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  styles.categoryPill,
-                  recurrenceHint === opt.value &&
-                    styles.categoryPillActive,
-                ]}
-                onPress={() =>
-                  setRecurrenceHint(
-                    recurrenceHint === opt.value ? null : opt.value,
-                  )
-                }
-              >
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    recurrenceHint === opt.value &&
-                      styles.categoryPillTextActive,
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.hintText}>
-            How often do events in this series repeat? Leave unset if
-            irregular.
-          </Text>
+        <FieldLabel>Recurrence</FieldLabel>
+        <View style={[styles.chipWrap, { marginBottom: spacing.sm }]}>
+          {RECURRENCE_OPTIONS.map((opt) => (
+            <Chip
+              key={opt.value}
+              label={opt.label}
+              icon="repeat-outline"
+              selected={recurrenceHint === opt.value}
+              onPress={() =>
+                setRecurrenceHint(
+                  recurrenceHint === opt.value ? null : opt.value
+                )
+              }
+            />
+          ))}
         </View>
-
-        <View style={styles.bottomPadding} />
+        <Text style={[styles.hint, { marginTop: 0 }]}>
+          How often do events in this series repeat? Leave unset if irregular.
+        </Text>
       </ScrollView>
 
       {/* Create Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[
-            styles.createButton,
-            !title.trim() && styles.createButtonDisabled,
-          ]}
+        <Button
+          label="Create Series"
           onPress={handleCreate}
           disabled={!title.trim()}
-        >
-          <Text style={styles.createButtonText}>Create Series</Text>
-        </TouchableOpacity>
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -403,179 +297,106 @@ export default function CreateSeriesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  coverPhotoBox: {
-    height: 140,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
+  contentInner: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 120,
+  },
+  sectionTitle: {
+    ...typography.h2,
+    marginBottom: spacing.lg,
+  },
+  coverBox: {
+    height: 160,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
   },
-  coverPhotoIcon: {
-    fontSize: 28,
-    marginBottom: 4,
+  coverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    height: 34,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  coverPhotoText: {
-    fontSize: 14,
-    color: '#94a3b8',
+  coverPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
   },
-  inputGroup: {
-    marginBottom: 16,
+  fieldLabel: {
+    ...typography.label,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
   },
-  inputLabel: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 8,
-    fontWeight: '500',
+  required: {
+    color: colors.danger,
   },
-  requiredAsterisk: {
-    color: '#ef4444',
+  hint: {
+    ...typography.caption,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.lg,
   },
-  input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 6,
-  },
-  categoryPills: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
-  categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  categoryPillActive: {
-    backgroundColor: '#14b8a6',
-    borderColor: '#14b8a6',
-  },
-  categoryPillText: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  categoryPillTextActive: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  privacyOptions: {
+  optionGroup: {
     gap: 10,
+    marginBottom: spacing.xl,
   },
-  privacyOption: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  privacyOptionActive: {
-    borderColor: '#14b8a6',
-    backgroundColor: '#0f2a2a',
-  },
-  radioRow: {
+  option: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    padding: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  radioContent: {
-    flex: 1,
+  optionActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#64748b',
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioCircleActive: {
-    borderColor: '#14b8a6',
-  },
-  radioCircleInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#14b8a6',
-  },
-  privacyOptionTitle: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  privacyOptionTitleActive: {
-    color: '#14b8a6',
-  },
-  privacyOptionHint: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  pickerPlaceholder: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  pickerPlaceholderText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  pickerChevron: {
-    fontSize: 20,
-    color: '#64748b',
-  },
-  bottomPadding: {
-    height: 100,
+  optionIconActive: {
+    backgroundColor: colors.surface,
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
     paddingBottom: 34,
-    backgroundColor: '#0f172a',
-  },
-  createButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  createButtonDisabled: {
-    opacity: 0.5,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 });

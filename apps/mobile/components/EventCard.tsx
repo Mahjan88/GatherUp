@@ -1,482 +1,276 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { EventCardData, RsvpStatus, Person } from '../types/event';
+import { AvatarStack, Badge, Avatar } from './ui';
+import { colors, radius, typography, shadows } from '../theme';
 
 export type { EventCardData, RsvpStatus, Person };
 
 interface EventCardProps {
   event: EventCardData;
-  variant?: 'compact' | 'full' | 'past';
+  /**
+   * feature — large "For You" card (full-width image, bookmark)
+   * compact — small tile for horizontal rails ("This Weekend")
+   * full    — alias of feature (legacy)
+   * row     — list row with thumbnail + status (My Events)
+   * past    — alias of row without status
+   */
+  variant?: 'feature' | 'compact' | 'full' | 'row' | 'past';
+  category?: string;
+  goingCount?: number;
+  onMore?: () => void;
 }
 
-export const formatEventDate = (date: Date): string => {
-  const now = new Date();
-  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  if (diffDays <= 7 && diffDays >= 0) {
-    const dayName = days[date.getDay()];
-    const fullDays: { [key: string]: string } = {
-      'Sun': 'Sunday', 'Mon': 'Monday', 'Tue': 'Tuesday', 
-      'Wed': 'Wednesday', 'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday'
-    };
-    const hours = date.getHours();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const hour12 = hours % 12 || 12;
-    return `This ${fullDays[dayName]} at ${hour12}${ampm}`;
-  } else {
-    const hours = date.getHours();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const hour12 = hours % 12 || 12;
-    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()} at ${hour12}${ampm}`;
-  }
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const MONTHS = [
+  'JAN',
+  'FEB',
+  'MAR',
+  'APR',
+  'MAY',
+  'JUN',
+  'JUL',
+  'AUG',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DEC',
+];
+
+const formatTime = (date: Date) => {
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm}`;
 };
 
-const getRsvpButtonText = (status: RsvpStatus): string => {
-  switch (status) {
-    case 'going': return '✓ Going';
-    case 'interested': return '★ Interested';
-    default: return 'RSVP';
-  }
+/** "SAT, OCT 26 · 8:00 AM" */
+export const formatEventDate = (date: Date): string =>
+  `${DAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()} · ${formatTime(date)}`;
+
+/** "Sat, Oct 26 · 8:00 AM" */
+export const formatEventDateShort = (date: Date): string => {
+  const cap = (s: string) => s[0] + s.slice(1).toLowerCase();
+  return `${cap(DAYS[date.getDay()])}, ${cap(MONTHS[date.getMonth()])} ${date.getDate()} · ${formatTime(date)}`;
 };
 
-export default function EventCard({ event, variant = 'compact' }: EventCardProps) {
+function StatusBadge({ status }: { status: RsvpStatus }) {
+  if (status === 'going') return <Badge label="You're Going" tone="success" />;
+  if (status === 'interested')
+    return (
+      <Badge label="Interested" tone="primary" icon="star-outline" outline />
+    );
+  return null;
+}
+
+function Cover({ uri, style }: { uri?: string; style: any }) {
+  return uri ? (
+    <Image source={{ uri }} style={style} />
+  ) : (
+    <View style={[style, styles.coverFallback]}>
+      <Ionicons name="image-outline" size={24} color={colors.textMuted} />
+    </View>
+  );
+}
+
+export default function EventCard({
+  event,
+  variant = 'feature',
+  category,
+  goingCount,
+  onMore,
+}: EventCardProps) {
   const router = useRouter();
+  const [saved, setSaved] = useState(false);
+  const open = () => router.push(`/event/${event.id}`);
+  const going = goingCount ?? event.attendees?.length ?? 0;
+  const people = (event.attendees ?? []).map((a) => ({
+    uri: a.avatar,
+    name: a.name,
+  }));
 
   if (variant === 'compact') {
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.compactCard}
-        onPress={() => router.push(`/event/${event.id}`)}
+        onPress={open}
         activeOpacity={0.9}
       >
-        <View style={styles.compactTop}>
-          <Image
-            source={{ uri: event.image }}
-            style={styles.compactThumbnail}
-          />
-          <View style={styles.compactContent}>
-            <Text style={styles.compactDate}>{formatEventDate(event.date)}</Text>
-            <Text style={styles.compactTitle} numberOfLines={2}>
-              {event.title}
-            </Text>
-            <Text style={styles.compactLocation} numberOfLines={1}>
+        <Cover uri={event.image} style={styles.compactImage} />
+        <View style={styles.compactBody}>
+          <Text style={styles.dateText} numberOfLines={1}>
+            {formatEventDate(event.date)}
+          </Text>
+          <Text style={styles.compactTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <View style={styles.metaRow}>
+            {people.length > 0 ? (
+              <AvatarStack people={people} size={18} max={2} />
+            ) : (
+              <Avatar name={event.hostName} uri={event.hostAvatar} size={18} />
+            )}
+            <Text style={typography.caption}>{going} going</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  if (variant === 'row' || variant === 'past') {
+    return (
+      <TouchableOpacity style={styles.row} onPress={open} activeOpacity={0.8}>
+        <Cover uri={event.image} style={styles.rowImage} />
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text style={typography.h3} numberOfLines={1}>
+            {event.title}
+          </Text>
+          <Text style={typography.caption} numberOfLines={1}>
+            {formatEventDateShort(event.date)}
+          </Text>
+          {variant === 'row' && !event.isPast && (
+            <View style={{ marginTop: 4 }}>
+              {event.isPending ? (
+                <Badge label="Invited" tone="warning" icon="mail-outline" />
+              ) : (
+                <StatusBadge status={event.rsvpStatus} />
+              )}
+            </View>
+          )}
+          {variant === 'past' && !!event.location && (
+            <Text style={typography.caption} numberOfLines={1}>
               {event.location}
             </Text>
-          </View>
+          )}
         </View>
-        <View style={styles.compactHost}>
-          <View style={styles.compactHostAvatar}>
-            <Text style={styles.compactHostInitial}>{event.hostName[0]}</Text>
-          </View>
-          <Text style={styles.compactHostText}>
-            <Text style={styles.compactHostName}>{event.hostName}</Text> invited you
-          </Text>
-        </View>
-        {!event.isPast && (
-          <View style={styles.compactButtons}>
-            <TouchableOpacity style={styles.compactRsvpBtn}>
-              <Text style={styles.compactRsvpText}>
-                {getRsvpButtonText(event.rsvpStatus)}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        {onMore && (
+          <TouchableOpacity onPress={onMore} hitSlop={10}>
+            <Ionicons
+              name="ellipsis-horizontal"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
         )}
       </TouchableOpacity>
     );
   }
 
-  if (variant === 'past') {
-    return (
-      <TouchableOpacity 
-        style={styles.pastCard}
-        onPress={() => router.push(`/event/${event.id}`)}
-        activeOpacity={0.9}
-      >
-        <Image
-          source={{ uri: event.image }}
-          style={styles.pastThumbnail}
-        />
-        <View style={styles.pastContent}>
-          <Text style={styles.pastDate}>{formatEventDate(event.date)}</Text>
-          <Text style={styles.pastTitle} numberOfLines={1}>
-            {event.title}
-          </Text>
-          <Text style={styles.pastLocation} numberOfLines={1}>
-            {event.location}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
+  // feature / full
   return (
-    <TouchableOpacity 
-      style={styles.fullCard}
-      onPress={() => router.push(`/event/${event.id}`)}
-      activeOpacity={0.9}
+    <TouchableOpacity
+      style={styles.featureCard}
+      onPress={open}
+      activeOpacity={0.92}
     >
-      <View style={styles.fullCardTop}>
-        <Image
-          source={{ uri: event.image }}
-          style={styles.fullThumbnail}
-        />
-        <View style={styles.fullContent}>
-          <Text style={styles.fullDate}>{formatEventDate(event.date)}</Text>
-          <Text style={styles.fullTitle} numberOfLines={2}>
-            {event.title}
-          </Text>
-          <Text style={styles.fullLocation} numberOfLines={1}>
-            {event.location}
-          </Text>
+      <View>
+        <Cover uri={event.image} style={styles.featureImage} />
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={() => setSaved((s) => !s)}
+          hitSlop={8}
+        >
+          <Ionicons
+            name={saved ? 'bookmark' : 'bookmark-outline'}
+            size={18}
+            color={colors.textOnImage}
+          />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.featureBody}>
+        <Text style={styles.dateText}>{formatEventDate(event.date)}</Text>
+        <Text style={styles.featureTitle} numberOfLines={2}>
+          {event.title}
+        </Text>
+        <View style={[styles.metaRow, { gap: 12 }]}>
+          {!!category && (
+            <View style={styles.metaRow}>
+              <Ionicons
+                name="pricetag-outline"
+                size={13}
+                color={colors.textSecondary}
+              />
+              <Text style={typography.caption}>{category}</Text>
+            </View>
+          )}
           {event.isPending ? (
-            <View style={styles.fullHost}>
-              <View style={styles.fullHostAvatar}>
-                <Text style={styles.fullHostInitial}>{event.hostName[0]}</Text>
-              </View>
-              <Text style={styles.fullHostText}>
-                <Text style={styles.fullHostName}>{event.hostName}</Text> invited you
-              </Text>
+            <Text style={typography.caption}>
+              <Text style={{ fontWeight: '700', color: colors.text }}>
+                {event.hostName}
+              </Text>{' '}
+              invited you
+            </Text>
+          ) : (
+            <View style={styles.metaRow}>
+              {people.length > 0 && <AvatarStack people={people} size={20} />}
+              <Text style={typography.caption}>{going} going</Text>
             </View>
-          ) : event.attendees && event.attendees.length > 0 ? (
-            <View style={styles.fullHost}>
-              <View style={styles.attendeesStack}>
-                {event.attendees.slice(0, 3).map((attendee, index) => (
-                  <View 
-                    key={index} 
-                    style={[styles.attendeeAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                  >
-                    <Text style={styles.attendeeInitial}>{attendee.name[0]}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.fullHostText}>
-                <Text style={styles.fullHostName}>
-                  {event.attendees.slice(0, 2).map(a => a.name).join(', ')}
-                </Text>
-                {event.attendees.length > 2 && ` and ${event.attendees.length - 2} friends`}
-              </Text>
-            </View>
-          ) : null}
+          )}
+          <View style={{ flex: 1 }} />
+          <StatusBadge status={event.rsvpStatus} />
         </View>
       </View>
-      {!event.isPast && (
-        <View style={styles.fullButtons}>
-          <TouchableOpacity 
-            style={[
-              styles.fullRsvpBtn,
-              event.rsvpStatus !== 'none' && styles.fullRsvpBtnActive
-            ]}
-          >
-            <Text style={[
-              styles.fullRsvpText,
-              event.rsvpStatus !== 'none' && styles.fullRsvpTextActive
-            ]}>
-              {getRsvpButtonText(event.rsvpStatus)}
-            </Text>
-            {event.rsvpStatus !== 'none' && (
-              <Text style={styles.fullRsvpDropdown}> ▼</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.fullShareBtn}>
-            <Text style={styles.fullShareIcon}>➦</Text>
-          </TouchableOpacity>
-          {event.isPrivate && event.chatUnread && event.chatUnread > 0 ? (
-            <TouchableOpacity style={styles.fullChatBtn}>
-              <Text style={styles.fullChatIcon}>💬</Text>
-              <View style={styles.fullChatBadge}>
-                <Text style={styles.fullChatBadgeText}>{event.chatUnread}</Text>
-              </View>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  // Compact variant (for horizontal scroll in home)
-  compactCard: { 
-    width: 220,
-    backgroundColor: '#1e293b',
-    borderRadius: 12, 
-    overflow: 'hidden',
-    padding: 12,
-  },
-  compactTop: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  compactThumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-  },
-  compactContent: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'flex-start',
-  },
-  compactDate: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#f59e0b',
-    marginBottom: 2,
-  },
-  compactTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 2,
-    lineHeight: 18,
-  },
-  compactLocation: {
-    fontSize: 12,
-    color: '#64748b',
-  },
-  compactHost: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  compactHostAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  compactHostInitial: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  compactHostText: {
-    fontSize: 12,
-    color: '#94a3b8',
-    flex: 1,
-  },
-  compactHostName: {
-    fontWeight: '600',
-    color: '#e2e8f0',
-  },
-  compactButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  compactRsvpBtn: {
-    flex: 1,
-    backgroundColor: '#334155',
-    borderRadius: 6,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  compactRsvpText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-
-  // Full variant (for list view in my-events)
-  fullCard: {
-    backgroundColor: '#1e293b',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 12,
-  },
-  fullCardTop: {
-    flexDirection: 'row',
-  },
-  fullThumbnail: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-  },
-  fullContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  fullDate: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#94a3b8',
-    marginBottom: 2,
-  },
-  fullTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  fullLocation: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 8,
-  },
-  fullHost: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fullHostAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  fullHostInitial: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  fullHostText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    flex: 1,
-  },
-  fullHostName: {
-    fontWeight: '600',
-    color: '#e2e8f0',
-  },
-  attendeesStack: {
-    flexDirection: 'row',
-    marginRight: 8,
-  },
-  attendeeAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#1e293b',
-  },
-  attendeeInitial: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  fullButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-  },
-  fullRsvpBtn: {
-    flex: 1,
-    backgroundColor: '#334155',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  fullRsvpBtnActive: {
-    backgroundColor: 'rgba(20, 184, 166, 0.15)',
-    borderWidth: 1,
-    borderColor: '#14b8a6',
-  },
-  fullRsvpText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  fullRsvpTextActive: {
-    color: '#14b8a6',
-  },
-  fullRsvpDropdown: {
-    fontSize: 10,
-    color: '#14b8a6',
-  },
-  fullShareBtn: {
-    width: 44,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#334155',
+  coverFallback: {
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fullShareIcon: {
-    fontSize: 18,
-    color: '#94a3b8',
-  },
-  fullChatBtn: {
-    width: 44,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  fullChatIcon: {
-    fontSize: 16,
-  },
-  fullChatBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#ef4444',
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: '#1e293b',
-  },
-  fullChatBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
-  // Past variant (shorter cards for past events)
-  pastCard: {
-    backgroundColor: '#1e293b',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    borderRadius: 10,
-    padding: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pastThumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 6,
-    backgroundColor: '#334155',
-  },
-  pastContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  pastDate: {
+  dateText: {
     fontSize: 11,
-    fontWeight: '400',
-    color: '#64748b',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 0.3,
   },
-  pastTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 2,
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+
+  featureCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    overflow: 'hidden',
+    ...shadows.card,
   },
-  pastLocation: {
-    fontSize: 12,
-    color: '#64748b',
+  featureImage: { width: '100%', height: 170 },
+  saveBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  featureBody: { padding: 14, gap: 6 },
+  featureTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+
+  compactCard: {
+    width: 170,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  compactImage: { width: '100%', height: 100 },
+  compactBody: { padding: 10, gap: 4 },
+  compactTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  rowImage: { width: 64, height: 64, borderRadius: radius.md },
 });

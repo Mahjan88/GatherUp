@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { createClient } from '@supabase/supabase-js';
 import type { FastifyInstance } from 'fastify';
 import { eventMedia } from '../../db/schema/event-media.js';

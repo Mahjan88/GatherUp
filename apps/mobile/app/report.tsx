@@ -5,11 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Header from '../components/Header';
+import { Button, Divider, Ionicons, TextField } from '../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../theme';
 
 type TargetType = 'user' | 'event' | 'community' | 'message' | 'media';
 
@@ -31,7 +32,9 @@ export default function ReportScreen() {
     target_id: string;
   }>();
 
-  const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
+  const [selectedReason, setSelectedReason] = useState<ReportReason | null>(
+    null
+  );
   const [details, setDetails] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,95 +83,93 @@ export default function ReportScreen() {
 
   return (
     <View style={styles.container}>
-      <Header
-        title="Report"
-        showBack
-        showLogo={false}
-        showHamburger={false}
-      />
+      <Header title="Report" showBack showLogo={false} showHamburger={false} />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Context Info */}
         <View style={styles.contextCard}>
-          <Text style={styles.contextText}>
-            Reporting {getTargetLabel().toLowerCase()}
-          </Text>
-          <Text style={styles.contextSubtext}>
-            Select a reason below and add optional details to help us review this report.
-          </Text>
+          <View style={styles.contextIcon}>
+            <Ionicons name="flag-outline" size={20} color={colors.danger} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={typography.h3}>
+              Reporting {getTargetLabel().toLowerCase()}
+            </Text>
+            <Text style={[typography.bodySecondary, styles.contextSubtext]}>
+              Select a reason below and add optional details to help us review
+              this report.
+            </Text>
+          </View>
         </View>
 
         {/* Reason Picker */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Reason <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.reasonList}>
-            {REPORT_REASONS.map((reason) => (
-              <TouchableOpacity
-                key={reason}
-                style={[
-                  styles.reasonOption,
-                  selectedReason === reason && styles.reasonOptionActive,
-                ]}
-                onPress={() => setSelectedReason(reason)}
-              >
-                <View style={styles.radioRow}>
-                  <View
-                    style={[
-                      styles.radioCircle,
-                      selectedReason === reason && styles.radioCircleActive,
-                    ]}
-                  >
-                    {selectedReason === reason && (
-                      <View style={styles.radioCircleInner} />
-                    )}
-                  </View>
+        <Text style={styles.sectionTitle}>Reason *</Text>
+        <View style={styles.reasonList}>
+          {REPORT_REASONS.map((reason, i) => {
+            const active = selectedReason === reason;
+            return (
+              <View key={reason}>
+                {i > 0 && <Divider style={styles.rowDivider} />}
+                <TouchableOpacity
+                  style={styles.reasonOption}
+                  onPress={() => setSelectedReason(reason)}
+                  activeOpacity={0.7}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: active }}
+                >
                   <Text
                     style={[
+                      typography.body,
                       styles.reasonText,
-                      selectedReason === reason && styles.reasonTextActive,
+                      active && styles.reasonTextActive,
                     ]}
                   >
                     {reason}
                   </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <View
+                    style={[styles.radioCircle, active && styles.radioActive]}
+                  >
+                    {active && (
+                      <Ionicons
+                        name="checkmark"
+                        size={14}
+                        color={colors.primaryOn}
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
         </View>
 
         {/* Details Textarea */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Additional Details</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Provide any additional context that may help our review..."
-            placeholderTextColor="#64748b"
-            value={details}
-            onChangeText={setDetails}
-            multiline
-            numberOfLines={5}
-          />
-        </View>
-
-        <View style={styles.bottomPadding} />
+        <Text style={styles.sectionTitle}>Additional Details</Text>
+        <TextField
+          placeholder="Provide any additional context that may help our review..."
+          value={details}
+          onChangeText={setDetails}
+          multiline
+          numberOfLines={5}
+          hint="Optional"
+        />
       </ScrollView>
 
       {/* Submit Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            (!selectedReason || submitting) && styles.submitButtonDisabled,
-          ]}
+        <Button
+          label={submitting ? 'Submitting...' : 'Submit Report'}
+          variant="danger"
+          icon="flag-outline"
           onPress={handleSubmit}
           disabled={!selectedReason || submitting}
-        >
-          <Text style={styles.submitButtonText}>
-            {submitting ? 'Submitting...' : 'Submit Report'}
-          </Text>
-        </TouchableOpacity>
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -177,123 +178,88 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.surfaceAlt,
   },
   content: {
     flex: 1,
-    padding: 16,
+  },
+  contentInner: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: 110,
   },
   contextCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 20,
-    borderLeftWidth: 3,
-    borderLeftColor: '#f59e0b',
-  },
-  contextText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  contextSubtext: {
-    fontSize: 13,
-    color: '#94a3b8',
-    lineHeight: 18,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 10,
-    fontWeight: '500',
-  },
-  requiredAsterisk: {
-    color: '#ef4444',
-  },
-  reasonList: {
-    gap: 8,
-  },
-  reasonOption: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  reasonOptionActive: {
-    borderColor: '#14b8a6',
-    backgroundColor: '#0f2a2a',
-  },
-  radioRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
   },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#64748b',
+  contextIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.dangerSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioCircleActive: {
-    borderColor: '#14b8a6',
+  contextSubtext: {
+    marginTop: spacing.xs,
+    lineHeight: 20,
   },
-  radioCircleInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#14b8a6',
+  sectionTitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+  },
+  reasonList: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  reasonOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
   },
   reasonText: {
-    fontSize: 14,
-    color: '#e2e8f0',
+    flex: 1,
   },
   reasonTextActive: {
-    color: '#14b8a6',
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
+  radioCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
+  radioActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  bottomPadding: {
-    height: 100,
+  rowDivider: {
+    marginLeft: spacing.lg,
   },
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    bottom: 0,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
     paddingBottom: 34,
-    backgroundColor: '#0f172a',
-  },
-  submitButton: {
-    backgroundColor: '#ef4444',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.5,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 });

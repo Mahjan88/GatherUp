@@ -5,11 +5,18 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import Header from '../../components/Header';
+import {
+  Button,
+  Chip,
+  IconName,
+  Ionicons,
+  ScreenHeader,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 type CommunityCategory =
   | 'networking'
@@ -31,6 +38,62 @@ const CATEGORIES: { value: CommunityCategory; label: string }[] = [
   { value: 'sports', label: 'Sports' },
   { value: 'other', label: 'Other' },
 ];
+
+/** Bold field label with optional required marker. */
+function FieldLabel({
+  children,
+  required,
+}: {
+  children: string;
+  required?: boolean;
+}) {
+  return (
+    <Text style={styles.fieldLabel}>
+      {children}
+      {required && <Text style={styles.required}> *</Text>}
+    </Text>
+  );
+}
+
+/** Selectable card with radio indicator, icon, title and hint. */
+function OptionCard({
+  icon,
+  title,
+  hint,
+  selected,
+  onPress,
+}: {
+  icon: IconName;
+  title: string;
+  hint: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.option, selected && styles.optionActive]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.optionIcon, selected && styles.optionIconActive]}>
+        <Ionicons
+          name={icon}
+          size={18}
+          color={selected ? colors.primary : colors.textSecondary}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={typography.label}>{title}</Text>
+        <Text style={[typography.caption, { marginTop: 2 }]}>{hint}</Text>
+      </View>
+      <Ionicons
+        name={selected ? 'radio-button-on' : 'radio-button-off'}
+        size={22}
+        color={selected ? colors.primary : colors.textMuted}
+      />
+    </TouchableOpacity>
+  );
+}
 
 export default function CreateCommunityScreen() {
   const router = useRouter();
@@ -66,212 +129,128 @@ export default function CreateCommunityScreen() {
 
   return (
     <View style={styles.container}>
-      <Header
-        title="Create Community"
-        showBack
-        showLogo={false}
-        showHamburger={false}
-      />
+      <ScreenHeader leftLabel="Cancel" title="Create Community" />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.sectionTitle}>Community Basics</Text>
+
         {/* Cover Image */}
-        <TouchableOpacity style={styles.coverPhotoBox}>
-          <Text style={styles.coverPhotoIcon}>📷</Text>
-          <Text style={styles.coverPhotoText}>Add Cover Image</Text>
+        <TouchableOpacity style={styles.coverBox} activeOpacity={0.85}>
+          <Ionicons name="image-outline" size={34} color={colors.textMuted} />
+          <View style={styles.coverPill}>
+            <Ionicons name="camera-outline" size={16} color={colors.text} />
+            <Text style={styles.coverPillText}>Add Cover Photo</Text>
+          </View>
         </TouchableOpacity>
 
         {/* Name */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Community Name <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Give your community a name"
-            placeholderTextColor="#64748b"
-            value={name}
-            onChangeText={handleNameChange}
-          />
-        </View>
+        <FieldLabel required>Community Name</FieldLabel>
+        <TextField
+          placeholder="Give your community a name"
+          value={name}
+          onChangeText={handleNameChange}
+        />
 
         {/* Slug */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Slug <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder="url-friendly-name"
-            placeholderTextColor="#64748b"
-            value={slug}
-            onChangeText={setSlug}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <Text style={styles.hintText}>
-            Used in the community URL. Letters, numbers, and hyphens only.
-          </Text>
-        </View>
+        <FieldLabel required>Slug</FieldLabel>
+        <TextField
+          icon="link-outline"
+          placeholder="url-friendly-name"
+          value={slug}
+          onChangeText={setSlug}
+          autoCapitalize="none"
+          autoCorrect={false}
+          hint="Used in the community URL. Letters, numbers, and hyphens only."
+        />
 
         {/* Description */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="What is this community about?"
-            placeholderTextColor="#64748b"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-        </View>
+        <FieldLabel>Description</FieldLabel>
+        <TextField
+          placeholder="What is this community about?"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+        />
 
         {/* Category */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Category <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.categoryPills}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat.value}
-                style={[
-                  styles.categoryPill,
-                  category === cat.value && styles.categoryPillActive,
-                ]}
-                onPress={() => setCategory(cat.value)}
-              >
-                <Text
-                  style={[
-                    styles.categoryPillText,
-                    category === cat.value && styles.categoryPillTextActive,
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <FieldLabel required>Category</FieldLabel>
+        <View style={styles.chipWrap}>
+          {CATEGORIES.map((cat) => (
+            <Chip
+              key={cat.value}
+              label={cat.label}
+              selected={category === cat.value}
+              onPress={() => setCategory(cat.value)}
+            />
+          ))}
         </View>
 
         {/* City */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>City</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., San Francisco, CA"
-            placeholderTextColor="#64748b"
-            value={city}
-            onChangeText={setCity}
+        <FieldLabel>City</FieldLabel>
+        <TextField
+          icon="location-outline"
+          placeholder="e.g., San Francisco, CA"
+          value={city}
+          onChangeText={setCity}
+        />
+
+        {/* Visibility */}
+        <FieldLabel required>Visibility</FieldLabel>
+        <View style={styles.optionGroup}>
+          <OptionCard
+            icon="globe-outline"
+            title="Public"
+            hint="Anyone can see and join this community"
+            selected={visibility === 'public'}
+            onPress={() => setVisibility('public')}
+          />
+          <OptionCard
+            icon="lock-closed-outline"
+            title="Private"
+            hint="Members must be approved to join"
+            selected={visibility === 'private'}
+            onPress={() => setVisibility('private')}
           />
         </View>
 
-        {/* Visibility */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            Visibility <Text style={styles.requiredAsterisk}>*</Text>
-          </Text>
-          <View style={styles.privacyOptions}>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                visibility === 'public' && styles.privacyOptionActive,
-              ]}
-              onPress={() => setVisibility('public')}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    visibility === 'public' && styles.radioCircleActive,
-                  ]}
-                >
-                  {visibility === 'public' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      visibility === 'public' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Public
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    Anyone can see and join this community
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.privacyOption,
-                visibility === 'private' && styles.privacyOptionActive,
-              ]}
-              onPress={() => setVisibility('private')}
-            >
-              <View style={styles.radioRow}>
-                <View
-                  style={[
-                    styles.radioCircle,
-                    visibility === 'private' && styles.radioCircleActive,
-                  ]}
-                >
-                  {visibility === 'private' && (
-                    <View style={styles.radioCircleInner} />
-                  )}
-                </View>
-                <View style={styles.radioContent}>
-                  <Text
-                    style={[
-                      styles.privacyOptionTitle,
-                      visibility === 'private' &&
-                        styles.privacyOptionTitleActive,
-                    ]}
-                  >
-                    Private
-                  </Text>
-                  <Text style={styles.privacyOptionHint}>
-                    Members must be approved to join
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Discoverable Toggle */}
-        <View style={styles.inlineToggle}>
-          <View style={styles.toggleInfo}>
-            <Text style={styles.toggleLabel}>Discoverable</Text>
-            <Text style={styles.toggleHint}>
+        <View style={styles.toggleRow}>
+          <View style={styles.optionIcon}>
+            <Ionicons
+              name="compass-outline"
+              size={18}
+              color={colors.textSecondary}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={typography.label}>Discoverable</Text>
+            <Text style={[typography.caption, { marginTop: 2 }]}>
               Show this community in search and browse results
             </Text>
           </View>
           <Switch
             value={isDiscoverable}
             onValueChange={setIsDiscoverable}
-            trackColor={{ false: '#334155', true: '#14b8a6' }}
-            thumbColor="#fff"
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.surface}
           />
         </View>
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
 
       {/* Create Button */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={[styles.createButton, !name.trim() && styles.createButtonDisabled]}
+        <Button
+          label="Create Community"
           onPress={handleCreate}
           disabled={!name.trim()}
-        >
-          <Text style={styles.createButtonText}>Create Community</Text>
-        </TouchableOpacity>
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -280,182 +259,110 @@ export default function CreateCommunityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    padding: 16,
   },
-  coverPhotoBox: {
-    height: 140,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
+  contentInner: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 120,
+  },
+  sectionTitle: {
+    ...typography.h2,
+    marginBottom: spacing.lg,
+  },
+  coverBox: {
+    height: 160,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.xxl,
   },
-  coverPhotoIcon: {
-    fontSize: 28,
-    marginBottom: 4,
+  coverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    height: 34,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  coverPhotoText: {
-    fontSize: 14,
-    color: '#94a3b8',
+  coverPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
   },
-  inputGroup: {
-    marginBottom: 16,
+  fieldLabel: {
+    ...typography.label,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
   },
-  inputLabel: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 8,
-    fontWeight: '500',
+  required: {
+    color: colors.danger,
   },
-  requiredAsterisk: {
-    color: '#ef4444',
-  },
-  input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 6,
-  },
-  categoryPills: {
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
-  categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  categoryPillActive: {
-    backgroundColor: '#14b8a6',
-    borderColor: '#14b8a6',
-  },
-  categoryPillText: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  categoryPillTextActive: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  privacyOptions: {
+  optionGroup: {
     gap: 10,
+    marginBottom: spacing.xl,
   },
-  privacyOption: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  privacyOptionActive: {
-    borderColor: '#14b8a6',
-    backgroundColor: '#0f2a2a',
-  },
-  radioRow: {
+  option: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
+    padding: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  radioContent: {
-    flex: 1,
+  optionActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: '#64748b',
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioCircleActive: {
-    borderColor: '#14b8a6',
+  optionIconActive: {
+    backgroundColor: colors.surface,
   },
-  radioCircleInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#14b8a6',
-  },
-  privacyOptionTitle: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  privacyOptionTitleActive: {
-    color: '#14b8a6',
-  },
-  privacyOptionHint: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  inlineToggle: {
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
+    gap: spacing.md,
     padding: 14,
-    marginBottom: 16,
-  },
-  toggleInfo: {
-    flex: 1,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  toggleHint: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  bottomPadding: {
-    height: 100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.md,
     paddingBottom: 34,
-    backgroundColor: '#0f172a',
-  },
-  createButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  createButtonDisabled: {
-    opacity: 0.5,
-  },
-  createButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 });

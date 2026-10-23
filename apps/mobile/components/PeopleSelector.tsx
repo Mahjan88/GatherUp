@@ -1,5 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import SlideUpModal from './SlideUpModal';
+import { Avatar, Button, Ionicons, SearchBar } from './ui';
+import { colors, radius, spacing, typography } from '../theme';
 import { Person } from '../types/event';
 
 export type { Person };
@@ -20,6 +22,16 @@ interface PeopleSelectorProps {
   showSearch?: boolean;
 }
 
+function CheckCircle({ checked }: { checked: boolean }) {
+  return (
+    <View style={[styles.checkbox, checked && styles.checkboxActive]}>
+      {checked && (
+        <Ionicons name="checkmark" size={15} color={colors.primaryOn} />
+      )}
+    </View>
+  );
+}
+
 export default function PeopleSelector({
   label,
   selectedPeople,
@@ -35,38 +47,44 @@ export default function PeopleSelector({
   onSearchChange,
   showSearch = true,
 }: PeopleSelectorProps) {
-  const filteredPeople = availablePeople.filter(p =>
+  const filteredPeople = availablePeople.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      
+
       {/* Selected People Chips */}
       {selectedPeople.length > 0 && (
         <View style={styles.chipsContainer}>
-          {selectedPeople.map(person => (
+          {selectedPeople.map((person) => (
             <View key={person.id} style={styles.chip}>
-              {person.avatar ? (
-                <Image source={{ uri: person.avatar }} style={styles.chipAvatar} />
-              ) : (
-                <View style={styles.chipAvatarPlaceholder}>
-                  <Text style={styles.chipAvatarText}>{person.name.charAt(0)}</Text>
-                </View>
-              )}
+              <Avatar uri={person.avatar} name={person.name} size={24} />
               <Text style={styles.chipName}>{person.name}</Text>
-              <TouchableOpacity onPress={() => onRemove(person.id)}>
-                <Text style={styles.chipRemove}>✕</Text>
+              <TouchableOpacity
+                onPress={() => onRemove(person.id)}
+                hitSlop={8}
+                accessibilityLabel={`Remove ${person.name}`}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={16}
+                  color={colors.textMuted}
+                />
               </TouchableOpacity>
             </View>
           ))}
         </View>
       )}
-      
+
       {/* Add Button */}
-      <TouchableOpacity style={styles.addButton} onPress={onAdd}>
-        <Text style={styles.addButtonIcon}>+</Text>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={onAdd}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="person-add-outline" size={18} color={colors.primary} />
         <Text style={styles.addButtonText}>{addButtonText}</Text>
       </TouchableOpacity>
 
@@ -77,49 +95,44 @@ export default function PeopleSelector({
         title={modalTitle}
       >
         {showSearch && onSearchChange && (
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search..."
-            placeholderTextColor="#64748b"
+          <SearchBar
+            placeholder="Search people"
             value={searchQuery}
             onChangeText={onSearchChange}
+            style={styles.search}
           />
         )}
-        
-        <View style={styles.peopleList}>
+
+        <View>
           {filteredPeople.length > 0 ? (
-            filteredPeople.map(person => (
-              <TouchableOpacity
-                key={person.id}
-                style={styles.personItem}
-                onPress={() => onTogglePerson(person)}
-              >
-                {person.avatar ? (
-                  <Image source={{ uri: person.avatar }} style={styles.personAvatar} />
-                ) : (
-                  <View style={styles.personAvatarPlaceholder}>
-                    <Text style={styles.personAvatarText}>{person.name.charAt(0)}</Text>
-                  </View>
-                )}
-                <Text style={styles.personName}>{person.name}</Text>
-                <View style={[
-                  styles.checkbox,
-                  selectedPeople.some(p => p.id === person.id) && styles.checkboxActive
-                ]}>
-                  {selectedPeople.some(p => p.id === person.id) && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))
+            filteredPeople.map((person) => {
+              const checked = selectedPeople.some((p) => p.id === person.id);
+              return (
+                <TouchableOpacity
+                  key={person.id}
+                  style={styles.personItem}
+                  onPress={() => onTogglePerson(person)}
+                  activeOpacity={0.7}
+                >
+                  <Avatar uri={person.avatar} name={person.name} size={44} />
+                  <Text style={styles.personName} numberOfLines={1}>
+                    {person.name}
+                  </Text>
+                  <CheckCircle checked={checked} />
+                </TouchableOpacity>
+              );
+            })
           ) : (
             <Text style={styles.emptyText}>No people found</Text>
           )}
         </View>
-        
-        <TouchableOpacity style={styles.doneButton} onPress={onModalClose}>
-          <Text style={styles.doneButtonText}>Done</Text>
-        </TouchableOpacity>
+
+        <Button
+          label="Done"
+          onPress={onModalClose}
+          fullWidth
+          style={styles.doneButton}
+        />
       </SlideUpModal>
     </View>
   );
@@ -127,156 +140,83 @@ export default function PeopleSelector({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   label: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 10,
-    fontWeight: '500',
+    ...typography.label,
+    marginBottom: spacing.sm,
   },
   chipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#334155',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingLeft: 6,
-    paddingRight: 12,
-    gap: 8,
-  },
-  chipAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  chipAvatarPlaceholder: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipAvatarText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.sm,
+    gap: spacing.sm,
   },
   chipName: {
-    color: '#fff',
     fontSize: 13,
-  },
-  chipRemove: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginLeft: 4,
+    fontWeight: '600',
+    color: colors.text,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
+    gap: spacing.sm,
+    height: 48,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
     borderStyle: 'dashed',
-  },
-  addButtonIcon: {
-    fontSize: 18,
-    color: '#14b8a6',
-    marginRight: 8,
+    backgroundColor: colors.primarySoft,
   },
   addButtonText: {
     fontSize: 14,
-    color: '#14b8a6',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: colors.primaryDark,
   },
-  searchInput: {
-    backgroundColor: '#334155',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#fff',
-    marginBottom: 16,
-  },
-  peopleList: {
-    gap: 10,
+  search: {
+    marginBottom: spacing.sm,
   },
   personItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#334155',
-    borderRadius: 12,
-    padding: 12,
-  },
-  personAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  personAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  personAvatarText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
   personName: {
+    ...typography.body,
     flex: 1,
-    color: '#fff',
-    fontSize: 15,
+    fontWeight: '600',
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#64748b',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxActive: {
-    backgroundColor: '#14b8a6',
-    borderColor: '#14b8a6',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   emptyText: {
-    color: '#64748b',
-    fontSize: 14,
+    ...typography.bodySecondary,
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: spacing.xl,
   },
   doneButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginTop: spacing.lg,
   },
 });

@@ -1,4 +1,5 @@
-import type { FastifyInstance } from 'fastify';
+// Side-effect import makes this file a module so the augmentation below applies.
+import 'fastify';
 import type { Env } from '../config/env.js';
 import type { createDatabase } from '../config/database.js';
 

@@ -5,16 +5,28 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   FlatList,
   Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Header from '../../components/Header';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  Ionicons,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 type InviteMethod = 'email' | 'phone' | 'link';
 
-type InvitationStatus = 'sent' | 'accepted' | 'declined' | 'expired' | 'cancelled';
+type InvitationStatus =
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'expired'
+  | 'cancelled';
 
 interface PendingInvitation {
   id: string;
@@ -25,13 +37,18 @@ interface PendingInvitation {
   created_at: string;
 }
 
-const STATUS_COLORS: Record<InvitationStatus, { bg: string; text: string }> = {
-  sent: { bg: '#334155', text: '#94a3b8' },
-  accepted: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  declined: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
-  expired: { bg: 'rgba(234, 179, 8, 0.15)', text: '#eab308' },
-  cancelled: { bg: '#334155', text: '#64748b' },
+const STATUS_TONES: Record<
+  InvitationStatus,
+  'primary' | 'success' | 'warning' | 'danger' | 'neutral'
+> = {
+  sent: 'primary',
+  accepted: 'success',
+  declined: 'danger',
+  expired: 'warning',
+  cancelled: 'neutral',
 };
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function InviteScreen() {
   const router = useRouter();
@@ -70,31 +87,32 @@ export default function InviteScreen() {
   };
 
   const handleCancelInvitation = (invitation: PendingInvitation) => {
-    const recipient = invitation.invited_email || invitation.invited_phone || 'this person';
-    Alert.alert(
-      'Cancel Invitation',
-      `Cancel the invitation to ${recipient}?`,
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Call API to cancel invitation
-            // PATCH /api/events/:eventId/invitations/:id { status: 'cancelled' }
-            setInvitations((prev) =>
-              prev.map((inv) =>
-                inv.id === invitation.id ? { ...inv, status: 'cancelled' as InvitationStatus } : inv
-              )
-            );
-          },
+    const recipient =
+      invitation.invited_email || invitation.invited_phone || 'this person';
+    Alert.alert('Cancel Invitation', `Cancel the invitation to ${recipient}?`, [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: () => {
+          // TODO: Call API to cancel invitation
+          // PATCH /api/events/:eventId/invitations/:id { status: 'cancelled' }
+          setInvitations((prev) =>
+            prev.map((inv) =>
+              inv.id === invitation.id
+                ? { ...inv, status: 'cancelled' as InvitationStatus }
+                : inv
+            )
+          );
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const getRecipientLabel = (invitation: PendingInvitation) => {
-    return invitation.invited_email || invitation.invited_phone || 'Link invitation';
+    return (
+      invitation.invited_email || invitation.invited_phone || 'Link invitation'
+    );
   };
 
   const tabs: { key: InviteMethod; label: string }[] = [
@@ -103,29 +121,40 @@ export default function InviteScreen() {
     { key: 'link', label: 'Link' },
   ];
 
-  const renderInvitation = ({ item }: { item: PendingInvitation }) => {
-    const colors = STATUS_COLORS[item.status];
-    return (
-      <View style={styles.invitationRow}>
-        <View style={styles.invitationInfo}>
-          <Text style={styles.invitationRecipient}>{getRecipientLabel(item)}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: colors.text }]}>
-              {item.status}
-            </Text>
-          </View>
-        </View>
-        {item.status === 'sent' && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => handleCancelInvitation(item)}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
+  const renderInvitation = ({ item }: { item: PendingInvitation }) => (
+    <View style={styles.invitationRow}>
+      <View style={styles.invitationIcon}>
+        <Ionicons
+          name={
+            item.invited_email
+              ? 'mail-outline'
+              : item.invited_phone
+                ? 'call-outline'
+                : 'link-outline'
+          }
+          size={18}
+          color={colors.primary}
+        />
       </View>
-    );
-  };
+      <View style={styles.invitationInfo}>
+        <Text style={styles.invitationRecipient} numberOfLines={1}>
+          {getRecipientLabel(item)}
+        </Text>
+        <Badge
+          label={capitalize(item.status)}
+          tone={STATUS_TONES[item.status]}
+        />
+      </View>
+      {item.status === 'sent' && (
+        <Button
+          label="Cancel"
+          variant="danger"
+          size="sm"
+          onPress={() => handleCancelInvitation(item)}
+        />
+      )}
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -136,7 +165,11 @@ export default function InviteScreen() {
         showHamburger={false}
       />
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentInner}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Segmented Control */}
         <View style={styles.segmentedControl}>
           {tabs.map((tab) => (
@@ -164,53 +197,54 @@ export default function InviteScreen() {
         <View style={styles.inviteSection}>
           {activeTab === 'email' && (
             <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
+              <TextField
+                containerStyle={styles.inputField}
+                icon="mail-outline"
                 placeholder="Enter email address"
-                placeholderTextColor="#64748b"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <TouchableOpacity
-                style={[styles.sendButton, !email.trim() && styles.sendButtonDisabled]}
+              <Button
+                label="Send"
+                size="md"
                 onPress={handleSendEmail}
                 disabled={!email.trim()}
-              >
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
+                style={styles.sendButton}
+              />
             </View>
           )}
 
           {activeTab === 'phone' && (
             <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
+              <TextField
+                containerStyle={styles.inputField}
+                icon="call-outline"
                 placeholder="Enter phone number"
-                placeholderTextColor="#64748b"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
               />
-              <TouchableOpacity
-                style={[styles.sendButton, !phone.trim() && styles.sendButtonDisabled]}
+              <Button
+                label="Send"
+                size="md"
                 onPress={handleSendPhone}
                 disabled={!phone.trim()}
-              >
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
+                style={styles.sendButton}
+              />
             </View>
           )}
 
           {activeTab === 'link' && (
-            <TouchableOpacity style={styles.copyLinkButton} onPress={handleCopyLink}>
-              <Text style={styles.copyLinkIcon}>&#x1F517;</Text>
-              <Text style={styles.copyLinkText}>
-                {linkCopied ? 'Link Copied!' : 'Copy Invite Link'}
-              </Text>
-            </TouchableOpacity>
+            <Button
+              label={linkCopied ? 'Link Copied!' : 'Copy Invite Link'}
+              variant={linkCopied ? 'soft' : 'outline'}
+              icon={linkCopied ? 'checkmark-circle' : 'link-outline'}
+              onPress={handleCopyLink}
+              fullWidth
+            />
           )}
         </View>
 
@@ -219,13 +253,11 @@ export default function InviteScreen() {
           <Text style={styles.sectionTitle}>Pending Invitations</Text>
 
           {invitations.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>&#x2709;</Text>
-              <Text style={styles.emptyStateTitle}>No invitations yet</Text>
-              <Text style={styles.emptyStateText}>
-                Invite friends via email, phone, or a shareable link.
-              </Text>
-            </View>
+            <EmptyState
+              icon="mail-outline"
+              title="No invitations yet"
+              message="Invite friends via email, phone, or a shareable link."
+            />
           ) : (
             <FlatList
               data={invitations}
@@ -245,157 +277,89 @@ export default function InviteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    padding: 16,
+  },
+  contentInner: {
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
     padding: 4,
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   segmentTab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   segmentTabActive: {
-    backgroundColor: '#14b8a6',
+    backgroundColor: colors.surface,
+    shadowColor: colors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 1,
   },
   segmentTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: colors.textSecondary,
   },
   segmentTabTextActive: {
-    color: '#fff',
+    color: colors.primary,
+    fontWeight: '700',
   },
   inviteSection: {
-    marginBottom: 28,
+    marginBottom: spacing.xxl,
   },
   inputRow: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
-  input: {
+  inputField: {
     flex: 1,
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
-    color: '#fff',
-    fontSize: 14,
+    marginBottom: 0,
   },
   sendButton: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  copyLinkButton: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  copyLinkIcon: {
-    fontSize: 20,
-  },
-  copyLinkText: {
-    color: '#14b8a6',
-    fontSize: 15,
-    fontWeight: '600',
+    height: 48,
   },
   pendingSection: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 14,
+    ...typography.h2,
+    marginBottom: spacing.md,
   },
   invitationRow: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
-    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  invitationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   invitationInfo: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 4,
   },
   invitationRecipient: {
-    fontSize: 14,
-    color: '#e2e8f0',
-    flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  cancelButton: {
-    marginLeft: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-  },
-  cancelButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ef4444',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
+    ...typography.label,
   },
   bottomPadding: {
     height: 40,

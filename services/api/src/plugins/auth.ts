@@ -15,7 +15,7 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
       try {
         const decoded = await request.jwtVerify<{ sub: string }>();
         request.userId = decoded.sub;
-      } catch (err) {
+      } catch {
         reply.status(401).send({
           statusCode: 401,
           error: 'Unauthorized',

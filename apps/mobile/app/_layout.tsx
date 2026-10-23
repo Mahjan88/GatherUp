@@ -3,7 +3,9 @@ import { Stack, useRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import SplashScreen from '../components/SplashScreen';
+import { StatusBar } from 'expo-status-bar';
 import { CenterButtonProvider } from '../contexts/CenterButtonContext';
+import { colors } from '../theme';
 
 // Prevent the native splash screen from hiding automatically
 ExpoSplashScreen.preventAutoHideAsync();
@@ -35,9 +37,9 @@ export default function RootLayout() {
 
   const onSplashFinish = useCallback(() => {
     setShowSplash(false);
-    // Navigate to signup if not authenticated
+    // Navigate to welcome if not authenticated
     if (!isAuthenticated) {
-      router.replace('/(auth)/signup');
+      router.replace('/(auth)/welcome');
     }
   }, [isAuthenticated, router]);
 
@@ -49,7 +51,12 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <CenterButtonProvider>
         {showSplash && <SplashScreen onFinish={onSplashFinish} />}
-        <Stack>
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -59,14 +66,8 @@ export default function RootLayout() {
               presentation: 'modal',
             }}
           />
-          <Stack.Screen
-            name="chat/[id]"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="contact/[id]"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="contact/[id]" options={{ headerShown: false }} />
           <Stack.Screen
             name="settings/profile"
             options={{ headerShown: false }}
@@ -87,14 +88,8 @@ export default function RootLayout() {
             name="settings/data-storage"
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="event/[id]"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="gallery/[id]"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="gallery/[id]" options={{ headerShown: false }} />
           <Stack.Screen
             name="event/create"
             options={{
@@ -103,18 +98,9 @@ export default function RootLayout() {
               headerShown: false,
             }}
           />
-          <Stack.Screen
-            name="event/past"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="event/invite"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="discover"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="event/past" options={{ headerShown: false }} />
+          <Stack.Screen name="event/invite" options={{ headerShown: false }} />
+          <Stack.Screen name="discover" options={{ headerShown: false }} />
           <Stack.Screen
             name="community/[id]"
             options={{ headerShown: false }}
@@ -123,22 +109,13 @@ export default function RootLayout() {
             name="community/create"
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="series/[id]"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="series/create"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="series/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="series/create" options={{ headerShown: false }} />
           <Stack.Screen
             name="settings/blocked"
             options={{ headerShown: false }}
           />
-          <Stack.Screen
-            name="report"
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="report" options={{ headerShown: false }} />
         </Stack>
       </CenterButtonProvider>
     </QueryClientProvider>

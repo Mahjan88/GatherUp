@@ -161,7 +161,7 @@ export default function SeeAllCommunitiesPage() {
 
           {!hasMore && communities.length > 0 && (
             <p className="text-center text-gray-400 text-sm py-4">
-              You've reached the end
+              You&apos;ve reached the end
             </p>
           )}
         </div>

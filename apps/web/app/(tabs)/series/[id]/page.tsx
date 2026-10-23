@@ -10,7 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 // TODO: Replace with actual API call - GET /api/series/:id
 const MOCK_SERIES = {
   id: 'placeholder-id',
-  organizer_type: 'user' as const,
+  organizer_type: 'user' as 'user' | 'community',
   host_id: 'user-123',
   community_id: null as string | null,
   title: 'Weekly Tech Meetup',
@@ -19,7 +19,7 @@ const MOCK_SERIES = {
     'A recurring series of tech talks and networking events for developers in the area. Join us every week to learn something new and meet fellow developers.',
   cover_image_url: null as string | null,
   category: 'networking' as const,
-  visibility: 'public' as const,
+  visibility: 'public' as 'public' | 'private',
   recurrence_hint: 'weekly' as const,
   settings: {},
   subscriber_count: 42,

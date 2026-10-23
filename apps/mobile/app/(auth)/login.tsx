@@ -2,17 +2,24 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Image,
-  SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import {
+  Button,
+  Divider,
+  Ionicons,
+  ScreenHeader,
+  TextField,
+} from '../../components/ui';
+import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -25,102 +32,68 @@ export default function LoginScreen() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    // TODO: Add actual login logic
-    router.replace('/(tabs)');
+    // TODO: Add actual login logic (use setLoading while the request runs)
+    router.replace('/(tabs)/explore');
   };
 
   const handleSocialLogin = (provider: string) => {
     // TODO: Implement social login
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/explore');
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Background orbs */}
-      <View style={styles.bgEffects}>
-        <View style={[styles.orb, styles.orb1]} />
-        <View style={[styles.orb, styles.orb2]} />
-        <View style={[styles.orb, styles.orb3]} />
-      </View>
-
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+      <ScreenHeader showBack />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={styles.flex}
       >
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={typography.title}>Welcome back!</Text>
+          <Text style={styles.subtitle}>Log in to your GatherUp account</Text>
+
+          <View style={styles.form}>
+            <TextField
+              label="Email"
+              icon="mail-outline"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <TextField
+              label="Password"
+              icon="lock-closed-outline"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+
+            <TouchableOpacity style={styles.forgotButton} hitSlop={8}>
+              <Text style={styles.link}>Forgot password?</Text>
+            </TouchableOpacity>
+
+            <Button
+              label={loading ? 'Signing In...' : 'Log In'}
+              onPress={handleLogin}
+              loading={loading}
+              fullWidth
             />
           </View>
 
-          {/* Title */}
-          <Text style={styles.title}>Welcome back!</Text>
-          <Text style={styles.subtitle}>Log in to your GatherUp account</Text>
-
-          {/* Login Form */}
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="rgba(255, 255, 255, 0.25)"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="rgba(255, 255, 255, 0.25)"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
-
-            <TouchableOpacity style={styles.forgotButton}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.loginButton, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.loginButtonText}>
-                {loading ? 'Signing In...' : 'Log In'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
+          <View style={styles.dividerRow}>
+            <Divider style={styles.flex} />
             <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+            <Divider style={styles.flex} />
           </View>
 
-          {/* Social Login Buttons — white pill style */}
           <View style={styles.socialButtons}>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => handleSocialLogin('apple')}
-              activeOpacity={0.85}
-            >
-              <FontAwesome5 name="apple" size={22} color="#111" />
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.socialButton}
               onPress={() => handleSocialLogin('google')}
@@ -128,188 +101,102 @@ export default function LoginScreen() {
             >
               <Image
                 source={require('../../assets/google-logo.png')}
-                style={{ width: 22, height: 22 }}
+                style={styles.socialIcon}
                 resizeMode="contain"
               />
+              <Text style={styles.socialText}>Continue with Google</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.socialButton}
-              onPress={() => handleSocialLogin('facebook')}
+              onPress={() => handleSocialLogin('apple')}
               activeOpacity={0.85}
             >
-              <FontAwesome5 name="facebook" size={22} color="#1877F2" />
+              <Ionicons name="logo-apple" size={20} color={colors.text} />
+              <Text style={styles.socialText}>Continue with Apple</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Sign Up Link */}
           <View style={styles.signupRow}>
-            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Text style={typography.bodySecondary}>Don't have an account?</Text>
             <Link href="/(auth)/signup" asChild>
-              <TouchableOpacity>
-                <Text style={styles.signupLink}> Sign Up</Text>
+              <TouchableOpacity hitSlop={8}>
+                <Text style={styles.link}> Sign Up</Text>
               </TouchableOpacity>
             </Link>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background,
   },
-  bgEffects: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  orb: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  orb1: {
-    width: 260,
-    height: 260,
-    backgroundColor: 'rgba(0, 212, 170, 0.12)',
-    top: -60,
-    left: -80,
-  },
-  orb2: {
-    width: 200,
-    height: 200,
-    backgroundColor: 'rgba(224, 64, 160, 0.10)',
-    top: 60,
-    right: -60,
-  },
-  orb3: {
-    width: 180,
-    height: 180,
-    backgroundColor: 'rgba(64, 128, 255, 0.08)',
-    bottom: 140,
-    left: 40,
-  },
-  keyboardView: {
+  flex: {
     flex: 1,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: 'center',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 6,
-    letterSpacing: -0.3,
+    paddingHorizontal: GUTTER,
+    paddingTop: spacing.sm,
+    paddingBottom: 40,
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.5)',
-    textAlign: 'center',
-    marginBottom: 28,
+    ...typography.bodySecondary,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xxl,
   },
   form: {
-    gap: 14,
-  },
-  inputContainer: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#fff',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    gap: spacing.xs,
   },
   forgotButton: {
     alignSelf: 'flex-end',
+    marginBottom: spacing.lg,
   },
-  forgotText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  loginButton: {
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    paddingVertical: 16,
-    marginTop: 4,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  loginButtonText: {
-    color: '#000',
-    textAlign: 'center',
+  link: {
+    fontSize: 14,
     fontWeight: '600',
-    fontSize: 16,
+    color: colors.link,
   },
-  divider: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 22,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginVertical: spacing.xxl,
   },
   dividerText: {
-    color: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 16,
-    fontSize: 13,
+    ...typography.caption,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.lg,
   },
   socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 14,
+    gap: spacing.md,
   },
   socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 50,
-    backgroundColor: '#fff',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+    height: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  socialIcon: {
+    width: 20,
+    height: 20,
+  },
+  socialText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
   },
   signupRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28,
-  },
-  signupText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 14,
-  },
-  signupLink: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
+    alignItems: 'center',
+    marginTop: spacing.xxxl,
   },
 });

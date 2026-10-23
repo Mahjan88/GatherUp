@@ -1,214 +1,169 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { ReactNode } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import HamburgerMenu from './HamburgerMenu';
-
-const NotificationIcon = require('../assets/Icons/notification_icon.png');
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { ScreenHeader, IconButton, IconName } from './ui';
+import { colors, radius, GUTTER } from '../theme';
 
 interface HeaderProps {
+  /** Large left-aligned title. Omit to show the brand bar (logo + location). */
   title?: string;
+  subtitle?: string;
   showBack?: boolean;
-  showHamburger?: boolean;
+  onBack?: () => void;
+  /** Force the brand bar even when a title is given. */
   showLogo?: boolean;
   showNotificationBell?: boolean;
   unreadNotificationCount?: number;
-  rightElement?: React.ReactNode;
-  onBack?: () => void;
+  /** Current city shown in the brand bar location pill. */
+  location?: string;
+  /** Single icon action on the right (e.g. search, settings). */
+  rightIcon?: IconName;
+  onRightPress?: () => void;
+  /** Arbitrary right-side content. */
+  rightElement?: ReactNode;
+  /** Content rendered under the title row (search bar, chips…). */
+  children?: ReactNode;
+  /** @deprecated Menu moved to Profile → settings. Kept for API compat. */
+  showHamburger?: boolean;
 }
 
-export default function Header({
-  title,
-  showBack = false,
-  showHamburger = true,
-  showLogo = true,
-  showNotificationBell = true,
-  unreadNotificationCount = 0,
-  rightElement,
-  onBack,
-}: HeaderProps) {
-  const router = useRouter();
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      router.back();
-    }
-  };
-
+/** Teal mountain mark + "gatherup" wordmark. */
+export function BrandMark({
+  size = 26,
+  light,
+  stacked,
+}: {
+  size?: number;
+  light?: boolean;
+  /** Icon above the wordmark (splash / welcome). */
+  stacked?: boolean;
+}) {
   return (
-    <View style={styles.header}>
-      {/* Top Row: Logo + GatherUp + Bell + Hamburger */}
-      <View style={styles.topRow}>
-        <View style={styles.headerLeft}>
-          {showBack && (
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Text style={styles.backIcon}>&#x2039;</Text>
-            </TouchableOpacity>
-          )}
-          {showLogo && (
-            <>
-              <Image
-                source={require('../assets/logo.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-              <Text style={styles.headerTitle}>
-                <Text style={styles.titleCyan}>Gather</Text>
-                <Text style={styles.titlePink}>Up</Text>
-              </Text>
-            </>
-          )}
-        </View>
-
-        <View style={styles.headerRight}>
-          {rightElement}
-          {showNotificationBell && (
-            <TouchableOpacity
-              style={styles.bellButton}
-              onPress={() => router.push('/notifications')}
-            >
-              <Image
-                source={NotificationIcon}
-                style={styles.bellIcon}
-                resizeMode="contain"
-              />
-              {unreadNotificationCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
-          {showHamburger && (
-            <TouchableOpacity style={styles.hamburgerButton} onPress={() => setMenuVisible(true)}>
-              <Text style={styles.hamburgerIcon}>&#x2630;</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Page Title (shown below logo row when no back button) */}
-      {title && !showBack && (
-        <View style={styles.titleRow}>
-          <Text style={styles.pageTitle}>{title}</Text>
-        </View>
-      )}
-
-      {/* Hamburger Menu Modal */}
-      <HamburgerMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        userName="John Doe"
-        userEmail="john@example.com"
+    <View style={stacked ? styles.brandStacked : styles.brand}>
+      <MaterialCommunityIcons
+        name="image-filter-hdr"
+        size={stacked ? size * 1.3 : size}
+        color={colors.primary}
       />
+      <Text
+        style={[
+          styles.wordmark,
+          { fontSize: size * 0.78 },
+          stacked && { marginTop: -size * 0.15, letterSpacing: -1 },
+          light && { color: colors.textOnImage },
+        ]}
+      >
+        gatherup
+      </Text>
     </View>
   );
 }
 
+export default function Header({
+  title,
+  subtitle,
+  showBack = false,
+  onBack,
+  showLogo,
+  showNotificationBell = true,
+  unreadNotificationCount = 0,
+  location = 'San Jose, CA',
+  rightIcon,
+  onRightPress,
+  rightElement,
+  children,
+}: HeaderProps) {
+  const router = useRouter();
+
+  const bell = showNotificationBell ? (
+    <IconButton
+      name="notifications-outline"
+      badge={unreadNotificationCount > 0 ? unreadNotificationCount : false}
+      onPress={() => router.push('/notifications')}
+      accessibilityLabel="Notifications"
+    />
+  ) : null;
+
+  const right = (
+    <>
+      {rightElement}
+      {rightIcon && <IconButton name={rightIcon} onPress={onRightPress} />}
+      {!showBack && bell}
+    </>
+  );
+
+  const brandBar = showLogo || (!title && !showBack);
+
+  if (brandBar) {
+    return (
+      <View style={styles.brandHeader}>
+        <View style={styles.brandRow}>
+          <BrandMark />
+          <TouchableOpacity style={styles.locationPill} activeOpacity={0.8}>
+            <Ionicons
+              name="location-outline"
+              size={13}
+              color={colors.primary}
+            />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {location}
+            </Text>
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+          {right}
+        </View>
+        {children}
+      </View>
+    );
+  }
+
+  return (
+    <ScreenHeader
+      title={title}
+      subtitle={subtitle}
+      showBack={showBack}
+      onBack={onBack}
+      right={right}
+    >
+      {children}
+    </ScreenHeader>
+  );
+}
+
 const styles = StyleSheet.create({
-  header: {
+  brandHeader: {
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#0f172a',
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-  },
-  backIcon: {
-    fontSize: 22,
-    color: '#fff',
-    marginTop: -2,
-  },
-  logoImage: {
-    width: 40,
-    height: 40,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  titleCyan: { color: '#00FFFF' },
-  titlePink: { color: '#FF00FF' },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingBottom: 12,
+    backgroundColor: colors.background,
     gap: 12,
   },
-  bellButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  bellIcon: {
-    width: 22,
-    height: 22,
-    tintColor: '#94a3b8',
-  },
-  badge: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: '#0f172a',
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  hamburgerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hamburgerIcon: {
-    fontSize: 20,
-    color: '#fff',
-  },
-  titleRow: {
+  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginTop: 16,
+    paddingHorizontal: GUTTER,
+    gap: 10,
   },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  brandStacked: { alignItems: 'center' },
+  wordmark: {
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -0.5,
+  },
+  locationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    height: 26,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceAlt,
+    maxWidth: 140,
+  },
+  locationText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textSecondary,
   },
 });

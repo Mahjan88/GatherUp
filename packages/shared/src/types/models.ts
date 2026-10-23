@@ -241,6 +241,10 @@ export type MediaType = 'image' | 'video';
 export interface EventWithHost extends EventRow {
   host: User;
   member_count?: number;
+  /** Joined when organizer_type = 'community'. */
+  community?: Pick<Community, 'id' | 'name'> | null;
+  /** Joined when the event belongs to a series. */
+  series?: Pick<EventSeriesRow, 'id' | 'title'> | null;
 }
 
 export interface EventWithMembers extends EventRow {

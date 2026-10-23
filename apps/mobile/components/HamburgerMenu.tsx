@@ -1,13 +1,43 @@
-import { View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Avatar, IconButton, IconName, ListRow } from './ui';
+import { colors, radius, spacing, typography, GUTTER } from '../theme';
 
-const MENU_ITEMS = [
-  { id: 'profile', icon: '👤', label: 'Profile', route: '/profile' },
-  { id: 'settings', icon: '⚙️', label: 'Settings', route: '/settings/account' },
-  { id: 'notifications', icon: '🔔', label: 'Notification Settings', route: '/settings/notifications' },
-  { id: 'privacy', icon: '🔒', label: 'Privacy', route: '/settings/account' },
-  { id: 'help', icon: 'ℹ️', label: 'Help & Support' },
-  { id: 'signout', icon: '🚪', label: 'Sign Out', danger: true },
+interface MenuItem {
+  id: string;
+  icon: IconName;
+  label: string;
+  route?: string;
+  danger?: boolean;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  {
+    id: 'profile',
+    icon: 'person-outline',
+    label: 'Profile',
+    route: '/profile',
+  },
+  {
+    id: 'settings',
+    icon: 'settings-outline',
+    label: 'Settings',
+    route: '/settings/account',
+  },
+  {
+    id: 'notifications',
+    icon: 'notifications-outline',
+    label: 'Notification Settings',
+    route: '/settings/notifications',
+  },
+  {
+    id: 'privacy',
+    icon: 'lock-closed-outline',
+    label: 'Privacy',
+    route: '/settings/account',
+  },
+  { id: 'help', icon: 'help-circle-outline', label: 'Help & Support' },
+  { id: 'signout', icon: 'log-out-outline', label: 'Sign Out', danger: true },
 ];
 
 interface HamburgerMenuProps {
@@ -17,20 +47,20 @@ interface HamburgerMenuProps {
   userEmail?: string;
 }
 
-export default function HamburgerMenu({ 
-  visible, 
-  onClose, 
+export default function HamburgerMenu({
+  visible,
+  onClose,
   userName = 'User Name',
-  userEmail = 'user@example.com'
+  userEmail = 'user@example.com',
 }: HamburgerMenuProps) {
   const router = useRouter();
 
-  const handleMenuItemPress = (item: typeof MENU_ITEMS[0]) => {
+  const handleMenuItemPress = (item: MenuItem) => {
     onClose();
     if (item.route) {
       router.push(item.route as any);
     } else if (item.id === 'signout') {
-      router.replace('/login');
+      router.replace('/(auth)/welcome');
     }
   };
 
@@ -38,42 +68,48 @@ export default function HamburgerMenu({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable style={styles.menuContainer} onPress={(e) => e.stopPropagation()}>
-          {/* User Profile Header */}
-          <View style={styles.menuHeader}>
-            <View style={styles.menuAvatar}>
-              <Text style={styles.menuAvatarText}>{userName[0]?.toUpperCase() || 'U'}</Text>
-            </View>
-            <View style={styles.menuUserInfo}>
-              <Text style={styles.menuUserName}>{userName}</Text>
-              <Text style={styles.menuUserEmail}>{userEmail}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.menuDivider} />
-          
-          {/* Menu Items */}
-          {MENU_ITEMS.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.menuItem}
-              onPress={() => handleMenuItemPress(item)}
-            >
-              <Text style={styles.menuItemIcon}>{item.icon}</Text>
-              <Text style={[styles.menuItemLabel, item.danger && styles.menuItemDanger]}>
-                {item.label}
+      <Pressable style={styles.overlay} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.grabber} />
+
+          {/* User header */}
+          <View style={styles.header}>
+            <Avatar name={userName} size={52} />
+            <View style={{ flex: 1 }}>
+              <Text style={typography.h2} numberOfLines={1}>
+                {userName}
               </Text>
-            </TouchableOpacity>
-          ))}
-          
-          {/* App Version */}
-          <View style={styles.menuFooter}>
-            <Text style={styles.menuVersion}>GatherUp v1.0.0</Text>
+              <Text style={typography.bodySecondary} numberOfLines={1}>
+                {userEmail}
+              </Text>
+            </View>
+            <IconButton
+              name="close"
+              variant="filled"
+              size={20}
+              onPress={onClose}
+              accessibilityLabel="Close menu"
+            />
           </View>
+
+          {/* Menu items */}
+          <View style={styles.list}>
+            {MENU_ITEMS.map((item) => (
+              <ListRow
+                key={item.id}
+                icon={item.icon}
+                title={item.label}
+                destructive={item.danger}
+                showChevron={!item.danger}
+                onPress={() => handleMenuItemPress(item)}
+              />
+            ))}
+          </View>
+
+          <Text style={styles.version}>GatherUp v1.0.0</Text>
         </Pressable>
       </Pressable>
     </Modal>
@@ -82,74 +118,50 @@ export default function HamburgerMenu({
 
 export function HamburgerButton({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.hamburgerButton} onPress={onPress}>
-      <Text style={styles.hamburgerIcon}>☰</Text>
-    </TouchableOpacity>
+    <IconButton
+      name="menu"
+      variant="filled"
+      onPress={onPress}
+      accessibilityLabel="Open menu"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  hamburgerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hamburgerIcon: { fontSize: 20, color: '#fff' },
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-start',
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
   },
-  menuContainer: {
-    backgroundColor: '#1e293b',
-    marginTop: 100,
-    marginLeft: 20,
-    marginRight: 80,
-    borderRadius: 16,
-    paddingVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: 36,
   },
-  menuHeader: {
+  grabber: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    gap: spacing.md,
+    paddingHorizontal: GUTTER,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
   },
-  menuAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
+  list: { paddingTop: spacing.xs },
+  version: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
-  menuAvatarText: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  menuUserInfo: { marginLeft: 12, flex: 1 },
-  menuUserName: { fontSize: 17, fontWeight: '600', color: '#fff' },
-  menuUserEmail: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  menuDivider: { height: 1, backgroundColor: '#334155', marginVertical: 8 },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  menuItemIcon: { fontSize: 20, marginRight: 14, width: 28 },
-  menuItemLabel: { fontSize: 16, color: '#fff' },
-  menuItemDanger: { color: '#ef4444' },
-  menuFooter: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
-    marginTop: 8,
-  },
-  menuVersion: { fontSize: 12, color: '#475569', textAlign: 'center' },
 });

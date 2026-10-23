@@ -7,20 +7,26 @@ import {
   TouchableOpacity,
   Animated,
   PanResponder,
-  TextInput,
-  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import SlideUpModal from '../../components/SlideUpModal';
-import { useCenterButton } from '../../contexts/CenterButtonContext';
-
-// Import icons
-const EditIcon = require('../../assets/Icons/edit_icon.png');
-const SearchIcon = require('../../assets/Icons/search_icon.png');
-const ArchiveIcon = require('../../assets/Icons/archive_icon.png');
-const DoneIcon = require('../../assets/Icons/done_icon.png');
+import {
+  Avatar,
+  Chip,
+  EmptyState,
+  Ionicons,
+  IconName,
+  SearchBar,
+} from '../../components/ui';
+import {
+  colors,
+  radius,
+  shadows,
+  spacing,
+  typography,
+  GUTTER,
+} from '../../theme';
 
 type ChatFilter = 'all' | 'personal' | 'groups' | 'unread' | 'archived';
 
@@ -40,9 +46,51 @@ interface Chat {
 const INITIAL_CHATS: Chat[] = [];
 const GROUP_CHATS: Chat[] = [];
 
-const CONTACTS: { id: string; name: string; status: string; avatar: string | null }[] = [];
+const CONTACTS: {
+  id: string;
+  name: string;
+  status: string;
+  avatar: string | null;
+}[] = [];
 
 const SWIPE_THRESHOLD = 60;
+const AVATAR_SIZE = 48;
+
+/** Compose FAB (pencil) — opens the New Message sheet. */
+function ComposeFab({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={styles.fab}
+      accessibilityLabel="New message"
+    >
+      <Ionicons name="create-outline" size={26} color={colors.primaryOn} />
+    </TouchableOpacity>
+  );
+}
+
+function SwipeAction({
+  icon,
+  color,
+  onPress,
+  label,
+}: {
+  icon: IconName;
+  color: string;
+  onPress: () => void;
+  label: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.actionButton, { backgroundColor: color }]}
+      onPress={onPress}
+      accessibilityLabel={label}
+    >
+      <Ionicons name={icon} size={22} color={colors.primaryOn} />
+    </TouchableOpacity>
+  );
+}
 
 function SwipeableChatItem({
   chat,
@@ -98,39 +146,41 @@ function SwipeableChatItem({
     Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
   };
 
+  const hasUnread = chat.unread > 0;
+
   return (
     <View style={styles.swipeContainer}>
       <View style={[styles.actionContainer, styles.pinAction]}>
-        <TouchableOpacity
-          style={styles.actionButton}
+        <SwipeAction
+          icon={chat.pinned ? 'pin' : 'pin-outline'}
+          color={colors.primary}
+          label={chat.pinned ? 'Unpin' : 'Pin'}
           onPress={() => {
             onPin();
             resetSwipe();
           }}
-        >
-          <Text style={styles.actionIcon}>{chat.pinned ? '📍' : '📌'}</Text>
-        </TouchableOpacity>
+        />
       </View>
 
-      <View style={[styles.actionContainer, styles.leftActions]}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.archiveButton]}
+      <View style={[styles.actionContainer, styles.rightActions]}>
+        <SwipeAction
+          icon="archive-outline"
+          color={colors.info}
+          label={chat.archived ? 'Unarchive' : 'Archive'}
           onPress={() => {
             onArchive();
             resetSwipe();
           }}
-        >
-          <Text style={styles.actionIcon}>📦</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
+        />
+        <SwipeAction
+          icon="trash-outline"
+          color={colors.danger}
+          label="Delete"
           onPress={() => {
             onDelete();
             resetSwipe();
           }}
-        >
-          <Text style={styles.actionIcon}>🗑️</Text>
-        </TouchableOpacity>
+        />
       </View>
 
       <Animated.View
@@ -149,34 +199,55 @@ function SwipeableChatItem({
                 isSelected && styles.selectCircleSelected,
               ]}
             >
-              {isSelected && <Text style={styles.checkmark}>✓</Text>}
+              {isSelected && (
+                <Ionicons name="checkmark" size={15} color={colors.primaryOn} />
+              )}
             </View>
           )}
-          {chat.pinned && <Text style={styles.pinnedIcon}>📌</Text>}
-          <View style={[styles.avatar, chat.isGroupChat && styles.groupAvatar]}>
-            <Text style={styles.avatarText}>
-              {chat.isGroupChat ? '👥' : (() => {
-                const parts = chat.name.split(' ');
-                if (parts.length >= 2) {
-                  return parts[0][0] + parts[1][0];
-                }
-                return chat.name.substring(0, 2);
-              })()}
-            </Text>
-          </View>
+
+          {chat.isGroupChat && !chat.avatar ? (
+            <View style={styles.groupAvatar}>
+              <Ionicons name="people" size={22} color={colors.primary} />
+            </View>
+          ) : (
+            <Avatar uri={chat.avatar} name={chat.name} size={AVATAR_SIZE} />
+          )}
+
           <View style={styles.chatInfo}>
-            <Text style={styles.chatName}>{chat.name}</Text>
-            <Text style={styles.chatMessage} numberOfLines={1}>
+            <View style={styles.nameRow}>
+              <Text style={styles.chatName} numberOfLines={1}>
+                {chat.name}
+              </Text>
+              {chat.pinned && (
+                <Ionicons name="pin" size={13} color={colors.textMuted} />
+              )}
+            </View>
+            <Text
+              style={[
+                styles.chatMessage,
+                hasUnread && styles.chatMessageUnread,
+              ]}
+              numberOfLines={1}
+            >
               {chat.message}
             </Text>
           </View>
+
           <View style={styles.chatRight}>
-            {chat.unread > 0 && (
+            <Text
+              style={[styles.chatTime, hasUnread && { color: colors.primary }]}
+            >
+              {chat.time}
+            </Text>
+            {hasUnread ? (
               <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{chat.unread}</Text>
+                <Text style={styles.unreadText}>
+                  {chat.unread > 99 ? '99+' : chat.unread}
+                </Text>
               </View>
+            ) : (
+              <View style={styles.unreadSpacer} />
             )}
-            <Text style={styles.chatTime}>{chat.time}</Text>
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -186,7 +257,6 @@ function SwipeableChatItem({
 
 export default function MessagesScreen() {
   const router = useRouter();
-  const { setCustomAction } = useCenterButton();
   const [personalChats, setPersonalChats] = useState<Chat[]>(INITIAL_CHATS);
   const [groupChats, setGroupChats] = useState<Chat[]>(GROUP_CHATS);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -194,20 +264,7 @@ export default function MessagesScreen() {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [contactSearchQuery, setContactSearchQuery] = useState('');
   const [chatFilter, setChatFilter] = useState<ChatFilter>('all');
-  const [isSearchMode, setIsSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Register custom action for center button when this screen is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      setCustomAction(() => setShowNewChatModal(true));
-      
-      // Cleanup: reset to default when leaving this screen
-      return () => {
-        setCustomAction(null);
-      };
-    }, [setCustomAction])
-  );
 
   const getCurrentChats = () => {
     const allChats = [...personalChats, ...groupChats];
@@ -226,10 +283,11 @@ export default function MessagesScreen() {
   };
 
   const sortedChats = [...getCurrentChats()]
-    .filter((c) => 
-      searchQuery === '' || 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.message.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter(
+      (c) =>
+        searchQuery === '' ||
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.message.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
@@ -238,8 +296,12 @@ export default function MessagesScreen() {
     });
 
   // Calculate unread counts
-  const personalUnreadCount = personalChats.filter(c => !c.archived && c.unread > 0).length;
-  const groupUnreadCount = groupChats.filter(c => !c.archived && c.unread > 0).length;
+  const personalUnreadCount = personalChats.filter(
+    (c) => !c.archived && c.unread > 0
+  ).length;
+  const groupUnreadCount = groupChats.filter(
+    (c) => !c.archived && c.unread > 0
+  ).length;
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedChats);
@@ -253,15 +315,29 @@ export default function MessagesScreen() {
 
   const handlePin = (id: string) => {
     if (personalChats.some((c) => c.id === id)) {
-      setPersonalChats(personalChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+      setPersonalChats(
+        personalChats.map((c) =>
+          c.id === id ? { ...c, pinned: !c.pinned } : c
+        )
+      );
     } else {
-      setGroupChats(groupChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
+      setGroupChats(
+        groupChats.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))
+      );
     }
   };
 
   const handleArchive = (ids: string[]) => {
-    setPersonalChats(personalChats.map((c) => ids.includes(c.id) ? { ...c, archived: !c.archived } : c));
-    setGroupChats(groupChats.map((c) => ids.includes(c.id) ? { ...c, archived: !c.archived } : c));
+    setPersonalChats(
+      personalChats.map((c) =>
+        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
+      )
+    );
+    setGroupChats(
+      groupChats.map((c) =>
+        ids.includes(c.id) ? { ...c, archived: !c.archived } : c
+      )
+    );
     setSelectedChats(new Set());
   };
 
@@ -273,20 +349,33 @@ export default function MessagesScreen() {
 
   const handleMarkRead = (id: string) => {
     if (personalChats.some((c) => c.id === id)) {
-      setPersonalChats(personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      setPersonalChats(
+        personalChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
+      );
     } else {
-      setGroupChats(groupChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      setGroupChats(
+        groupChats.map((c) => (c.id === id ? { ...c, unread: 0 } : c))
+      );
     }
   };
 
   const handleReadAll = () => {
     const currentChats = getCurrentChats();
-    const idsToMark = selectedChats.size === 0
-      ? currentChats.map((c) => c.id)
-      : Array.from(selectedChats);
+    const idsToMark =
+      selectedChats.size === 0
+        ? currentChats.map((c) => c.id)
+        : Array.from(selectedChats);
 
-    setPersonalChats(personalChats.map((c) => idsToMark.includes(c.id) ? { ...c, unread: 0 } : c));
-    setGroupChats(groupChats.map((c) => idsToMark.includes(c.id) ? { ...c, unread: 0 } : c));
+    setPersonalChats(
+      personalChats.map((c) =>
+        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
+      )
+    );
+    setGroupChats(
+      groupChats.map((c) =>
+        idsToMark.includes(c.id) ? { ...c, unread: 0 } : c
+      )
+    );
   };
 
   const selectedHaveUnread = Array.from(selectedChats).some(
@@ -300,11 +389,11 @@ export default function MessagesScreen() {
   const handleStartChat = (contactId: string, contactName: string) => {
     setShowNewChatModal(false);
     setContactSearchQuery('');
-    
+
     const existingChat = personalChats.find(
       (chat) => chat.name === contactName
     );
-    
+
     if (existingChat) {
       // Open existing chat
       router.push(`/chat/${existingChat.id}`);
@@ -314,117 +403,72 @@ export default function MessagesScreen() {
     }
   };
 
-  const renderChats = () => (
-    <View style={styles.content}>
-      {/* Content Header */}
-      <View style={styles.contentHeader}>
-        {/* Left - Edit Button */}
-        <TouchableOpacity
-          style={styles.headerIconButton}
-          onPress={() => setIsEditMode(!isEditMode)}
+  const withCount = (label: string, count: number) =>
+    count > 0 ? `${label} · ${count}` : label;
+
+  const filterOptions: { value: ChatFilter; label: string; icon?: IconName }[] =
+    [
+      { value: 'all', label: 'All' },
+      { value: 'personal', label: withCount('Personal', personalUnreadCount) },
+      { value: 'groups', label: withCount('Groups', groupUnreadCount) },
+      { value: 'archived', label: 'Archived', icon: 'archive-outline' },
+    ];
+
+  const noSelection = selectedChats.size === 0;
+  const readDisabled = !noSelection && !selectedHaveUnread;
+
+  return (
+    <View style={styles.container}>
+      <Header
+        title="Messages"
+        rightElement={
+          <TouchableOpacity
+            onPress={() => setIsEditMode(!isEditMode)}
+            hitSlop={8}
+            style={styles.editToggle}
+          >
+            <Text style={styles.editToggleText}>
+              {isEditMode ? 'Done' : 'Edit'}
+            </Text>
+          </TouchableOpacity>
+        }
+      >
+        <SearchBar
+          placeholder="Search messages"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchBar}
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
         >
-          <Image 
-            source={isEditMode ? DoneIcon : EditIcon} 
-            style={styles.headerIcon} 
-            resizeMode="contain" 
-          />
-        </TouchableOpacity>
-
-        {/* Right - Search & Archive */}
-        {!isEditMode && (
-          <View style={styles.headerRightSection}>
-            {isSearchMode && (
-              <View style={styles.searchInputContainer}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search..."
-                  placeholderTextColor="#64748b"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoFocus
-                />
-              </View>
-            )}
-            <View style={styles.iconsWrapper}>
-              <TouchableOpacity
-                style={styles.wrapperIconButton}
-                onPress={() => {
-                  setIsSearchMode(!isSearchMode);
-                  if (isSearchMode) {
-                    setSearchQuery('');
-                  }
-                }}
-              >
-                <Image
-                  source={SearchIcon}
-                  style={[
-                    styles.wrapperIcon,
-                    isSearchMode && styles.wrapperIconActive
-                  ]}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-              <View style={styles.iconDivider} />
-              <TouchableOpacity
-                style={styles.wrapperIconButton}
-                onPress={() => setChatFilter(chatFilter === 'archived' ? 'all' : 'archived')}
-              >
-                <Image
-                  source={ArchiveIcon}
-                  style={[
-                    styles.wrapperIcon,
-                    chatFilter === 'archived' && styles.wrapperIconActive
-                  ]}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.filterTabsContainer}>
-        <View style={styles.filterTabsWrapper}>
-          <TouchableOpacity
-            style={[styles.filterTab, chatFilter === 'all' && styles.filterTabActive]}
-            onPress={() => setChatFilter('all')}
-          >
-            <Text style={[styles.filterTabText, chatFilter === 'all' && styles.filterTabTextActive]}>
-              All
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterTab, chatFilter === 'personal' && styles.filterTabActive]}
-            onPress={() => setChatFilter('personal')}
-          >
-            <Text style={[styles.filterTabText, chatFilter === 'personal' && styles.filterTabTextActive]}>
-              Personal
-            </Text>
-            {personalUnreadCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{personalUnreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterTab, chatFilter === 'groups' && styles.filterTabActive]}
-            onPress={() => setChatFilter('groups')}
-          >
-            <Text style={[styles.filterTabText, chatFilter === 'groups' && styles.filterTabTextActive]}>
-              Groups
-            </Text>
-            {groupUnreadCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{groupUnreadCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+          {filterOptions.map((o) => (
+            <Chip
+              key={o.value}
+              label={o.label}
+              icon={o.icon}
+              selected={chatFilter === o.value}
+              onPress={() =>
+                setChatFilter(
+                  o.value === 'archived' && chatFilter === 'archived'
+                    ? 'all'
+                    : o.value
+                )
+              }
+            />
+          ))}
+        </ScrollView>
+      </Header>
 
       {/* Chat List */}
-      <ScrollView style={styles.chatList} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.chatList}
+        contentContainerStyle={styles.chatListContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {sortedChats.length > 0 ? (
           sortedChats.map((chat) => (
             <SwipeableChatItem
@@ -443,85 +487,81 @@ export default function MessagesScreen() {
             />
           ))
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptyText}>Start a conversation with friends or create a group chat</Text>
-          </View>
+          <EmptyState
+            icon="chatbubbles-outline"
+            title="No messages yet"
+            message="Start a conversation with friends or create a group chat"
+            actionLabel="New Message"
+            onAction={() => setShowNewChatModal(true)}
+          />
         )}
-        <View style={styles.listPadding} />
       </ScrollView>
 
       {/* Bottom Action Bar (Edit Mode) */}
-      {isEditMode && (
+      {isEditMode ? (
         <View style={styles.bottomBar}>
           <TouchableOpacity
-            style={[
-              styles.bottomButton,
-              selectedChats.size > 0 &&
-                !selectedHaveUnread &&
-                styles.bottomButtonDisabled,
-            ]}
+            style={[styles.bottomButton, readDisabled && styles.disabled]}
             onPress={handleReadAll}
-            disabled={selectedChats.size > 0 && !selectedHaveUnread}
+            disabled={readDisabled}
           >
+            <Ionicons
+              name="checkmark-done-outline"
+              size={20}
+              color={readDisabled ? colors.textMuted : colors.primary}
+            />
             <Text
               style={[
                 styles.bottomButtonText,
-                selectedChats.size > 0 &&
-                  !selectedHaveUnread &&
-                  styles.bottomButtonTextDisabled,
+                readDisabled && styles.bottomButtonTextDisabled,
               ]}
             >
-              {selectedChats.size === 0 ? 'Read All' : 'Read'}
+              {noSelection ? 'Read All' : 'Read'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.bottomButton,
-              selectedChats.size === 0 && styles.bottomButtonDisabled,
-            ]}
+            style={[styles.bottomButton, noSelection && styles.disabled]}
             onPress={() => handleArchive(Array.from(selectedChats))}
-            disabled={selectedChats.size === 0}
+            disabled={noSelection}
           >
+            <Ionicons
+              name="archive-outline"
+              size={20}
+              color={noSelection ? colors.textMuted : colors.primary}
+            />
             <Text
               style={[
                 styles.bottomButtonText,
-                selectedChats.size === 0 && styles.bottomButtonTextDisabled,
+                noSelection && styles.bottomButtonTextDisabled,
               ]}
             >
               Archive
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.bottomButton,
-              selectedChats.size === 0 && styles.bottomButtonDisabled,
-            ]}
+            style={[styles.bottomButton, noSelection && styles.disabled]}
             onPress={() => handleDelete(Array.from(selectedChats))}
-            disabled={selectedChats.size === 0}
+            disabled={noSelection}
           >
+            <Ionicons
+              name="trash-outline"
+              size={20}
+              color={noSelection ? colors.textMuted : colors.danger}
+            />
             <Text
               style={[
                 styles.bottomButtonText,
                 styles.deleteText,
-                selectedChats.size === 0 && styles.bottomButtonTextDisabled,
+                noSelection && styles.bottomButtonTextDisabled,
               ]}
             >
               Delete
             </Text>
           </TouchableOpacity>
         </View>
+      ) : (
+        <ComposeFab onPress={() => setShowNewChatModal(true)} />
       )}
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      <Header title="Messages" />
-
-      {/* Main Content */}
-      {renderChats()}
 
       {/* New Chat Modal */}
       <SlideUpModal
@@ -544,7 +584,11 @@ export default function MessagesScreen() {
             }}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>👥</Text>
+              <Ionicons
+                name="people-outline"
+                size={22}
+                color={colors.primary}
+              />
             </View>
             <Text style={styles.quickActionText}>New Group</Text>
           </TouchableOpacity>
@@ -557,457 +601,245 @@ export default function MessagesScreen() {
             }}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionEmoji}>➕</Text>
+              <Ionicons
+                name="person-add-outline"
+                size={22}
+                color={colors.primary}
+              />
             </View>
             <Text style={styles.quickActionText}>New Contact</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Divider */}
-        <View style={styles.modalDivider} />
-
         {/* Contact Search */}
-        <View style={styles.modalSearchContainer}>
-          <Text style={styles.modalSearchIcon}>🔍</Text>
-          <TextInput
-            style={styles.modalSearchInput}
-            placeholder="Search contacts"
-            placeholderTextColor="#64748b"
-            value={contactSearchQuery}
-            onChangeText={setContactSearchQuery}
-          />
-        </View>
+        <SearchBar
+          placeholder="Search contacts"
+          value={contactSearchQuery}
+          onChangeText={setContactSearchQuery}
+          style={styles.modalSearch}
+        />
 
         {/* Contacts List */}
         <Text style={styles.modalSectionTitle}>Contacts</Text>
-        <ScrollView 
-          style={styles.modalContactsList}
-          showsVerticalScrollIndicator={false}
-        >
-          {filteredContacts.map((contact) => (
-            <TouchableOpacity
-              key={contact.id}
-              style={styles.modalContactItem}
-              onPress={() => handleStartChat(contact.id, contact.name)}
-            >
-              <View style={styles.modalContactAvatar}>
-                <Text style={styles.modalContactAvatarText}>{contact.name[0]}</Text>
-              </View>
-              <View style={styles.modalContactInfo}>
-                <Text style={styles.modalContactName}>{contact.name}</Text>
-                <Text style={styles.modalContactStatus}>{contact.status}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View>
+          {filteredContacts.length > 0 ? (
+            filteredContacts.map((contact) => (
+              <TouchableOpacity
+                key={contact.id}
+                style={styles.modalContactItem}
+                onPress={() => handleStartChat(contact.id, contact.name)}
+                activeOpacity={0.7}
+              >
+                <Avatar uri={contact.avatar} name={contact.name} size={44} />
+                <View style={styles.modalContactInfo}>
+                  <Text style={styles.modalContactName} numberOfLines={1}>
+                    {contact.name}
+                  </Text>
+                  <Text style={typography.caption} numberOfLines={1}>
+                    {contact.status}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.modalEmpty}>No contacts found</Text>
+          )}
+        </View>
       </SlideUpModal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  headerTitle: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  content: { flex: 1, backgroundColor: '#0f172a' },
-  contentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-  },
-  contentTitle: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  headerButton: { color: '#3b82f6', fontSize: 16, fontWeight: '500' },
-  headerIconButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerIconButtonActive: {
-    backgroundColor: '#14b8a6',
-  },
-  headerIcon: {
-    width: 30,
-    height: 30,
-    tintColor: '#14b8a6',
-  },
-  headerIconActive: {
-    tintColor: '#fff',
-  },
-  headerRightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  iconsWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 25,
-    paddingHorizontal: 8
-  },
-  wrapperIconButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wrapperIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#14b8a6',
-  },
-  wrapperIconActive: {
-    tintColor: '#fff',
-  },
-  iconDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#334155',
-    marginHorizontal: 4,
-  },
-  searchInputContainer: {
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minWidth: 150,
-  },
-  searchInput: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  filterTabsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  filterTabsWrapper: {
-    flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    borderRadius: 20,
-    padding: 4,
-  },
-  filterTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 22,
-    gap: 8,
-  },
-  filterTabActive: {
-    backgroundColor: '#334155',
-  },
-  filterTabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#94a3b8',
-  },
-  filterTabTextActive: {
-    color: '#fff',
-  },
-  filterBadge: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  filterBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  composeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  composeIcon: { fontSize: 16 },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addIcon: { fontSize: 24, color: '#fff', marginTop: -2 },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  searchIcon: { fontSize: 14, marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: '#fff' },
-  chatList: { 
-    flex: 1,
-    paddingHorizontal: 12,
-  },
-  swipeContainer: { 
-    position: 'relative', 
+  container: { flex: 1, backgroundColor: colors.background },
+
+  editToggle: { paddingHorizontal: spacing.xs, marginRight: spacing.xs },
+  editToggleText: { fontSize: 15, fontWeight: '600', color: colors.link },
+
+  searchBar: { marginHorizontal: GUTTER },
+  filterRow: { paddingHorizontal: GUTTER, gap: spacing.sm },
+
+  chatList: { flex: 1 },
+  chatListContent: { paddingBottom: 100 },
+
+  swipeContainer: {
+    position: 'relative',
     overflow: 'hidden',
-    marginBottom: 10,
-    borderRadius: 16,
   },
   actionContainer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
-  pinAction: { left: 0, backgroundColor: '#3b82f6', borderRadius: 16 },
-  leftActions: { right: 0 },
+  pinAction: { left: 0 },
+  rightActions: { right: 0 },
   actionButton: {
     width: 60,
-    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  archiveButton: { backgroundColor: '#8b5cf6' },
-  deleteButton: { backgroundColor: '#ef4444', borderTopRightRadius: 16, borderBottomRightRadius: 16 },
-  actionIcon: { fontSize: 20 },
-  chatItemAnimated: { 
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
+  chatItemAnimated: {
+    backgroundColor: colors.surface,
   },
   chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: GUTTER,
+    backgroundColor: colors.surface,
   },
   selectCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#475569',
-    marginRight: 12,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectCircleSelected: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-  checkmark: { color: '#ffffff', fontSize: 14, fontWeight: 'bold' },
-  pinnedIcon: { fontSize: 12, marginRight: 6 },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#000000',
+  selectCircleSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  groupAvatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  groupAvatar: { backgroundColor: '#1e293b' },
-  avatarText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
-  chatInfo: { 
-    flex: 1, 
-    marginLeft: 12,
+  chatInfo: {
+    flex: 1,
     justifyContent: 'center',
   },
-  chatName: { 
-    fontSize: 16, 
-    fontWeight: '600', 
-    color: '#fff',
-    marginBottom: 4,
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: 3,
   },
-  chatMessage: { 
-    fontSize: 14, 
-    color: '#94a3b8',
+  chatName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    flexShrink: 1,
+  },
+  chatMessage: {
+    ...typography.bodySecondary,
+  },
+  chatMessageUnread: {
+    color: colors.text,
   },
   chatRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-    marginLeft: 12,
+    gap: 6,
   },
-  chatTime: { 
-    fontSize: 12, 
-    color: '#64748b',
-    marginTop: 6,
+  chatTime: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   unreadBadge: {
-    backgroundColor: '#14b8a6',
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    minWidth: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
-  unreadText: { color: '#ffffff', fontSize: 13, fontWeight: '700' },
-  listPadding: { height: 20 },
+  unreadSpacer: { height: 20 },
+  unreadText: { color: colors.primaryOn, fontSize: 11, fontWeight: '700' },
+
   bottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    backgroundColor: '#0f172a',
+    borderTopColor: colors.divider,
+    backgroundColor: colors.background,
   },
-  bottomButton: { paddingHorizontal: 16, paddingVertical: 8 },
-  bottomButtonDisabled: { opacity: 0.4 },
-  bottomButtonText: { color: '#3b82f6', fontSize: 15, fontWeight: '500' },
-  bottomButtonTextDisabled: { color: '#64748b' },
-  deleteText: { color: '#ef4444' },
-  emptyState: {
-    flex: 1,
+  bottomButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
+    gap: 2,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
   },
-  emptyIcon: { fontSize: 64 },
-  emptyTitle: { fontSize: 20, fontWeight: '600', color: '#fff', marginTop: 16 },
-  emptyText: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
-  },
-  contactInfo: { flex: 1, marginLeft: 12 },
-  contactName: { fontSize: 16, fontWeight: '600', color: '#fff' },
-  contactStatus: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  contactAction: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contactActionIcon: {
-    width: 22,
-    height: 22,
-  },
-  // New Chat Modal Styles
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 16,
-  },
-  quickActionItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  quickActionIcon: {
+  disabled: { opacity: 0.6 },
+  bottomButtonText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  bottomButtonTextDisabled: { color: colors.textMuted },
+  deleteText: { color: colors.danger },
+
+  fab: {
+    position: 'absolute',
+    right: GUTTER,
+    bottom: spacing.xxl,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#334155',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    ...shadows.fab,
   },
-  quickActionEmoji: {
-    fontSize: 24,
+
+  // New Chat Modal Styles
+  quickActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  quickActionText: {
-    fontSize: 13,
-    color: '#e2e8f0',
-    fontWeight: '500',
-  },
-  modalDivider: {
-    height: 1,
-    backgroundColor: '#334155',
-    marginVertical: 16,
-  },
-  modalSearchContainer: {
+  quickActionItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#334155',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 16,
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
   },
-  modalSearchIcon: {
-    fontSize: 14,
-    marginRight: 10,
+  quickActionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalSearchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#fff',
+  quickActionText: {
+    ...typography.label,
+  },
+  modalSearch: {
+    marginBottom: spacing.lg,
   },
   modalSectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#94a3b8',
-    marginBottom: 12,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  modalContactsList: {
-    flex: 1,
+    letterSpacing: 0.4,
   },
   modalContactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
-  },
-  modalContactAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalContactAvatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
   modalContactInfo: {
     flex: 1,
-    marginLeft: 12,
   },
   modalContactName: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '600',
-    color: '#fff',
   },
-  modalContactStatus: {
-    fontSize: 13,
-    color: '#64748b',
-    marginTop: 2,
+  modalEmpty: {
+    ...typography.bodySecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.xl,
   },
 });

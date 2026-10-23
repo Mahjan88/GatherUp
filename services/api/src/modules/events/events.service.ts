@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, sql, count } from 'drizzle-orm';
+import { eq, and, desc, gte, lte, count } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { events } from '../../db/schema/events.js';
 import { eventMembers } from '../../db/schema/event-members.js';
