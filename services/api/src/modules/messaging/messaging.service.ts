@@ -1,4 +1,4 @@
-import { eq, and, or, desc, lt, count } from 'drizzle-orm';
+import { eq, and, or, desc, lt } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { eventMessage } from '../../db/schema/event-messages.js';
 import { privateMessage } from '../../db/schema/private-messages.js';
