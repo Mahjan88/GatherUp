@@ -10,14 +10,9 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Button,
-  Ionicons,
-  ScreenHeader,
-  StepDots,
-  TextField,
-} from '../../components/ui';
+import { Button, Ionicons, TextField } from '../../components/ui';
 import { colors, shadows, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
@@ -52,9 +47,6 @@ export default function ProfileSetupScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={2} />
-      </ScreenHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -140,6 +132,7 @@ export default function ProfileSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   flex: {

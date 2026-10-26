@@ -12,15 +12,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Button,
-  Divider,
-  Ionicons,
-  ScreenHeader,
-  StepDots,
-  TextField,
-} from '../../components/ui';
+import { Button, Divider, Ionicons, TextField } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
 
 export default function EmailSignInScreen() {
   const router = useRouter();
@@ -49,9 +43,6 @@ export default function EmailSignInScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={0} />
-      </ScreenHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -139,6 +130,7 @@ export default function EmailSignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   flex: {

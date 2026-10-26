@@ -2,14 +2,9 @@ import { useState } from 'react';
 import { View, Text, Switch, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Button,
-  Ionicons,
-  IconName,
-  ScreenHeader,
-  StepDots,
-} from '../../components/ui';
+import { Button, Ionicons, IconName } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
 
 interface PrefRowProps {
   icon: IconName;
@@ -65,9 +60,6 @@ export default function NotificationPrefsScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={3} />
-      </ScreenHeader>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={typography.title}>Get notified about...</Text>
         <Text style={styles.subtitle}>
@@ -118,6 +110,7 @@ export default function NotificationPrefsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   content: {
