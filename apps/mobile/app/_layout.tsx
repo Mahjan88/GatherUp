@@ -13,6 +13,9 @@ ExpoSplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// Open on the tabs; useAuthRedirect sends signed-out users to welcome
+export const unstable_settings = { anchor: '(tabs)' };
+
 /** Onboarding steps a signed-in user may still be on before finishing. */
 const ONBOARDING_SCREENS = ['profile-setup', 'notification-prefs'];
 

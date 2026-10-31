@@ -16,6 +16,9 @@ function tabIcon(active: IconName, inactive: IconName) {
 
 const hidden = { href: null } as const;
 
+// expo-router 58 replaced the `initialRouteName` prop with `anchor`
+export const unstable_settings = { anchor: 'explore' };
+
 /**
  * Tabs: Explore · My Events · Communities · Chats · Profile.
  * Create lives in a floating + button on Explore / My Events.
@@ -24,7 +27,8 @@ const hidden = { href: null } as const;
 export default function TabsLayout() {
   return (
     <Tabs
-      initialRouteName="explore"
+      // Needed for the anchor: back from a hidden tab returns to Explore
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

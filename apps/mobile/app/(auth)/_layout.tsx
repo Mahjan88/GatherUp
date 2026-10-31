@@ -13,6 +13,9 @@ const STEPS: Record<string, number> = {
 };
 const TOTAL_STEPS = 4;
 
+// Without this expo-router starts the group on its first file (email)
+export const unstable_settings = { anchor: 'welcome' };
+
 export default function AuthLayout() {
   const pathname = usePathname();
   const step = STEPS[pathname] ?? null;

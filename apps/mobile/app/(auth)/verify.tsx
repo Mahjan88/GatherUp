@@ -10,6 +10,7 @@ import {
   Pressable,
   StyleSheet,
 } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Button } from '../../components/ui';
@@ -33,7 +34,7 @@ export default function VerifyScreen() {
   }>();
   const isEmail = method === 'email';
 
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const [code, setCode] = useState('');
   const [focused, setFocused] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(EXPIRY_SECONDS);
