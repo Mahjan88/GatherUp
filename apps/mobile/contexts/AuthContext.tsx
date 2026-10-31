@@ -19,6 +19,9 @@ interface AuthContextType {
   loading: boolean;
   /** Set by the last onboarding step in `users.user_data`. */
   isOnboarded: boolean;
+  /** Browsing without an account via welcome's "Skip for now". */
+  isGuest: boolean;
+  continueAsGuest: () => void;
   refreshProfile: () => Promise<Profile | null>;
   signOut: () => Promise<void>;
 }
@@ -28,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isOnboarded: false,
+  isGuest: false,
+  continueAsGuest: () => {},
   refreshProfile: async () => null,
   signOut: async () => {},
 });
@@ -51,6 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  // TODO: Temporary while sign-in is being tested. Not persisted, so a
+  // reload returns guests to welcome. Remove before launch.
+  const [isGuest, setIsGuest] = useState(false);
 
   const loadProfile = useCallback(async (next: Session | null) => {
     if (!next) {
@@ -105,7 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return loadProfile(data.session);
   }, [loadProfile]);
 
+  const continueAsGuest = useCallback(() => setIsGuest(true), []);
+
   const signOut = useCallback(async () => {
+    setIsGuest(false);
     await supabase.auth.signOut();
   }, []);
 
@@ -116,6 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         loading,
         isOnboarded: isProfileOnboarded(profile),
+        isGuest,
+        continueAsGuest,
         refreshProfile,
         signOut,
       }}

@@ -21,10 +21,10 @@ const ONBOARDING_SCREENS = ['profile-setup', 'notification-prefs'];
 
 /**
  * Sends users to the right place for their auth state: signed out → welcome,
- * signed in but not onboarded → profile setup, onboarded → the tabs.
+ * signed in but not onboarded → profile setup, onboarded or guest → the tabs.
  */
 function useAuthRedirect(enabled: boolean) {
-  const { session, loading, isOnboarded } = useAuth();
+  const { session, loading, isOnboarded, isGuest } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -33,7 +33,9 @@ function useAuthRedirect(enabled: boolean) {
     const [group, screen = ''] = segments as string[];
     const inAuthGroup = group === '(auth)';
 
-    if (!session) {
+    if (!session && isGuest) {
+      if (inAuthGroup) router.replace('/(tabs)/explore');
+    } else if (!session) {
       if (!inAuthGroup) router.replace('/(auth)/welcome');
     } else if (!isOnboarded) {
       if (!inAuthGroup || !ONBOARDING_SCREENS.includes(screen)) {
@@ -42,7 +44,7 @@ function useAuthRedirect(enabled: boolean) {
     } else if (inAuthGroup) {
       router.replace('/(tabs)/explore');
     }
-  }, [enabled, loading, session, isOnboarded, segments, router]);
+  }, [enabled, loading, session, isOnboarded, isGuest, segments, router]);
 }
 
 export default function RootLayout() {
