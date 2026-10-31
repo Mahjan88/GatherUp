@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -19,6 +19,15 @@ async function fetchEvents(_params: {
 const PAGE_SIZE = 5;
 
 export default function SeeAllEventsPage() {
+  // useSearchParams needs a Suspense boundary for `next build`
+  return (
+    <Suspense>
+      <SeeAllEvents />
+    </Suspense>
+  );
+}
+
+function SeeAllEvents() {
   const searchParams = useSearchParams();
   const timeFilter = searchParams.get('time') || 'this_week';
   const categoryFilter = searchParams.get('category') || 'all';

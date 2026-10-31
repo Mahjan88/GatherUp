@@ -147,6 +147,9 @@ export default function CreateEventPage() {
         organizer_type: organizerType,
         community_id: organizerType === 'community' && communityId ? communityId : null,
         series_id: seriesId || null,
+        // No draft/publish step in the UI yet, so publish on create
+        status: 'published',
+        published_at: new Date().toISOString(),
         settings: {
           chat_enabled: chatEnabled,
           gallery_for_attendees_only: galleryForAttendeesOnly,
