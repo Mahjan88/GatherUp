@@ -13,8 +13,8 @@ export async function uploadEventMedia(
 
   if (!user) throw new Error('Not authenticated');
 
-  // Upload to storage
-  const filePath = `${eventId}/${Date.now()}-${fileName}`;
+  // Storage policies require the first folder to be the uploader's id
+  const filePath = `${user.id}/${eventId}/${Date.now()}-${fileName}`;
   const { error: uploadError } = await supabase.storage
     .from('event-media')
     .upload(filePath, file);
@@ -97,7 +97,8 @@ export async function deleteEventMedia(id: string) {
 export async function uploadAvatar(file: File | Blob, userId: string) {
   const supabase = getSupabase();
 
-  const filePath = `avatars/${userId}-${Date.now()}`;
+  // Storage policies require the first folder to be the user's id
+  const filePath = `${userId}/${Date.now()}`;
   const { error: uploadError } = await supabase.storage
     .from('avatars')
     .upload(filePath, file);
