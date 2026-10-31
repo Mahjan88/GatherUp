@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Button, Divider, Ionicons, TextField } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
 
 export default function EmailSignInScreen() {
   const router = useRouter();
@@ -26,18 +27,27 @@ export default function EmailSignInScreen() {
       Alert.alert('Email required', 'Please enter your email address');
       return;
     }
+    const address = email.trim().toLowerCase();
     setLoading(true);
-    // TODO: supabase.auth.signInWithOtp({ email })
+    const { error } = await supabase.auth.signInWithOtp({ email: address });
     setLoading(false);
+    if (error) {
+      Alert.alert('Could not send code', error.message);
+      return;
+    }
     router.push({
       pathname: '/(auth)/verify',
-      params: { contact: email.trim(), method: 'email' },
+      params: { contact: address, method: 'email' },
     });
   };
 
   const handleSocial = (provider: 'google' | 'apple') => {
-    // TODO: supabase.auth.signInWithOAuth({ provider })
-    router.push('/(auth)/profile-setup');
+    // TODO: supabase.auth.signInWithOAuth({ provider }) needs a redirect
+    // deep link (expo-web-browser + app scheme) configured first
+    Alert.alert(
+      'Not available yet',
+      `Sign in with ${provider === 'google' ? 'Google' : 'Apple'} is coming soon. Please use your email or phone.`
+    );
   };
 
   return (

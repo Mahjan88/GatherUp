@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
 import { Avatar, IconButton, IconName, ListRow } from './ui';
 import { colors, radius, spacing, typography, GUTTER } from '../theme';
 
@@ -54,13 +55,15 @@ export default function HamburgerMenu({
   userEmail = 'user@example.com',
 }: HamburgerMenuProps) {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   const handleMenuItemPress = (item: MenuItem) => {
     onClose();
     if (item.route) {
       router.push(item.route as any);
     } else if (item.id === 'signout') {
-      router.replace('/(auth)/welcome');
+      // The root layout sends signed-out users back to welcome
+      signOut();
     }
   };
 

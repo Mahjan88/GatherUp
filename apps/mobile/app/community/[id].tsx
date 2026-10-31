@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import Header from '../../components/Header';
 import EventCard, { EventCardData } from '../../components/EventCard';
 import {
@@ -25,6 +27,8 @@ import {
   UnderlineTabs,
 } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 type CommunityCategory =
   | 'networking'
@@ -84,19 +88,94 @@ function Placeholder({ icon, text }: { icon: IconName; text: string }) {
   );
 }
 
+async function fetchCommunityDetail(id: string, userId?: string) {
+  const { data: community, error } = await supabase
+    .from('communities')
+    .select('*')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!community) return null;
+
+  const [eventsRes, memberRes, followRes] = await Promise.all([
+    supabase
+      .from('events')
+      .select(
+        '*, host:users!events_host_id_fkey(first_name, last_name, avatar_url)'
+      )
+      .eq('community_id', id)
+      .eq('status', 'published')
+      .is('deleted_at', null)
+      .gte('start_time', new Date().toISOString())
+      .order('start_time', { ascending: true })
+      .limit(10),
+    userId
+      ? supabase
+          .from('community_members')
+          .select('status')
+          .eq('community_id', id)
+          .eq('user_id', userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    userId
+      ? supabase
+          .from('community_follows')
+          .select('notify')
+          .eq('community_id', id)
+          .eq('follower_id', userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (eventsRes.error) throw eventsRes.error;
+
+  const upcomingEvents: EventCardData[] = (eventsRes.data ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    image: e.cover_image_url ?? '',
+    date: new Date(e.start_time),
+    location: e.is_online ? 'Online' : (e.location ?? e.city_region ?? ''),
+    hostName: e.host
+      ? [e.host.first_name, e.host.last_name].filter(Boolean).join(' ')
+      : '',
+    hostAvatar: e.host?.avatar_url ?? undefined,
+    rsvpStatus: 'none',
+    isPrivate: e.visibility !== 'public',
+  }));
+
+  return {
+    community: community as CommunityDetail,
+    upcomingEvents,
+    isMember: memberRes.data?.status === 'active',
+    isFollowing: !!followRes.data,
+    notify: followRes.data?.notify ?? true,
+  };
+}
+
 export default function CommunityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
-  // TODO: Fetch real data from API using the community ID
-  const [community, setCommunity] = useState<CommunityDetail | null>(null);
+  const { session } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ['community', id, session?.user.id],
+    queryFn: () => fetchCommunityDetail(String(id), session?.user.id),
+    enabled: !!id,
+  });
+  const community = data?.community ?? null;
+  const upcomingEvents = data?.upcomingEvents ?? [];
   const [isMember, setIsMember] = useState(false);
   const [notifyOnEvents, setNotifyOnEvents] = useState(true);
   // TODO: Wire to community follows API (POST/DELETE /api/communities/:id/follow)
   const [isFollowing, setIsFollowing] = useState(false);
   const [tab, setTab] = useState<CommunityTab>('events');
-  // TODO: Fetch upcoming events for this community from the API
-  const upcomingEvents: EventCardData[] = [];
+
+  useEffect(() => {
+    if (!data) return;
+    setIsMember(data.isMember);
+    setIsFollowing(data.isFollowing);
+    setNotifyOnEvents(data.notify);
+  }, [data]);
 
   const handleJoinToggle = () => {
     if (isMember) {
@@ -158,6 +237,17 @@ export default function CommunityDetailScreen() {
       ]
     );
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Header showBack title="Community" />
+        <View style={styles.centered}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
 
   // Empty / not-found state
   if (!community) {

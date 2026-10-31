@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Image,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import SlideUpModal from '../../components/SlideUpModal';
 import {
   Avatar,
@@ -22,10 +24,10 @@ import {
   UnderlineTabs,
 } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { HERO_IMAGE } from '../../constants/images';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
-// TODO: Replace with real data fetched from API using the event ID
-
-// Event type for when real data is loaded from API
 interface EventDetail {
   id: string;
   title: string;
@@ -40,7 +42,7 @@ interface EventDetail {
   location: string;
   address: string;
   city: string;
-  coordinates: { lat: number; lng: number };
+  coordinates?: { lat: number; lng: number };
   isPrivate: boolean;
   isFree: boolean;
   isGroupChatEnabled?: boolean;
@@ -49,8 +51,80 @@ interface EventDetail {
   goingCount?: number;
   spotsLeft?: number;
   friendsAttending: { id: string; name: string; avatar: string }[];
-  mutualFriends: number;
   agenda: { time: string; title: string }[];
+  /** Current user's membership status, if any. */
+  myStatus?: string;
+}
+
+const fullName = (u: { first_name: string; last_name: string | null }) =>
+  [u.first_name, u.last_name].filter(Boolean).join(' ');
+
+async function fetchEventDetail(
+  id: string,
+  userId?: string
+): Promise<EventDetail | null> {
+  const { data: e, error } = await supabase
+    .from('events')
+    .select(
+      `*,
+      host:users!events_host_id_fkey(first_name, last_name, avatar_url, is_verified),
+      community:communities(name),
+      members:event_members(user_id, status, user:users!event_members_user_id_fkey(id, first_name, last_name, avatar_url))`
+    )
+    .eq('id', id)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (error) throw error;
+  if (!e) return null;
+
+  const settings = (e.settings ?? {}) as Record<string, any>;
+  const going = (e.members ?? []).filter((m) => m.status === 'joined');
+  const start = new Date(e.start_time);
+  const lat = e.latitude != null ? Number(e.latitude) : null;
+  const lng = e.longitude != null ? Number(e.longitude) : null;
+
+  return {
+    id: e.id,
+    title: e.title,
+    organizer: e.host ? fullName(e.host) : 'Unknown host',
+    organizerAvatar: e.host?.avatar_url ?? undefined,
+    organizerVerified: e.host?.is_verified,
+    communityName: e.community?.name,
+    image: e.cover_image_url ?? '',
+    description: e.description ?? '',
+    date: start.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    }),
+    time: start.toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }),
+    location: e.is_online ? 'Online event' : (e.location ?? ''),
+    address: e.address ?? '',
+    city: e.city_region ?? '',
+    coordinates: lat != null && lng != null ? { lat, lng } : undefined,
+    isPrivate: e.visibility !== 'public',
+    isFree: settings.is_free === true,
+    isGroupChatEnabled: settings.chat_enabled !== false,
+    category: e.category,
+    tags: Array.isArray(settings.tags) ? settings.tags : [],
+    goingCount: going.length,
+    spotsLeft:
+      e.capacity_limit != null
+        ? Math.max(e.capacity_limit - going.length, 0)
+        : undefined,
+    friendsAttending: going
+      .filter((m) => m.user)
+      .map((m) => ({
+        id: m.user!.id,
+        name: fullName(m.user!),
+        avatar: m.user!.avatar_url ?? '',
+      })),
+    agenda: Array.isArray(settings.agenda) ? settings.agenda : [],
+    myStatus: e.members?.find((m) => m.user_id === userId)?.status,
+  };
 }
 
 type DetailTab = 'about' | 'chat' | 'photos' | 'attendees';
@@ -90,8 +164,27 @@ export default function EventDetailScreen() {
   // TODO: Wire RSVP to the API
   const [rsvp, setRsvp] = useState<RsvpState>('none');
 
-  // TODO: Fetch real data from API using the event ID
-  const [event, setEvent] = useState<EventDetail | null>(null);
+  const { session } = useAuth();
+  const { data: event, isLoading } = useQuery({
+    queryKey: ['event', id, session?.user.id],
+    queryFn: () => fetchEventDetail(String(id), session?.user.id),
+    enabled: !!id,
+  });
+
+  useEffect(() => {
+    if (event?.myStatus === 'joined') setRsvp('going');
+  }, [event?.myStatus]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ScreenHeader showBack onBack={() => router.push('/(tabs)/explore')} />
+        <View style={styles.emptyWrap}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
 
   if (!event) {
     return (
@@ -108,12 +201,22 @@ export default function EventDetailScreen() {
     );
   }
 
+  const coords = event.coordinates;
   // Static map URL using OpenStreetMap tile service
-  const staticMapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${event.coordinates.lat},${event.coordinates.lng}&zoom=16&size=600x300&maptype=mapnik&markers=${event.coordinates.lat},${event.coordinates.lng},red-pushpin`;
+  const staticMapUrl = coords
+    ? `https://staticmap.openstreetmap.de/staticmap.php?center=${coords.lat},${coords.lng}&zoom=16&size=600x300&maptype=mapnik&markers=${coords.lat},${coords.lng},red-pushpin`
+    : null;
 
   const openInMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${event.coordinates.lat},${event.coordinates.lng}`;
-    Linking.openURL(url);
+    const query = coords
+      ? `${coords.lat},${coords.lng}`
+      : encodeURIComponent(
+          [event.address, event.city].filter(Boolean).join(', ') ||
+            event.location
+        );
+    Linking.openURL(
+      `https://www.google.com/maps/search/?api=1&query=${query}`
+    );
   };
 
   const tabs: { value: DetailTab; label: string }[] = [
@@ -159,7 +262,7 @@ export default function EventDetailScreen() {
         {/* Hero Image */}
         <View style={styles.heroContainer}>
           <Image
-            source={{ uri: event.image }}
+            source={event.image ? { uri: event.image } : HERO_IMAGE}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -328,7 +431,7 @@ export default function EventDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Who's Going</Text>
               <Text style={[typography.bodySecondary, { marginBottom: 12 }]}>
-                {event.mutualFriends} mutual friends are going
+                {goingCount} going
               </Text>
               {event.friendsAttending.map((friend) => (
                 <View key={friend.id} style={styles.attendeeRow}>
@@ -390,11 +493,13 @@ export default function EventDetailScreen() {
         </View>
 
         <TouchableOpacity style={styles.mapContainer} onPress={openInMaps}>
-          <Image
-            source={{ uri: staticMapUrl }}
-            style={styles.mapPreview}
-            resizeMode="cover"
-          />
+          {staticMapUrl && (
+            <Image
+              source={{ uri: staticMapUrl }}
+              style={styles.mapPreview}
+              resizeMode="cover"
+            />
+          )}
           <View style={styles.mapPinOverlay} pointerEvents="none">
             <Ionicons name="location" size={32} color={colors.danger} />
           </View>

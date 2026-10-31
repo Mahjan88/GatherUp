@@ -161,17 +161,6 @@ export default function WelcomeScreen() {
         >
           <Text style={styles.signInText}>Sign In</Text>
         </TouchableOpacity>
-
-        {/* TODO: Temporary dev shortcut. Remove once auth is wired up. */}
-        <TouchableOpacity
-          style={styles.skip}
-          onPress={() => router.replace('/(tabs)/explore')}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Skip sign in"
-        >
-          <Text style={styles.skipText}>Skip for now</Text>
-        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
@@ -194,16 +183,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-  },
-  skip: {
-    alignSelf: 'center',
-    paddingVertical: spacing.xs,
-  },
-  skipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
-    textDecorationLine: 'underline',
   },
   slideText: {
     // Sits just under the fixed logo

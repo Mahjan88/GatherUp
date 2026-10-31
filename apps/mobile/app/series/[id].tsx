@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Image,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import Header from '../../components/Header';
 import { formatEventDate } from '../../components/EventCard';
 import {
@@ -24,6 +26,8 @@ import {
   SectionHeader,
 } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 type SeriesCategory =
   | 'networking'
@@ -130,17 +134,79 @@ function SeriesEventRow({
   );
 }
 
+async function fetchSeriesDetail(id: string, userId?: string) {
+  const { data: series, error } = await supabase
+    .from('event_series')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!series) return null;
+
+  const [eventsRes, subRes] = await Promise.all([
+    supabase
+      .from('events')
+      .select(
+        'id, title, start_time, cover_image_url, members:event_members(status)'
+      )
+      .eq('series_id', id)
+      .eq('status', 'published')
+      .is('deleted_at', null)
+      .order('start_time', { ascending: true }),
+    userId
+      ? supabase
+          .from('event_series_subscriptions')
+          .select('notify')
+          .eq('series_id', id)
+          .eq('user_id', userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (eventsRes.error) throw eventsRes.error;
+
+  const now = Date.now();
+  const items: SeriesEventItem[] = (eventsRes.data ?? []).map((e) => ({
+    id: e.id,
+    title: e.title,
+    start_time: e.start_time,
+    cover_image_url: e.cover_image_url,
+    going_count: (e.members ?? []).filter((m) => m.status === 'joined')
+      .length,
+  }));
+
+  return {
+    series: series as SeriesDetail,
+    upcomingEvents: items.filter((e) => new Date(e.start_time).getTime() >= now),
+    // Most recent first
+    pastEvents: items
+      .filter((e) => new Date(e.start_time).getTime() < now)
+      .reverse(),
+    isSubscribed: !!subRes.data,
+    notify: subRes.data?.notify ?? true,
+  };
+}
+
 export default function SeriesDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
 
-  // TODO: Fetch real data from API using the series ID
-  const [series, setSeries] = useState<SeriesDetail | null>(null);
+  const { session } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ['series', id, session?.user.id],
+    queryFn: () => fetchSeriesDetail(String(id), session?.user.id),
+    enabled: !!id,
+  });
+  const series = data?.series ?? null;
+  const upcomingEvents = data?.upcomingEvents ?? [];
+  const pastEvents = data?.pastEvents ?? [];
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [notifyOnEvents, setNotifyOnEvents] = useState(true);
-  // TODO: Fetch upcoming / past events for this series from the API
-  const upcomingEvents: SeriesEventItem[] = [];
-  const pastEvents: SeriesEventItem[] = [];
+
+  useEffect(() => {
+    if (!data) return;
+    setIsSubscribed(data.isSubscribed);
+    setNotifyOnEvents(data.notify);
+  }, [data]);
 
   const handleSubscribe = () => {
     // TODO: Call API to subscribe/unsubscribe
@@ -173,6 +239,17 @@ export default function SeriesDetailScreen() {
   };
 
   // Empty / not-found state
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Header showBack title="Event Series" />
+        <View style={styles.centered}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
   if (!series) {
     return (
       <View style={styles.container}>

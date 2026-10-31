@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Button, Divider, Ionicons } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
 
 export default function PhoneSignInScreen() {
   const router = useRouter();
@@ -27,12 +28,17 @@ export default function PhoneSignInScreen() {
       Alert.alert('Phone required', 'Please enter your phone number');
       return;
     }
+    const phone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
     setLoading(true);
-    // TODO: supabase.auth.signInWithOtp({ phone: `${countryCode}${phoneNumber}` })
+    const { error } = await supabase.auth.signInWithOtp({ phone });
     setLoading(false);
+    if (error) {
+      Alert.alert('Could not send code', error.message);
+      return;
+    }
     router.push({
       pathname: '/(auth)/verify',
-      params: { contact: `${countryCode}${phoneNumber}`, method: 'phone' },
+      params: { contact: phone, method: 'phone' },
     });
   };
 

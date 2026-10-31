@@ -1,10 +1,18 @@
 import { useState } from 'react';
-import { View, Text, Switch, ScrollView, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  Switch,
+  ScrollView,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Button, Ionicons, IconName } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
 import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PrefRowProps {
   icon: IconName;
@@ -42,19 +50,40 @@ function PrefRow({
 }
 
 export default function NotificationPrefsScreen() {
-  const router = useRouter();
+  const { session, profile, refreshProfile } = useAuth();
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [smsEnabled, setSmsEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleFinish = async () => {
+    if (!session) return;
     setLoading(true);
-    // TODO: save preferences via the API
     // TODO: if pushEnabled, request OS permission with
     //   expo-notifications Notifications.requestPermissionsAsync()
+    const userData = (profile?.user_data ?? {}) as Record<string, unknown>;
+    const { error } = await supabase
+      .from('users')
+      .update({
+        user_data: {
+          ...userData,
+          notification_prefs: {
+            email: emailEnabled,
+            sms: smsEnabled,
+            push: pushEnabled,
+          },
+          onboarding_complete: true,
+        },
+      })
+      .eq('id', session.user.id);
+    if (error) {
+      setLoading(false);
+      Alert.alert('Could not save preferences', error.message);
+      return;
+    }
+    // Refreshing marks onboarding complete; the root layout then opens the tabs
+    await refreshProfile();
     setLoading(false);
-    router.replace('/(tabs)/explore');
   };
 
   return (
