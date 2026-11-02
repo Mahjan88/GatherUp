@@ -7,34 +7,41 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Alert,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Button,
-  Ionicons,
-  ScreenHeader,
-  StepDots,
-  TextField,
-} from '../../components/ui';
+import { Button, Ionicons, TextField } from '../../components/ui';
 import { colors, shadows, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+
+/** Placeholder first name the signup trigger writes when none is given. */
+const DEFAULT_FIRST_NAME = 'User';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string }>();
+  const { session, profile, refreshProfile } = useAuth();
+  const initialName =
+    profile && profile.first_name !== DEFAULT_FIRST_NAME
+      ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+      : '';
+  const initialEmail = profile?.email ?? session?.user.email ?? '';
 
   const [avatarUri] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState(params.email ?? '');
-  const [confirmEmail, setConfirmEmail] = useState(params.email ?? '');
-  const [city, setCity] = useState('');
+  const [fullName, setFullName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+  const [confirmEmail, setConfirmEmail] = useState(initialEmail);
+  const [city, setCity] = useState(profile?.city ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   const handlePickAvatar = () => {
     // TODO: open expo-image-picker and upload to the avatars bucket
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const next: Record<string, string> = {};
     if (!fullName.trim()) next.fullName = 'Please enter your name';
     if (!email.trim()) next.email = 'Please enter your email';
@@ -45,16 +52,35 @@ export default function ProfileSetupScreen() {
     setErrors(next);
     if (Object.keys(next).length) return;
 
-    // TODO: persist profile (onboarding store or PATCH /api/auth/me)
+    if (!session) return;
+    const [firstName, ...rest] = fullName.trim().split(/\s+/);
+    setSaving(true);
+    const { error } = await supabase
+      .from('users')
+      .update({
+        first_name: firstName,
+        last_name: rest.join(' ') || null,
+        email: email.trim().toLowerCase(),
+        city: city.trim(),
+      })
+      .eq('id', session.user.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert(
+        'Could not save profile',
+        error.code === '23505'
+          ? 'That email is already used by another account.'
+          : error.message
+      );
+      return;
+    }
+    await refreshProfile();
     router.push('/(auth)/notification-prefs');
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={2} />
-      </ScreenHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -130,7 +156,12 @@ export default function ProfileSetupScreen() {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button label="Continue" fullWidth onPress={handleContinue} />
+          <Button
+            label="Continue"
+            fullWidth
+            loading={saving}
+            onPress={handleContinue}
+          />
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -140,6 +171,7 @@ export default function ProfileSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   flex: {

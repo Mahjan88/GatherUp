@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import SplashScreen from '../components/SplashScreen';
 import { StatusBar } from 'expo-status-bar';
 import { CenterButtonProvider } from '../contexts/CenterButtonContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { colors } from '../theme';
 
 // Prevent the native splash screen from hiding automatically
@@ -12,11 +13,52 @@ ExpoSplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// Open on the tabs; useAuthRedirect sends signed-out users to welcome
+export const unstable_settings = { anchor: '(tabs)' };
+
+/** Onboarding steps a signed-in user may still be on before finishing. */
+const ONBOARDING_SCREENS = ['profile-setup', 'notification-prefs'];
+
+/**
+ * Sends users to the right place for their auth state: signed out → welcome,
+ * signed in but not onboarded → profile setup, onboarded or guest → the tabs.
+ */
+function useAuthRedirect(enabled: boolean) {
+  const { session, loading, isOnboarded, isGuest } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!enabled || loading) return;
+    const [group, screen = ''] = segments as string[];
+    const inAuthGroup = group === '(auth)';
+
+    if (!session && isGuest) {
+      if (inAuthGroup) router.replace('/(tabs)/explore');
+    } else if (!session) {
+      if (!inAuthGroup) router.replace('/(auth)/welcome');
+    } else if (!isOnboarded) {
+      if (!inAuthGroup || !ONBOARDING_SCREENS.includes(screen)) {
+        router.replace('/(auth)/profile-setup');
+      }
+    } else if (inAuthGroup) {
+      router.replace('/(tabs)/explore');
+    }
+  }, [enabled, loading, session, isOnboarded, isGuest, segments, router]);
+}
+
 export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
+  );
+}
+
+function RootNavigator() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [isAuthenticated] = useState(false); // TODO: Integrate useAuth hook from @gatherup/shared when auth screens are implemented
-  const router = useRouter();
+  useAuthRedirect(appIsReady && !showSplash);
 
   useEffect(() => {
     async function prepare() {
@@ -37,11 +79,7 @@ export default function RootLayout() {
 
   const onSplashFinish = useCallback(() => {
     setShowSplash(false);
-    // Navigate to welcome if not authenticated
-    if (!isAuthenticated) {
-      router.replace('/(auth)/welcome');
-    }
-  }, [isAuthenticated, router]);
+  }, []);
 
   if (!appIsReady) {
     return null;

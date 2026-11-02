@@ -101,6 +101,7 @@ export default function MyEventsScreen() {
           />
         }
         rightIcon="search"
+        onRightPress={() => router.push('/discover/events')}
         showNotificationBell={false}
       />
 

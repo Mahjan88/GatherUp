@@ -17,6 +17,30 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BrandMark } from '../../components/Header';
 import { colors, radius, spacing, GUTTER } from '../../theme';
 import { HERO_IMAGE } from '../../constants/images';
+import { useAuth } from '../../contexts/AuthContext';
+
+interface Slide {
+  key: string;
+  title: string;
+  subtitle?: string;
+}
+
+const SLIDES: Slide[] = [
+  {
+    key: 'people',
+    title: 'Find your people.\nPlan the moment.',
+  },
+  {
+    key: 'discover',
+    title: 'Discover events near you',
+    subtitle: 'Hikes, supper clubs, pickup games: see what’s happening.',
+  },
+  {
+    key: 'share',
+    title: 'Chat and share together',
+    subtitle: 'Group chats, photos and RSVPs, all in one place.',
+  },
+];
 
 interface Slide {
   key: string;
@@ -47,6 +71,7 @@ const SLIDES: Slide[] = [
  */
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { continueAsGuest } = useAuth();
   const { width } = useWindowDimensions();
   const listRef = useRef<FlatList<Slide>>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -161,6 +186,17 @@ export default function WelcomeScreen() {
         >
           <Text style={styles.signInText}>Sign In</Text>
         </TouchableOpacity>
+
+        {/* TODO: Temporary shortcut while sign-in is tested. Remove before launch. */}
+        <TouchableOpacity
+          style={styles.skip}
+          onPress={continueAsGuest}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Skip sign in"
+        >
+          <Text style={styles.skipText}>Skip for now</Text>
+        </TouchableOpacity>
       </View>
     </ImageBackground>
   );
@@ -183,6 +219,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  skip: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+  },
+  skipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    textDecorationLine: 'underline',
   },
   slideText: {
     // Sits just under the fixed logo
@@ -212,7 +258,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: GUTTER + 4,
-    paddingBottom: 44,
+    paddingBottom: 32,
     gap: spacing.md,
   },
   dots: {

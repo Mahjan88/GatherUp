@@ -60,6 +60,7 @@ export async function deleteEvent(id: string) {
 
 export async function getEvents(filters?: {
   visibility?: 'public' | 'private' | 'invite_only';
+  category?: EventInsert['category'];
   startDate?: string;
   endDate?: string;
 }) {
@@ -74,6 +75,10 @@ export async function getEvents(filters?: {
 
   if (filters?.visibility) {
     query = query.eq('visibility', filters.visibility);
+  }
+
+  if (filters?.category) {
+    query = query.eq('category', filters.category);
   }
 
   if (filters?.startDate) {
@@ -137,10 +142,16 @@ export async function getMyInvitedEvents() {
     `
     )
     .eq('user_id', user.id)
+    .neq('role', 'host')
     .in('status', ['invited', 'joined']);
 
   if (error) throw error;
-  return data.map((d) => d.event) as EventWithHost[];
+  // Expose the membership status: event.status is the event's own
+  // draft/published state, not whether the user was invited or joined.
+  return data.map((d) => ({
+    ...d.event,
+    member_status: d.status,
+  })) as EventWithHost[];
 }
 
 export async function inviteToEvent(eventId: string, userId: string) {

@@ -1,4 +1,4 @@
-import { pgTable, uuid, boolean, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, boolean, timestamp, unique } from 'drizzle-orm/pg-core';
 import { eventSeries } from './event-series.js';
 import { users } from './users.js';
 
@@ -14,5 +14,6 @@ export const eventSeriesSubscriptions = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     notify: boolean('notify').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  }
+  },
+  (table) => [unique().on(table.seriesId, table.userId)]
 );

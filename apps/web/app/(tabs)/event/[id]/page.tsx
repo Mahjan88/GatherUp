@@ -6,6 +6,7 @@ import {
   getEvent,
   deleteEvent,
   requestToJoinEvent,
+  useAuth,
 } from '@gatherup/shared';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -14,6 +15,7 @@ export default function EventDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const id = params.id as string;
+  const { user } = useAuth();
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -32,6 +34,7 @@ export default function EventDetailPage() {
       alert('Event deleted successfully');
       router.push('/');
     },
+    onError: () => alert('Could not delete this event.'),
   });
 
   const joinRequestMutation = useMutation({
@@ -40,6 +43,7 @@ export default function EventDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['event', id] });
       alert('Join request sent!');
     },
+    onError: () => alert('Could not send join request. You may already be a member.'),
   });
 
   const handleReport = () => {
@@ -72,9 +76,11 @@ export default function EventDetailPage() {
     );
   }
 
+  const isHost = user?.id === event.host_id;
+  const memberCount = event.members?.[0]?.count ?? 0;
   const spotsLeft =
     event.capacity_limit != null
-      ? event.capacity_limit - (event.member_count || 0)
+      ? event.capacity_limit - memberCount
       : null;
 
   return (
@@ -115,7 +121,7 @@ export default function EventDetailPage() {
                     {event.status}
                   </span>
                 )}
-                {event.visibility === 'public' && (
+                {event.visibility === 'public' && !isHost && (
                   <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-1 rounded-full">
                     Public
                   </span>
@@ -249,7 +255,7 @@ export default function EventDetailPage() {
               <span className="text-xl">👥</span>
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  {event.member_count || 0} attending
+                  {memberCount} attending
                 </p>
                 {event.capacity_limit != null && (
                   <p className="text-xs text-gray-500">
@@ -266,7 +272,7 @@ export default function EventDetailPage() {
 
           {/* Action buttons */}
           <div className="bg-white rounded-lg shadow-sm p-5 space-y-3">
-            {event.visibility === 'public' && (
+            {event.visibility === 'public' && !isHost && (
               <button
                 onClick={() => joinRequestMutation.mutate()}
                 disabled={joinRequestMutation.isPending}
@@ -306,7 +312,7 @@ export default function EventDetailPage() {
             </button>
 
             <button
-              onClick={() => router.push(`/chat/${id}`)}
+              onClick={() => router.push(`/event/${id}/chat`)}
               className="w-full px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors text-sm"
             >
               View chat
@@ -319,13 +325,15 @@ export default function EventDetailPage() {
               >
                 Report
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteEventMutation.isPending}
-                className="flex-1 px-4 py-2 text-red-500 text-xs hover:text-red-700 disabled:opacity-50 transition-colors"
-              >
-                Delete
-              </button>
+              {isHost && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteEventMutation.isPending}
+                  className="flex-1 px-4 py-2 text-red-500 text-xs hover:text-red-700 disabled:opacity-50 transition-colors"
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         </div>

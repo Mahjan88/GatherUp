@@ -1,14 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getMyHostedEvents, getMyInvitedEvents } from '@gatherup/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  getMyHostedEvents,
+  getMyInvitedEvents,
+  respondToInvitation,
+} from '@gatherup/shared';
 import Link from 'next/link';
 
 type FeedTab = 'upcoming' | 'invites' | 'series';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<FeedTab>('upcoming');
+  const queryClient = useQueryClient();
 
   const { data: hostedEvents, isLoading: loadingHosted } = useQuery({
     queryKey: ['events', 'hosted'],
@@ -26,17 +31,31 @@ export default function HomePage() {
   //   queryFn: () => client.events.feed(),
   // });
 
+  const respondMutation = useMutation({
+    mutationFn: ({
+      eventId,
+      status,
+    }: {
+      eventId: string;
+      status: 'joined' | 'declined';
+    }) => respondToInvitation(eventId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: () => alert('Could not update your RSVP. Please try again.'),
+  });
+
   const isLoading = loadingHosted || loadingInvited;
 
   const upcomingEvents = [
     ...(hostedEvents || []),
-    ...(invitedEvents?.filter((e: any) => e.status === 'joined') || []),
+    ...(invitedEvents?.filter((e: any) => e.member_status === 'joined') || []),
   ].sort((a: any, b: any) =>
     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
 
   const pendingInvites = invitedEvents?.filter(
-    (e: any) => e.status === 'invited'
+    (e: any) => e.member_status === 'invited'
   ) || [];
 
   return (
@@ -141,10 +160,26 @@ export default function HomePage() {
                     <p className="text-gray-500 text-sm mt-1">{event.location}</p>
                   )}
                   <div className="flex gap-3 mt-4">
-                    <button className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
+                    <button
+                      onClick={() =>
+                        respondMutation.mutate({
+                          eventId: event.id,
+                          status: 'joined',
+                        })
+                      }
+                      disabled={respondMutation.isPending}
+                      className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">
                       Going
                     </button>
-                    <button className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+                    <button
+                      onClick={() =>
+                        respondMutation.mutate({
+                          eventId: event.id,
+                          status: 'declined',
+                        })
+                      }
+                      disabled={respondMutation.isPending}
+                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
                       Decline
                     </button>
                   </div>

@@ -3,16 +3,20 @@ import {
   View,
   Text,
   TextInput,
+  Alert,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import type { TextInputInstance } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Button, ScreenHeader, StepDots } from '../../components/ui';
+import { Button } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
 
 const CODE_LENGTH = 6;
 const EXPIRY_SECONDS = 15 * 60;
@@ -24,14 +28,13 @@ function formatTime(seconds: number) {
 }
 
 export default function VerifyScreen() {
-  const router = useRouter();
   const { contact, method } = useLocalSearchParams<{
     contact: string;
     method: string;
   }>();
   const isEmail = method === 'email';
 
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   const [code, setCode] = useState('');
   const [focused, setFocused] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(EXPIRY_SECONDS);
@@ -49,19 +52,38 @@ export default function VerifyScreen() {
   };
 
   const handleContinue = async () => {
+    if (!contact) return;
     setLoading(true);
-    // TODO: supabase.auth.verifyOtp({ [isEmail ? 'email' : 'phone']: contact,
-    //   token: code, type: isEmail ? 'email' : 'sms' })
-    // TODO: returning users with a profile should go straight to /(tabs)
+    const { error } = isEmail
+      ? await supabase.auth.verifyOtp({
+          email: contact,
+          token: code,
+          type: 'email',
+        })
+      : await supabase.auth.verifyOtp({
+          phone: contact,
+          token: code,
+          type: 'sms',
+        });
     setLoading(false);
-    router.push({
-      pathname: '/(auth)/profile-setup',
-      params: isEmail && contact ? { email: contact } : {},
-    });
+    if (error) {
+      Alert.alert('Invalid code', error.message);
+      setCode('');
+      inputRef.current?.focus();
+    }
+    // On success the root layout redirects: returning users go to the
+    // tabs, new users continue to profile setup
   };
 
-  const handleResend = () => {
-    // TODO: re-call supabase.auth.signInWithOtp for `contact`
+  const handleResend = async () => {
+    if (!contact) return;
+    const { error } = isEmail
+      ? await supabase.auth.signInWithOtp({ email: contact })
+      : await supabase.auth.signInWithOtp({ phone: contact });
+    if (error) {
+      Alert.alert('Could not resend code', error.message);
+      return;
+    }
     setTimeRemaining(EXPIRY_SECONDS);
     setCode('');
     inputRef.current?.focus();
@@ -72,9 +94,6 @@ export default function VerifyScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={1} />
-      </ScreenHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -146,7 +165,7 @@ export default function VerifyScreen() {
             label="Continue"
             fullWidth
             loading={loading}
-            disabled={code.length < CODE_LENGTH}
+            disabled={code.length < CODE_LENGTH || timeRemaining === 0}
             onPress={handleContinue}
           />
         </View>
@@ -158,6 +177,7 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   flex: {

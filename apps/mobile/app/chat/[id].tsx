@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Avatar, IconButton, Ionicons } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
@@ -131,7 +132,7 @@ export default function EventChatScreen() {
   const { id } = useLocalSearchParams();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
 
   const sendMessage = () => {
     if (!message.trim()) return;

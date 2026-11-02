@@ -12,14 +12,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import {
-  Button,
-  Divider,
-  Ionicons,
-  ScreenHeader,
-  StepDots,
-} from '../../components/ui';
+import { Button, Divider, Ionicons } from '../../components/ui';
 import { colors, radius, spacing, typography, GUTTER } from '../../theme';
+import { ONBOARDING_HEADER_HEIGHT } from '../../components/OnboardingHeader';
+import { supabase } from '../../lib/supabase';
 
 export default function PhoneSignInScreen() {
   const router = useRouter();
@@ -32,21 +28,23 @@ export default function PhoneSignInScreen() {
       Alert.alert('Phone required', 'Please enter your phone number');
       return;
     }
+    const phone = `${countryCode}${phoneNumber.replace(/\D/g, '')}`;
     setLoading(true);
-    // TODO: supabase.auth.signInWithOtp({ phone: `${countryCode}${phoneNumber}` })
+    const { error } = await supabase.auth.signInWithOtp({ phone });
     setLoading(false);
+    if (error) {
+      Alert.alert('Could not send code', error.message);
+      return;
+    }
     router.push({
       pathname: '/(auth)/verify',
-      params: { contact: `${countryCode}${phoneNumber}`, method: 'phone' },
+      params: { contact: phone, method: 'phone' },
     });
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <ScreenHeader showBack>
-        <StepDots total={4} current={0} />
-      </ScreenHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -121,6 +119,7 @@ export default function PhoneSignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: ONBOARDING_HEADER_HEIGHT,
     backgroundColor: colors.background,
   },
   flex: {

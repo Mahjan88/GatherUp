@@ -241,6 +241,10 @@ export type MediaType = 'image' | 'video';
 export interface EventWithHost extends EventRow {
   host: User;
   member_count?: number;
+  /** Aggregate from `members:event_members(count)` in the select. */
+  members?: { count: number }[];
+  /** Current user's membership status, set by getMyInvitedEvents. */
+  member_status?: EventMember['status'];
   /** Joined when organizer_type = 'community'. */
   community?: Pick<Community, 'id' | 'name'> | null;
   /** Joined when the event belongs to a series. */
