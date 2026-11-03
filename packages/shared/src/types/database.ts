@@ -333,12 +333,61 @@ export interface Database {
           }
         ];
       };
+      external_events: {
+        Row: {
+          id: string;
+          provider: 'ticketmaster';
+          provider_event_id: string;
+          provider_url_id: string | null;
+          source_url: string;
+          title: string;
+          starts_at: string | null;
+          timezone: string | null;
+          venue_name: string | null;
+          city_region: string | null;
+          image_url: string | null;
+          last_synced_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider: 'ticketmaster';
+          provider_event_id: string;
+          provider_url_id?: string | null;
+          source_url: string;
+          title: string;
+          starts_at?: string | null;
+          timezone?: string | null;
+          venue_name?: string | null;
+          city_region?: string | null;
+          image_url?: string | null;
+          last_synced_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: 'ticketmaster';
+          provider_event_id?: string;
+          provider_url_id?: string | null;
+          source_url?: string;
+          title?: string;
+          starts_at?: string | null;
+          timezone?: string | null;
+          venue_name?: string | null;
+          city_region?: string | null;
+          image_url?: string | null;
+          last_synced_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       events: {
         Row: {
           id: string;
           host_id: string;
           community_id: string | null;
           series_id: string | null;
+          external_event_id: string | null;
           organizer_type: 'user' | 'community';
           title: string;
           tagline: string | null;
@@ -369,6 +418,7 @@ export interface Database {
           host_id: string;
           community_id?: string | null;
           series_id?: string | null;
+          external_event_id?: string | null;
           organizer_type?: 'user' | 'community';
           title: string;
           tagline?: string | null;
@@ -399,6 +449,7 @@ export interface Database {
           host_id?: string;
           community_id?: string | null;
           series_id?: string | null;
+          external_event_id?: string | null;
           organizer_type?: 'user' | 'community';
           title?: string;
           tagline?: string | null;
@@ -425,6 +476,13 @@ export interface Database {
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'events_external_event_id_fkey';
+            columns: ['external_event_id'];
+            isOneToOne: false;
+            referencedRelation: 'external_events';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'events_host_id_fkey';
             columns: ['host_id'];

@@ -27,7 +27,7 @@ export class EventsService {
       where: eq(events.id, eventId),
     });
 
-    if (!result) throw new Error('Event not found');
+    if (!result) throw Object.assign(new Error('Event not found'), { statusCode: 404 });
 
     // Get host info
     const host = await this.app.db.query.users.findFirst({
@@ -89,7 +89,7 @@ export class EventsService {
       where: and(eq(events.id, eventId), eq(events.hostId, hostId)),
     });
 
-    if (!existing) throw new Error('Event not found or not authorized');
+    if (!existing) throw Object.assign(new Error('Event not found or not authorized'), { statusCode: 404 });
 
     const updateData: Record<string, unknown> = { ...input };
     if (input.startTime) updateData.startTime = new Date(input.startTime);
@@ -109,7 +109,7 @@ export class EventsService {
       where: and(eq(events.id, eventId), eq(events.hostId, hostId)),
     });
 
-    if (!existing) throw new Error('Event not found or not authorized');
+    if (!existing) throw Object.assign(new Error('Event not found or not authorized'), { statusCode: 404 });
 
     await this.app.db.delete(events).where(eq(events.id, eventId));
   }
@@ -163,7 +163,7 @@ export class EventsService {
       )
       .returning();
 
-    if (!updated) throw new Error('Invitation not found');
+    if (!updated) throw Object.assign(new Error('Invitation not found'), { statusCode: 404 });
     return updated;
   }
 
@@ -190,7 +190,7 @@ export class EventsService {
       )
       .returning();
 
-    if (!updated) throw new Error('Join request not found');
+    if (!updated) throw Object.assign(new Error('Join request not found'), { statusCode: 404 });
     return updated;
   }
 
@@ -203,7 +203,7 @@ export class EventsService {
       )
       .returning();
 
-    if (!updated) throw new Error('Join request not found');
+    if (!updated) throw Object.assign(new Error('Join request not found'), { statusCode: 404 });
     return updated;
   }
 }

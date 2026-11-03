@@ -4,6 +4,7 @@ export { communityMembers } from './community-members.js';
 export { eventSeries } from './event-series.js';
 export { eventSeriesSubscriptions } from './event-series-subscriptions.js';
 export { communityFollows } from './community-follows.js';
+export { externalEvents } from './external-events.js';
 export { events } from './events.js';
 export { eventMembers } from './event-members.js';
 export { eventMessage } from './event-messages.js';

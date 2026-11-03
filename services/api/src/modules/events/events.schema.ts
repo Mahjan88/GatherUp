@@ -40,6 +40,7 @@ export const createEventSchema = z.object({
   description: z.string().nullable().optional(),
   communityId: z.string().uuid().nullable().optional(),
   seriesId: z.string().uuid().nullable().optional(),
+  externalEventId: z.string().uuid().nullable().optional(),
   organizerType: z.enum(['user', 'community']).default('user'),
   startTime: z.string().datetime(),
   endTime: z.string().datetime().nullable().optional(),

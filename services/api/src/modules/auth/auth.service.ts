@@ -54,7 +54,7 @@ export class AuthService {
       where: eq(users.id, userId),
     });
 
-    if (!result) throw new Error('User not found');
+    if (!result) throw Object.assign(new Error('User not found'), { statusCode: 404 });
     return result;
   }
 

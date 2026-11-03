@@ -4,8 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createEvent, getCurrentUser } from '@gatherup/shared';
+import type {
+  ImportedTicketmasterEvent,
+  TicketmasterEvent,
+} from '@gatherup/types';
+import { TicketmasterSearch } from '../../../components/TicketmasterSearch';
 
 type FormStep = 1 | 2 | 3;
+type CreateMode = 'manual' | 'ticketmaster';
 type EventCategory =
   | 'networking'
   | 'party'
@@ -45,8 +51,11 @@ export default function CreateEventPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  const [mode, setMode] = useState<CreateMode>('manual');
   const [step, setStep] = useState<FormStep>(1);
   const [error, setError] = useState('');
+  const [source, setSource] = useState<TicketmasterEvent | null>(null);
+  const [externalEventId, setExternalEventId] = useState<string | null>(null);
 
   // Step 1: Basics
   const [title, setTitle] = useState('');
@@ -98,6 +107,35 @@ export default function CreateEventPage() {
     },
   });
 
+  const applyTicketmasterEvent = ({
+    externalEventId,
+    event: e,
+  }: ImportedTicketmasterEvent) => {
+    setSource(e);
+    setExternalEventId(externalEventId);
+    setTitle(e.name);
+    setDescription(
+      e.info ?? `Who's coming to ${e.name}? Let's meet up and go together.`
+    );
+    setCategory(e.category);
+    setCoverImage(null);
+    setCoverPreview(e.imageUrl ?? '');
+    // datetime-local wants YYYY-MM-DDTHH:mm in the venue's local time
+    setStartTime(
+      e.localDate
+        ? `${e.localDate}T${(e.localTime ?? '19:00').slice(0, 5)}`
+        : ''
+    );
+    setEndTime('');
+    if (e.timezone) setTimezone(e.timezone);
+    setIsOnline(false);
+    setLocation(e.venueName ?? '');
+    setAddress(e.address ?? '');
+    setCityRegion(e.cityRegion ?? '');
+    setMode('manual');
+    setStep(1);
+  };
+
   const handleCoverImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -125,7 +163,8 @@ export default function CreateEventPage() {
       if (!user) throw new Error('Not authenticated');
 
       // TODO: upload cover image to Supabase storage and get URL
-      const coverImageUrl = null;
+      const coverImageUrl =
+        !coverImage && source?.imageUrl ? source.imageUrl : null;
 
       await createEventMutation.mutateAsync({
         host_id: user.id,
@@ -145,8 +184,10 @@ export default function CreateEventPage() {
         visibility,
         capacity_limit: capacityLimit ? parseInt(capacityLimit, 10) : null,
         organizer_type: organizerType,
-        community_id: organizerType === 'community' && communityId ? communityId : null,
+        community_id:
+          organizerType === 'community' && communityId ? communityId : null,
         series_id: seriesId || null,
+        external_event_id: externalEventId,
         // No draft/publish step in the UI yet, so publish on create
         status: 'published',
         published_at: new Date().toISOString(),
@@ -173,561 +214,636 @@ export default function CreateEventPage() {
     <div className="max-w-2xl mx-auto pb-8">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Create event</h2>
 
-      {/* Step tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1">
-        {stepLabels.map((label, i) => (
+      {/* Creation mode */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        {(
+          [
+            {
+              value: 'manual',
+              title: 'Create manually',
+              hint: 'Start from a blank form',
+            },
+            {
+              value: 'ticketmaster',
+              title: 'Import from Ticketmaster',
+              hint: 'Meet up at a concert, game or show',
+            },
+          ] as const
+        ).map((m) => (
           <button
-            key={label}
-            onClick={() => setStep((i + 1) as FormStep)}
-            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-              step === i + 1
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+            key={m.value}
+            type="button"
+            onClick={() => setMode(m.value)}
+            className={`p-4 border-2 rounded-lg text-left transition-colors ${
+              mode === m.value
+                ? 'border-teal-500 bg-teal-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
-            {label}
+            <p className="font-medium text-gray-900">{m.title}</p>
+            <p className="text-sm text-gray-500">{m.hint}</p>
           </button>
         ))}
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
+      {mode === 'ticketmaster' ? (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <TicketmasterSearch onSelect={applyTicketmasterEvent} />
         </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        {/* ─── STEP 1: BASICS ─── */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-              Event basics
-            </h3>
-
-            {/* Cover image */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cover image
-              </label>
-              <div
-                className="relative h-40 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
-                onClick={() =>
-                  document.getElementById('cover-upload')?.click()
-                }
+      ) : (
+        <>
+          {source && (
+            <div className="flex items-center justify-between gap-3 bg-teal-50 border border-teal-200 px-4 py-3 rounded-lg mb-6 text-sm">
+              <p className="text-teal-800">
+                Imported from Ticketmaster:{' '}
+                <span className="font-medium">{source.name}</span>. Review the
+                details below.{' '}
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View tickets
+                </a>
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSource(null);
+                  setExternalEventId(null);
+                }}
+                className="text-teal-700 hover:text-teal-900 font-medium flex-shrink-0"
               >
-                {coverPreview ? (
-                  <img
-                    src={coverPreview}
-                    alt="Cover preview"
-                    className="absolute inset-0 w-full h-full object-cover"
+                Unlink
+              </button>
+            </div>
+          )}
+
+          {/* Step tabs */}
+          <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1">
+            {stepLabels.map((label, i) => (
+              <button
+                key={label}
+                onClick={() => setStep((i + 1) as FormStep)}
+                className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  step === i + 1
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            {/* ─── STEP 1: BASICS ─── */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
+                  Event basics
+                </h3>
+
+                {/* Cover image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cover image
+                  </label>
+                  <div
+                    className="relative h-40 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
+                    onClick={() =>
+                      document.getElementById('cover-upload')?.click()
+                    }
+                  >
+                    {coverPreview ? (
+                      <img
+                        src={coverPreview}
+                        alt="Cover preview"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center">
+                        <span className="text-2xl">📷</span>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Click to upload
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    id="cover-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverImage}
                   />
-                ) : (
-                  <div className="text-center">
-                    <span className="text-2xl">📷</span>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Click to upload
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="Give your event a name"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+
+                {/* Tagline */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tagline
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="A short catchy subtitle"
+                    value={tagline}
+                    onChange={(e) => setTagline(e.target.value)}
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="Tell people about your event"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.value}
+                        type="button"
+                        onClick={() => setCategory(cat.value)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          category === cat.value
+                            ? 'bg-teal-500 text-white border-teal-500'
+                            : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
+                  When & where
+                </h3>
+
+                {/* Start / End */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start time <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Timezone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Timezone
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                  >
+                    {(TIMEZONES.includes(timezone)
+                      ? TIMEZONES
+                      : [timezone, ...TIMEZONES]
+                    ).map((tz) => (
+                      <option key={tz} value={tz}>
+                        {tz.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Online toggle */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">
+                      Online event
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      This event takes place virtually
                     </p>
                   </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={isOnline}
+                      onChange={(e) => setIsOnline(e.target.checked)}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                  </label>
+                </div>
+
+                {/* Virtual link (shown when online) */}
+                {isOnline && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Meeting link
+                    </label>
+                    <input
+                      type="url"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      placeholder="https://zoom.us/j/..."
+                      value={virtualLink}
+                      onChange={(e) => setVirtualLink(e.target.value)}
+                    />
+                  </div>
                 )}
-              </div>
-              <input
-                id="cover-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleCoverImage}
-              />
-            </div>
 
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Give your event a name"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
+                {/* Physical location (shown when not online-only) */}
+                {!isOnline && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Venue name
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        placeholder="e.g., The Grand Ballroom"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Street address
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        placeholder="123 Main St"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        City / Region
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        placeholder="San Francisco, CA"
+                        value={cityRegion}
+                        onChange={(e) => setCityRegion(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
 
-            {/* Tagline */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tagline
-              </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="A short catchy subtitle"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Tell people about your event"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
+                <div className="flex justify-end pt-4">
                   <button
-                    key={cat.value}
                     type="button"
-                    onClick={() => setCategory(cat.value)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                      category === cat.value
-                        ? 'bg-teal-500 text-white border-teal-500'
-                        : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                    onClick={() => setStep(2)}
+                    className="px-6 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-colors"
+                  >
+                    Next: Guests & privacy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ─── STEP 2: GUESTS & PRIVACY ─── */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
+                  Hosting as
+                </h3>
+
+                {/* Organizer type */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setOrganizerType('user')}
+                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                      organizerType === 'user'
+                        ? 'border-teal-500 bg-teal-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    {cat.label}
+                    <p className="font-medium text-gray-900">Myself</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Host as your personal profile
+                    </p>
                   </button>
-                ))}
-              </div>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
-              When & where
-            </h3>
-
-            {/* Start / End */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End time
-                </label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Timezone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Timezone
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz.replace(/_/g, ' ')}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Online toggle */}
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
-              <div>
-                <p className="text-sm font-medium text-gray-700">
-                  Online event
-                </p>
-                <p className="text-xs text-gray-500">
-                  This event takes place virtually
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={isOnline}
-                  onChange={(e) => setIsOnline(e.target.checked)}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
-              </label>
-            </div>
-
-            {/* Virtual link (shown when online) */}
-            {isOnline && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Meeting link
-                </label>
-                <input
-                  type="url"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="https://zoom.us/j/..."
-                  value={virtualLink}
-                  onChange={(e) => setVirtualLink(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Physical location (shown when not online-only) */}
-            {!isOnline && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Venue name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    placeholder="e.g., The Grand Ballroom"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street address
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    placeholder="123 Main St"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City / Region
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    placeholder="San Francisco, CA"
-                    value={cityRegion}
-                    onChange={(e) => setCityRegion(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex justify-end pt-4">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="px-6 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-colors"
-              >
-                Next: Guests & privacy
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 2: GUESTS & PRIVACY ─── */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-              Hosting as
-            </h3>
-
-            {/* Organizer type */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setOrganizerType('user')}
-                className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                  organizerType === 'user'
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <p className="font-medium text-gray-900">Myself</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Host as your personal profile
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrganizerType('community')}
-                className={`p-4 rounded-lg border-2 text-left transition-colors ${
-                  organizerType === 'community'
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <p className="font-medium text-gray-900">A community</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Host on behalf of a community
-                </p>
-              </button>
-            </div>
-
-            {/* Community picker (shown when organizing as community) */}
-            {organizerType === 'community' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select community
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
-                  value={communityId}
-                  onChange={(e) => setCommunityId(e.target.value)}
-                >
-                  <option value="">Choose a community...</option>
-                  {/* TODO: populate from API - user's owned/admin communities */}
-                </select>
-              </div>
-            )}
-
-            {/* Series picker */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Part of a series{' '}
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
-                value={seriesId}
-                onChange={(e) => setSeriesId(e.target.value)}
-              >
-                <option value="">Standalone event</option>
-                {/* TODO: populate from API - user's series */}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Link this event to a recurring series so subscribers get
-                notified
-              </p>
-            </div>
-
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
-              Privacy & access
-            </h3>
-
-            {/* Visibility */}
-            <div className="space-y-2">
-              {(
-                [
-                  {
-                    value: 'public',
-                    label: 'Public',
-                    hint: 'Anyone can find and join',
-                  },
-                  {
-                    value: 'private',
-                    label: 'Private',
-                    hint: 'Only people with the link can see it',
-                  },
-                  {
-                    value: 'invite_only',
-                    label: 'Invite only',
-                    hint: 'Only invited guests can see and attend',
-                  },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setVisibility(opt.value)}
-                  className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                    visibility === opt.value
-                      ? 'border-teal-500 bg-teal-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <p
-                    className={`text-sm font-medium ${visibility === opt.value ? 'text-teal-700' : 'text-gray-900'}`}
+                  <button
+                    type="button"
+                    onClick={() => setOrganizerType('community')}
+                    className={`p-4 rounded-lg border-2 text-left transition-colors ${
+                      organizerType === 'community'
+                        ? 'border-teal-500 bg-teal-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                   >
-                    {opt.label}
-                  </p>
-                  <p className="text-xs text-gray-500">{opt.hint}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* Capacity */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Capacity limit{' '}
-                <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <input
-                type="number"
-                min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Leave empty for unlimited"
-                value={capacityLimit}
-                onChange={(e) => setCapacityLimit(e.target.value)}
-              />
-            </div>
-
-            <div className="flex justify-between pt-4">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep(3)}
-                className="px-6 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-colors"
-              >
-                Next: Advanced
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── STEP 3: ADVANCED ─── */}
-        {step === 3 && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
-              Event settings
-            </h3>
-
-            {/* Toggle rows */}
-            {[
-              {
-                label: 'Event chat',
-                hint: 'Allow attendees to chat in the event',
-                value: chatEnabled,
-                onChange: setChatEnabled,
-              },
-              {
-                label: 'Gallery for attendees only',
-                hint: 'Only joined members can see photos & videos',
-                value: galleryForAttendeesOnly,
-                onChange: setGalleryForAttendeesOnly,
-              },
-              {
-                label: 'RSVP required',
-                hint: 'Guests must confirm attendance',
-                value: rsvpRequired,
-                onChange: setRsvpRequired,
-              },
-              {
-                label: 'Allow guests to invite others',
-                hint: 'Attendees can share the event with friends',
-                value: allowInviteOthers,
-                onChange: setAllowInviteOthers,
-              },
-              {
-                label: 'Post-event feedback',
-                hint: 'Enable reviews after the event ends',
-                value: feedbackEnabled,
-                onChange: setFeedbackEnabled,
-              },
-            ].map((toggle) => (
-              <div
-                key={toggle.label}
-                className="flex items-center justify-between bg-gray-50 rounded-lg p-4"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-700">
-                    {toggle.label}
-                  </p>
-                  <p className="text-xs text-gray-500">{toggle.hint}</p>
+                    <p className="font-medium text-gray-900">A community</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Host on behalf of a community
+                    </p>
+                  </button>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+
+                {/* Community picker (shown when organizing as community) */}
+                {organizerType === 'community' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select community
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                      value={communityId}
+                      onChange={(e) => setCommunityId(e.target.value)}
+                    >
+                      <option value="">Choose a community...</option>
+                      {/* TODO: populate from API - user's owned/admin communities */}
+                    </select>
+                  </div>
+                )}
+
+                {/* Series picker */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Part of a series{' '}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                    value={seriesId}
+                    onChange={(e) => setSeriesId(e.target.value)}
+                  >
+                    <option value="">Standalone event</option>
+                    {/* TODO: populate from API - user's series */}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Link this event to a recurring series so subscribers get
+                    notified
+                  </p>
+                </div>
+
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
+                  Privacy & access
+                </h3>
+
+                {/* Visibility */}
+                <div className="space-y-2">
+                  {(
+                    [
+                      {
+                        value: 'public',
+                        label: 'Public',
+                        hint: 'Anyone can find and join',
+                      },
+                      {
+                        value: 'private',
+                        label: 'Private',
+                        hint: 'Only people with the link can see it',
+                      },
+                      {
+                        value: 'invite_only',
+                        label: 'Invite only',
+                        hint: 'Only invited guests can see and attend',
+                      },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setVisibility(opt.value)}
+                      className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                        visibility === opt.value
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-medium ${visibility === opt.value ? 'text-teal-700' : 'text-gray-900'}`}
+                      >
+                        {opt.label}
+                      </p>
+                      <p className="text-xs text-gray-500">{opt.hint}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Capacity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Capacity limit{' '}
+                    <span className="text-gray-400 font-normal">
+                      (optional)
+                    </span>
+                  </label>
                   <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={toggle.value}
-                    onChange={(e) => toggle.onChange(e.target.checked)}
+                    type="number"
+                    min="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="Leave empty for unlimited"
+                    value={capacityLimit}
+                    onChange={(e) => setCapacityLimit(e.target.value)}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
-                </label>
+                </div>
+
+                <div className="flex justify-between pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="px-6 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium transition-colors"
+                  >
+                    Next: Advanced
+                  </button>
+                </div>
               </div>
-            ))}
+            )}
 
-            <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
-              Reminders
-            </h3>
+            {/* ─── STEP 3: ADVANCED ─── */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">
+                  Event settings
+                </h3>
 
-            <div className="flex gap-4">
-              {[
-                {
-                  label: '24 hours before',
-                  value: reminder24h,
-                  onChange: setReminder24h,
-                },
-                {
-                  label: '1 hour before',
-                  value: reminder1h,
-                  onChange: setReminder1h,
-                },
-              ].map((rem) => (
-                <label
-                  key={rem.label}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-                    rem.value
-                      ? 'border-teal-500 bg-teal-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-teal-500 focus:ring-teal-500 border-gray-300 rounded"
-                    checked={rem.value}
-                    onChange={(e) => rem.onChange(e.target.checked)}
-                  />
-                  <span className="text-sm text-gray-700">{rem.label}</span>
-                </label>
-              ))}
-            </div>
+                {/* Toggle rows */}
+                {[
+                  {
+                    label: 'Event chat',
+                    hint: 'Allow attendees to chat in the event',
+                    value: chatEnabled,
+                    onChange: setChatEnabled,
+                  },
+                  {
+                    label: 'Gallery for attendees only',
+                    hint: 'Only joined members can see photos & videos',
+                    value: galleryForAttendeesOnly,
+                    onChange: setGalleryForAttendeesOnly,
+                  },
+                  {
+                    label: 'RSVP required',
+                    hint: 'Guests must confirm attendance',
+                    value: rsvpRequired,
+                    onChange: setRsvpRequired,
+                  },
+                  {
+                    label: 'Allow guests to invite others',
+                    hint: 'Attendees can share the event with friends',
+                    value: allowInviteOthers,
+                    onChange: setAllowInviteOthers,
+                  },
+                  {
+                    label: 'Post-event feedback',
+                    hint: 'Enable reviews after the event ends',
+                    value: feedbackEnabled,
+                    onChange: setFeedbackEnabled,
+                  },
+                ].map((toggle) => (
+                  <div
+                    key={toggle.label}
+                    className="flex items-center justify-between bg-gray-50 rounded-lg p-4"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        {toggle.label}
+                      </p>
+                      <p className="text-xs text-gray-500">{toggle.hint}</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={toggle.value}
+                        onChange={(e) => toggle.onChange(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                    </label>
+                  </div>
+                ))}
 
-            <div className="flex justify-between pt-4 border-t">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-              >
-                Back
-              </button>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => router.back()}
-                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={createEventMutation.isPending}
-                  onClick={handleSubmit}
-                  className="px-8 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium disabled:opacity-50 transition-colors"
-                >
-                  {createEventMutation.isPending
-                    ? 'Creating...'
-                    : 'Create event'}
-                </button>
+                <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 pt-2">
+                  Reminders
+                </h3>
+
+                <div className="flex gap-4">
+                  {[
+                    {
+                      label: '24 hours before',
+                      value: reminder24h,
+                      onChange: setReminder24h,
+                    },
+                    {
+                      label: '1 hour before',
+                      value: reminder1h,
+                      onChange: setReminder1h,
+                    },
+                  ].map((rem) => (
+                    <label
+                      key={rem.label}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+                        rem.value
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-gray-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-teal-500 focus:ring-teal-500 border-gray-300 rounded"
+                        checked={rem.value}
+                        onChange={(e) => rem.onChange(e.target.checked)}
+                      />
+                      <span className="text-sm text-gray-700">{rem.label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex justify-between pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  >
+                    Back
+                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => router.back()}
+                      className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={createEventMutation.isPending}
+                      onClick={handleSubmit}
+                      className="px-8 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 font-medium disabled:opacity-50 transition-colors"
+                    >
+                      {createEventMutation.isPending
+                        ? 'Creating...'
+                        : 'Create event'}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

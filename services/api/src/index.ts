@@ -3,11 +3,13 @@ import { loadEnv } from './config/env.js';
 import { createDatabase, closeDatabase } from './config/database.js';
 import { corsPlugin } from './plugins/cors.js';
 import { authPlugin } from './plugins/auth.js';
+import { errorsPlugin } from './plugins/errors.js';
 import { eventsModule } from './modules/events/index.js';
 import { messagingModule } from './modules/messaging/index.js';
 import { authModule } from './modules/auth/index.js';
 import { mediaModule } from './modules/media/index.js';
 import { notificationsModule } from './modules/notifications/index.js';
+import { ticketmasterModule } from './modules/ticketmaster/index.js';
 import { realtimePlugin } from './plugins/realtime.js';
 
 async function main() {
@@ -32,6 +34,7 @@ async function main() {
   app.decorate('db', db);
 
   // Register plugins
+  await app.register(errorsPlugin);
   await app.register(corsPlugin);
   await app.register(authPlugin);
   await app.register(realtimePlugin);
@@ -42,6 +45,7 @@ async function main() {
   await app.register(messagingModule, { prefix: '/api/messages' });
   await app.register(mediaModule, { prefix: '/api/media' });
   await app.register(notificationsModule, { prefix: '/api/notifications' });
+  await app.register(ticketmasterModule, { prefix: '/api/ticketmaster' });
 
   // Health check
   app.get('/health', async () => ({

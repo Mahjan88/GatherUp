@@ -42,29 +42,6 @@ const SLIDES: Slide[] = [
   },
 ];
 
-interface Slide {
-  key: string;
-  title: string;
-  subtitle?: string;
-}
-
-const SLIDES: Slide[] = [
-  {
-    key: 'people',
-    title: 'Find your people.\nPlan the moment.',
-  },
-  {
-    key: 'discover',
-    title: 'Discover events near you',
-    subtitle: 'Hikes, supper clubs, pickup games: see what’s happening.',
-  },
-  {
-    key: 'share',
-    title: 'Chat and share together',
-    subtitle: 'Group chats, photos and RSVPs, all in one place.',
-  },
-];
-
 /**
  * Splash / Onboarding (mockup #1): one fixed full-bleed photo with the logo
  * at the top; the slide text swipes, with page dots and two pill CTAs below.

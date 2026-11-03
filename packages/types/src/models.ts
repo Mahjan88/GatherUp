@@ -3,7 +3,8 @@ import { Database } from './database.js';
 // --- Row types (direct DB rows) ---
 export type User = Database['public']['Tables']['users']['Row'];
 export type Community = Database['public']['Tables']['communities']['Row'];
-export type CommunityMember = Database['public']['Tables']['community_members']['Row'];
+export type CommunityMember =
+  Database['public']['Tables']['community_members']['Row'];
 export type EventRow = Database['public']['Tables']['events']['Row'];
 export type EventMember = Database['public']['Tables']['event_members']['Row'];
 export type EventMessage = Database['public']['Tables']['event_message']['Row'];
@@ -11,15 +12,21 @@ export type PrivateMessage =
   Database['public']['Tables']['private_message']['Row'];
 export type EventMedia = Database['public']['Tables']['event_media']['Row'];
 export type EventReview = Database['public']['Tables']['event_review']['Row'];
-export type MessageReaction = Database['public']['Tables']['message_reaction']['Row'];
+export type MessageReaction =
+  Database['public']['Tables']['message_reaction']['Row'];
 export type Notification = Database['public']['Tables']['notification']['Row'];
 export type UserFollow = Database['public']['Tables']['user_follows']['Row'];
-export type EventSeriesRow = Database['public']['Tables']['event_series']['Row'];
-export type EventSeriesSubscription = Database['public']['Tables']['event_series_subscriptions']['Row'];
-export type CommunityFollow = Database['public']['Tables']['community_follows']['Row'];
-export type EventInvitationRow = Database['public']['Tables']['event_invitations']['Row'];
+export type EventSeriesRow =
+  Database['public']['Tables']['event_series']['Row'];
+export type EventSeriesSubscription =
+  Database['public']['Tables']['event_series_subscriptions']['Row'];
+export type CommunityFollow =
+  Database['public']['Tables']['community_follows']['Row'];
+export type EventInvitationRow =
+  Database['public']['Tables']['event_invitations']['Row'];
 export type SavedEventRow = Database['public']['Tables']['saved_events']['Row'];
-export type BlockedUserRow = Database['public']['Tables']['blocked_users']['Row'];
+export type BlockedUserRow =
+  Database['public']['Tables']['blocked_users']['Row'];
 export type ReportRow = Database['public']['Tables']['reports']['Row'];
 export type AuditLogRow = Database['public']['Tables']['audit_log']['Row'];
 
@@ -44,33 +51,50 @@ export type EventMediaInsert =
 export type NotificationInsert =
   Database['public']['Tables']['notification']['Insert'];
 
-export type CommunityInsert = Database['public']['Tables']['communities']['Insert'];
-export type CommunityUpdate = Database['public']['Tables']['communities']['Update'];
+export type CommunityInsert =
+  Database['public']['Tables']['communities']['Insert'];
+export type CommunityUpdate =
+  Database['public']['Tables']['communities']['Update'];
 
-export type CommunityMemberInsert = Database['public']['Tables']['community_members']['Insert'];
-export type CommunityMemberUpdate = Database['public']['Tables']['community_members']['Update'];
+export type CommunityMemberInsert =
+  Database['public']['Tables']['community_members']['Insert'];
+export type CommunityMemberUpdate =
+  Database['public']['Tables']['community_members']['Update'];
 
-export type EventReviewInsert = Database['public']['Tables']['event_review']['Insert'];
-export type EventReviewUpdate = Database['public']['Tables']['event_review']['Update'];
+export type EventReviewInsert =
+  Database['public']['Tables']['event_review']['Insert'];
+export type EventReviewUpdate =
+  Database['public']['Tables']['event_review']['Update'];
 
-export type MessageReactionInsert = Database['public']['Tables']['message_reaction']['Insert'];
+export type MessageReactionInsert =
+  Database['public']['Tables']['message_reaction']['Insert'];
 
 export type UserUpdate = Database['public']['Tables']['users']['Update'];
 
-export type UserFollowInsert = Database['public']['Tables']['user_follows']['Insert'];
+export type UserFollowInsert =
+  Database['public']['Tables']['user_follows']['Insert'];
 
-export type EventSeriesInsert = Database['public']['Tables']['event_series']['Insert'];
-export type EventSeriesUpdate = Database['public']['Tables']['event_series']['Update'];
-export type EventSeriesSubscriptionInsert = Database['public']['Tables']['event_series_subscriptions']['Insert'];
-export type CommunityFollowInsert = Database['public']['Tables']['community_follows']['Insert'];
+export type EventSeriesInsert =
+  Database['public']['Tables']['event_series']['Insert'];
+export type EventSeriesUpdate =
+  Database['public']['Tables']['event_series']['Update'];
+export type EventSeriesSubscriptionInsert =
+  Database['public']['Tables']['event_series_subscriptions']['Insert'];
+export type CommunityFollowInsert =
+  Database['public']['Tables']['community_follows']['Insert'];
 
-export type EventInvitationInsert = Database['public']['Tables']['event_invitations']['Insert'];
-export type EventInvitationUpdate = Database['public']['Tables']['event_invitations']['Update'];
-export type SavedEventInsert = Database['public']['Tables']['saved_events']['Insert'];
-export type BlockedUserInsert = Database['public']['Tables']['blocked_users']['Insert'];
+export type EventInvitationInsert =
+  Database['public']['Tables']['event_invitations']['Insert'];
+export type EventInvitationUpdate =
+  Database['public']['Tables']['event_invitations']['Update'];
+export type SavedEventInsert =
+  Database['public']['Tables']['saved_events']['Insert'];
+export type BlockedUserInsert =
+  Database['public']['Tables']['blocked_users']['Insert'];
 export type ReportInsert = Database['public']['Tables']['reports']['Insert'];
 export type ReportUpdate = Database['public']['Tables']['reports']['Update'];
-export type AuditLogInsert = Database['public']['Tables']['audit_log']['Insert'];
+export type AuditLogInsert =
+  Database['public']['Tables']['audit_log']['Insert'];
 
 // --- Interfaces & enums ---
 
@@ -97,12 +121,28 @@ export interface PublicFields {
 
 export type EventVisibility = 'public' | 'private' | 'invite_only';
 export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
-export type EventMemberStatus = 'invited' | 'pending' | 'joined' | 'declined' | 'removed';
+export type EventMemberStatus =
+  | 'invited'
+  | 'pending'
+  | 'joined'
+  | 'declined'
+  | 'removed';
 export type EventMemberRole = 'host' | 'cohost' | 'member';
 export type CommunityVisibility = 'public' | 'private';
 export type CommunityMemberRole = 'owner' | 'admin' | 'member';
-export type CommunityMemberStatus = 'active' | 'pending' | 'banned' | 'left' | 'removed';
-export type MessageType = 'text' | 'image' | 'video' | 'file' | 'voice' | 'system';
+export type CommunityMemberStatus =
+  | 'active'
+  | 'pending'
+  | 'banned'
+  | 'left'
+  | 'removed';
+export type MessageType =
+  | 'text'
+  | 'image'
+  | 'video'
+  | 'file'
+  | 'voice'
+  | 'system';
 export type ReactionMessageType = 'event' | 'private';
 
 export type OrganizerType = 'user' | 'community';
@@ -114,9 +154,26 @@ export type ChatPermission = 'hosts' | 'attendees';
 export type MediaPermission = 'hosts' | 'attendees' | 'everyone';
 export type UploadPermission = 'attendees' | 'hosts';
 export type FeedbackVisibility = 'public' | 'attendees_only' | 'host_only';
-export type EventCategory = 'networking' | 'party' | 'workshop' | 'conference' | 'social' | 'sports' | 'other';
-export type EventInvitationStatus = 'sent' | 'accepted' | 'declined' | 'expired' | 'cancelled';
-export type ReportTargetType = 'user' | 'event' | 'community' | 'message' | 'media';
+export type EventCategory =
+  | 'networking'
+  | 'party'
+  | 'workshop'
+  | 'conference'
+  | 'social'
+  | 'sports'
+  | 'other';
+export type EventInvitationStatus =
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'expired'
+  | 'cancelled';
+export type ReportTargetType =
+  | 'user'
+  | 'event'
+  | 'community'
+  | 'message'
+  | 'media';
 export type ReportStatus = 'open' | 'reviewed' | 'dismissed' | 'action_taken';
 export type TicketType = 'free' | 'paid';
 export type RsvpStatus = 'none' | 'interested' | 'going';
@@ -220,7 +277,10 @@ export interface EventCardData {
   attendees?: Person[];
 }
 
-export const eventToCardData = (event: Event, userRsvpStatus?: RsvpStatus): EventCardData => ({
+export const eventToCardData = (
+  event: Event,
+  userRsvpStatus?: RsvpStatus
+): EventCardData => ({
   id: event.id,
   title: event.title,
   image: event.coverImage || '',
@@ -302,3 +362,63 @@ export type NotificationType =
   | 'new_series_event'
   | 'new_follower'
   | 'community_new_follower';
+
+/** Ticketmaster Discovery API event, normalized for prefilling the create form */
+export interface TicketmasterEvent {
+  /** Discovery API id */
+  id: string;
+  /** Id in the public event URL (differs from the Discovery id) */
+  urlId: string | null;
+  name: string;
+  url: string;
+  /** ISO 8601; null when Ticketmaster only lists a date (TBA time) */
+  startTime: string | null;
+  localDate: string | null;
+  localTime: string | null;
+  timezone: string | null;
+  venueName: string | null;
+  address: string | null;
+  cityRegion: string | null;
+  /** ISO country of the venue, e.g. "US", "CA" */
+  countryCode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  imageUrl: string | null;
+  /** Ticketmaster segment, e.g. "Music", "Sports" */
+  segment: string | null;
+  genre: string | null;
+  category:
+    | 'networking'
+    | 'party'
+    | 'workshop'
+    | 'conference'
+    | 'social'
+    | 'sports'
+    | 'other';
+  info: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  currency: string | null;
+  /** From the user's location, when the search sent one */
+  distanceMiles: number | null;
+}
+
+/** Result of resolving a pasted Ticketmaster link */
+export type TicketmasterUrlResolution =
+  | {
+      kind: 'event';
+      /** Set when the link's event id was confirmed; otherwise pick from events */
+      match: TicketmasterEvent | null;
+      events: TicketmasterEvent[];
+    }
+  | {
+      kind: 'artist';
+      attraction: { id: string; name: string; verified: boolean } | null;
+      events: TicketmasterEvent[];
+    };
+
+export interface ImportedTicketmasterEvent {
+  /** external_events.id, set as events.external_event_id */
+  externalEventId: string;
+  event: TicketmasterEvent;
+}

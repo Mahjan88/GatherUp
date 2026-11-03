@@ -34,7 +34,13 @@
         }
       ],
       "expo-font",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GatherUp uses your location to show events near you first."
+        }
+      ]
     ]
   }
 }

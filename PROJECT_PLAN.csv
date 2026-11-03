@@ -1,0 +1,156 @@
+Section,Task #,Task Name,Description,Status,Priority,Dependencies
+=== PHASE 1: INFRASTRUCTURE & SETUP ===,,,,,,
+Infrastructure,1.1,Monorepo Setup,Configure Turborepo with pnpm workspaces,Completed,High,None
+Infrastructure,1.2,Shared Package,Create @gatherup/shared for code reuse,Completed,High,1.1
+Infrastructure,1.3,TypeScript Configuration,Setup tsconfig for all packages,Completed,High,1.1
+Infrastructure,1.4,ESLint & Prettier,Code quality and formatting tools,Completed,Medium,1.1
+Infrastructure,1.5,CI/CD Pipeline,GitHub Actions workflow for testing/linting,Completed,Medium,1.4
+Infrastructure,1.6,Git Configuration,Setup .gitignore and .gitattributes,Completed,Low,None
+=== PHASE 2: DATABASE & BACKEND ===,,,,,,
+Database,2.1,Supabase Project Setup,Initialize Supabase with config.toml,Completed,High,None
+Database,2.2,Users Table,Create users table extending auth.users,Completed,High,2.1
+Database,2.3,Events Table,Create events table with all fields,Completed,High,2.2
+Database,2.4,Event Members Table,Create event_members junction table,Completed,High,2.3
+Database,2.5,Event Messages Table,Create event_messages for chat,Completed,High,2.3
+Database,2.6,Private Messages Table,Create private_messages table,Completed,High,2.2
+Database,2.7,Event Media Table,Create event_media for gallery,Completed,High,2.3
+Database,2.8,Notifications Table,Create notifications table,Completed,High,2.2
+Database,2.9,Database Indexes,Add performance indexes,Completed,Medium,2.2-2.8
+Database,2.1,Database Triggers,Auto-create user profile and host member,Completed,Medium,2.2-2.4
+Database,2.11,Row Level Security,Implement RLS policies for all tables,Completed,High,2.2-2.8
+Database,2.12,Storage Buckets,Setup avatars and event-media buckets,Completed,Medium,2.1
+Database,2.13,Extended Event Schema,Add agenda/coHosts/dressCode/etc fields,Not Started,Medium,2.3
+=== PHASE 3: AUTHENTICATION ===,,,,,,
+Authentication,3.1,Supabase Auth Setup,Configure auth providers in Supabase,Completed,High,2.1
+Authentication,3.2,Login Screen UI,Design and implement login page,Completed,High,None
+Authentication,3.3,Signup Screen UI,Design and implement signup page,Completed,High,None
+Authentication,3.4,Email Authentication,Email/password login flow,Completed,High,3.1
+Authentication,3.5,Auth Context/Hook,useAuth hook for auth state,Completed,High,3.4
+Authentication,3.6,Protected Routes,Route guards for authenticated pages,Completed,High,3.5
+Authentication,3.7,Splash Screen,Custom animated splash screen,Completed,Low,None
+Authentication,3.8,OAuth - Google,Google sign-in integration,Not Started,Medium,3.1
+Authentication,3.9,OAuth - Apple,Apple sign-in integration,Not Started,Medium,3.1
+Authentication,3.1,Phone Authentication,Phone/OTP login flow,Not Started,Medium,3.1
+Authentication,3.11,Password Reset,Forgot password flow,Not Started,Medium,3.4
+=== PHASE 4: MOBILE APP - CORE UI ===,,,,,,
+Mobile UI,4.1,App Layout,Root layout with providers,Completed,High,None
+Mobile UI,4.2,Tab Navigation,Bottom tab bar with 4 tabs,Completed,High,4.1
+Mobile UI,4.3,Header Component,Reusable header with logo/menu,Completed,High,None
+Mobile UI,4.4,Bottom Tab Bar,Custom animated tab bar,Completed,High,4.2
+Mobile UI,4.5,Hamburger Menu,Slide-out settings menu,Completed,High,4.3
+Mobile UI,4.6,Slide Up Modal,Reusable bottom sheet modal,Completed,Medium,None
+Mobile UI,4.7,Event Card Component,Reusable event card (compact/full/past),Completed,High,None
+Mobile UI,4.8,People Selector,Co-host/invite people picker,Completed,Medium,4.6
+Mobile UI,4.9,Dark Theme,Consistent dark theme styling,Completed,Medium,4.1-4.8
+Mobile UI,4.1,Loading States,Loading spinners and skeletons,In Progress,Medium,None
+Mobile UI,4.11,Empty States,Empty state illustrations/messages,Completed,Low,None
+=== PHASE 5: MOBILE APP - SCREENS ===,,,,,,
+Screens,5.1,Home Screen,Private/public events feed,Completed,High,4.7
+Screens,5.2,Calendar Screen,Calendar view of events,Completed,Medium,None
+Screens,5.3,Messages Screen,DM conversations list,Completed,High,None
+Screens,5.4,Notifications Screen,Notifications feed,Completed,High,None
+Screens,5.5,Profile Screen,User profile with hosted/attended tabs,Completed,High,None
+Screens,5.6,Event Detail Screen,[id].tsx - full event details,Completed,High,None
+Screens,5.7,Event Chat Screen,[id].tsx - event group chat,Completed,High,None
+Screens,5.8,Event Gallery Screen,[id].tsx - event photos/videos,Completed,Medium,None
+Screens,5.9,Contact Screen,[id].tsx - view user profile,Completed,Medium,None
+Screens,5.1,Create Event Screen,Multi-step event creation form,Completed,High,4.8
+Screens,5.11,Past Events Screen,Past events grouped by year,Completed,Medium,4.7
+Screens,5.12,Compose Message,New message composer,Completed,Medium,None
+Screens,5.13,Settings - Profile,Edit profile settings,Completed,Medium,None
+Screens,5.14,Settings - Account,Account settings,Completed,Low,None
+Screens,5.15,Settings - Notifications,Notification preferences,Completed,Low,None
+Screens,5.16,Settings - Chats,Chat settings,Completed,Low,None
+Screens,5.17,Settings - Data Storage,Data & storage settings,Completed,Low,None
+=== PHASE 6: MOBILE APP - FEATURES ===,,,,,,
+Features,6.1,Event Discovery,Browse and filter events,Completed,High,5.1
+Features,6.2,Event RSVP,Going/Interested/Not Going,Completed,High,5.6
+Features,6.3,Event Creation,Create new events with all fields,Completed,High,5.1
+Features,6.4,Event Chat,Real-time messaging in events,In Progress,High,5.7
+Features,6.5,Private Messaging,Direct messages between users,In Progress,High,5.3
+Features,6.6,Media Upload,Upload photos/videos to gallery,Not Started,Medium,5.8
+Features,6.7,Push Notifications,Real-time push notifications,Not Started,High,5.4
+Features,6.8,Event Invitations,Invite users to private events,In Progress,Medium,5.1
+Features,6.9,Co-host Management,Add/remove co-hosts,In Progress,Medium,5.1
+Features,6.1,Member Approval,Approve/reject join requests,Not Started,Medium,5.6
+Features,6.11,Event Editing,Edit existing events,Not Started,Medium,5.6
+Features,6.12,Event Deletion,Delete events (host only),Not Started,Medium,5.6
+Features,6.13,Calendar Integration,Add to device calendar,Not Started,Low,5.2
+Features,6.14,Location/Maps,Map view for event location,Not Started,Medium,5.6
+Features,6.15,Search Events,Search by title/location/host,Not Started,Medium,5.1
+Features,6.16,Event Sharing,Share event link externally,Not Started,Low,5.6
+=== PHASE 7: API & DATA LAYER ===,,,,,,
+API,7.1,Auth API,Authentication functions,Completed,High,3.1
+API,7.2,Events API,CRUD operations for events,Completed,High,2.3
+API,7.3,Messages API,Event and private messaging,Completed,High,2.5-2.6
+API,7.4,Media API,Upload/fetch media functions,Completed,Medium,2.7
+API,7.5,Notifications API,Create/read notifications,Completed,Medium,2.8
+API,7.6,Supabase Client,Configured Supabase client,Completed,High,2.1
+API,7.7,React Query Setup,TanStack Query configuration,Completed,High,None
+API,7.8,Real-time Subscriptions,Supabase realtime for chat,In Progress,High,7.6
+API,7.9,Error Handling,Consistent error handling,In Progress,Medium,7.1-7.5
+API,7.1,Data Caching,Optimistic updates and caching,Not Started,Medium,7.7
+=== PHASE 8: WEB APP ===,,,,,,
+Web,8.1,Next.js Setup,Initialize Next.js 15 with App Router,Completed,High,1.1
+Web,8.2,Tailwind CSS,Configure Tailwind for web,Completed,High,8.1
+Web,8.3,Web Layout,Root layout with providers,Completed,High,8.1
+Web,8.4,Auth Pages,Login and signup pages,Completed,High,3.1
+Web,8.5,Tab Layout,Main navigation layout,Completed,High,8.3
+Web,8.6,Home Page,Events listing page,Completed,High,8.5
+Web,8.7,Events Page,Events discovery page,Completed,Medium,8.5
+Web,8.8,Messages Page,DM listing page,Completed,High,8.5
+Web,8.9,Notifications Page,Notifications page,Completed,Medium,8.5
+Web,8.1,Event Detail Page,Single event page,Completed,High,8.5
+Web,8.11,Event Gallery Page,Event photos page,Completed,Medium,8.1
+Web,8.12,Create Event Page,Event creation form,Completed,High,8.5
+Web,8.13,DM Page,Direct message conversation,Completed,High,8.8
+Web,8.14,Web Components,EmptyState/EventCard/LoadingSpinner,Completed,Medium,8.2
+Web,8.15,Responsive Design,Mobile-friendly web UI,In Progress,Medium,8.4-8.14
+Web,8.16,SEO Optimization,Meta tags and structured data,Not Started,Low,8.4-8.14
+=== PHASE 9: TESTING ===,,,,,,
+Testing,9.1,Unit Test Setup,Jest/Vitest configuration,Not Started,High,None
+Testing,9.2,Shared Utils Tests,Tests for utility functions,Not Started,High,9.1
+Testing,9.3,API Function Tests,Tests for API functions,Not Started,High,9.1
+Testing,9.4,Component Tests,React component tests,Not Started,Medium,9.1
+Testing,9.5,E2E Test Setup,Playwright/Detox setup,Not Started,Medium,9.1
+Testing,9.6,Auth Flow E2E,End-to-end auth testing,Not Started,High,9.5
+Testing,9.7,Event Flow E2E,End-to-end event testing,Not Started,High,9.5
+Testing,9.8,Chat Flow E2E,End-to-end chat testing,Not Started,Medium,9.5
+Testing,9.9,Mobile E2E,Mobile-specific E2E tests,Not Started,Medium,9.5
+Testing,9.1,Performance Testing,Load and stress testing,Not Started,Low,9.5
+=== PHASE 10: DEPLOYMENT ===,,,,,,
+Deployment,10.1,Supabase Cloud Setup,Production Supabase project,Not Started,High,2.1-2.12
+Deployment,10.2,Database Migration,Push migrations to production,Not Started,High,10.1
+Deployment,10.3,Vercel Setup,Configure Vercel for web app,Not Started,High,8.1
+Deployment,10.4,Web Deployment,Deploy web app to Vercel,Not Started,High,10.3
+Deployment,10.5,EAS Build Setup,Configure Expo EAS,Not Started,High,None
+Deployment,10.6,iOS Build,Build iOS app with EAS,Not Started,High,10.5
+Deployment,10.7,Android Build,Build Android app with EAS,Not Started,High,10.5
+Deployment,10.8,App Store Submission,Submit to Apple App Store,Not Started,High,10.6
+Deployment,10.9,Play Store Submission,Submit to Google Play Store,Not Started,High,10.7
+Deployment,10.1,Environment Variables,Configure production env vars,Not Started,High,10.1-10.5
+Deployment,10.11,Domain Setup,Configure custom domain,Not Started,Medium,10.4
+Deployment,10.12,SSL/HTTPS,Ensure SSL certificates,Not Started,Medium,10.11
+=== PHASE 11: DOCUMENTATION ===,,,,,,
+Documentation,11.1,README.md,Project overview and quick start,Completed,High,None
+Documentation,11.2,SETUP.md,Detailed setup instructions,Completed,High,None
+Documentation,11.3,DEPLOYMENT.md,Deployment guide,Completed,High,None
+Documentation,11.4,CONTRIBUTING.md,Contribution guidelines,Completed,Medium,None
+Documentation,11.5,PROJECT_SUMMARY.md,Implementation summary,Completed,Medium,None
+Documentation,11.6,API Documentation,Document all API functions,Not Started,Medium,7.1-7.5
+Documentation,11.7,Component Documentation,Document reusable components,Not Started,Low,4.3-4.8
+Documentation,11.8,Database Schema Docs,Document DB schema and relations,Not Started,Medium,2.2-2.8
+Documentation,11.9,User Guide,End-user documentation,Not Started,Low,All
+=== PHASE 12: FUTURE ENHANCEMENTS ===,,,,,,
+Future,12.1,Event Categories,Add category tags to events,Not Started,Medium,2.3
+Future,12.2,Advanced Search,Full-text search with filters,Not Started,Medium,6.15
+Future,12.3,Map View,Discover events on a map,Not Started,Medium,6.14
+Future,12.4,Recurring Events,Support for recurring events,Not Started,Medium,6.3
+Future,12.5,Event Reviews,Ratings and reviews for events,Not Started,Low,5.6
+Future,12.6,Analytics Dashboard,Host analytics for events,Not Started,Low,5.5
+Future,12.7,Premium Features,In-app purchases,Not Started,Low,None
+Future,12.8,Sentry Integration,Error tracking and monitoring,Not Started,Medium,None
+Future,12.9,Analytics Integration,Mixpanel/Amplitude tracking,Not Started,Low,None
+Future,12.1,Image Optimization,CDN and image compression,Not Started,Medium,6.6
+Future,12.11,Offline Support,Offline-first capabilities,Not Started,Low,None
+Future,12.12,Localization,Multi-language support,Not Started,Low,None

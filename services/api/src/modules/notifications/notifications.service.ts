@@ -41,7 +41,7 @@ export class NotificationsService {
       )
       .returning();
 
-    if (!updated) throw new Error('Notification not found');
+    if (!updated) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
     return updated;
   }
 

@@ -11,6 +11,7 @@ import {
 import { users } from './users.js';
 import { communities } from './communities.js';
 import { eventSeries } from './event-series.js';
+import { externalEvents } from './external-events.js';
 
 export const events = pgTable('events', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -23,6 +24,10 @@ export const events = pgTable('events', {
   seriesId: uuid('series_id').references(() => eventSeries.id, {
     onDelete: 'set null',
   }),
+  externalEventId: uuid('external_event_id').references(
+    () => externalEvents.id,
+    { onDelete: 'set null' }
+  ),
   organizerType: text('organizer_type', { enum: ['user', 'community'] })
     .notNull()
     .default('user'),

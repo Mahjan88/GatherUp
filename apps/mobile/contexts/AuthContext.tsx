@@ -84,8 +84,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
-      setSession(data.session);
-      await loadProfile(data.session);
+      let stored = data.session;
+      if (stored) {
+        // The stored session is only read from the device, so ask the auth
+        // server whether its user still exists (e.g. after a db reset).
+        // Network errors have no status and keep the session for offline use.
+        const { error } = await supabase.auth.getUser();
+        if (error?.status && error.status >= 400 && error.status < 500) {
+          await supabase.auth.signOut({ scope: 'local' });
+          stored = null;
+        }
+        if (!mounted) return;
+      }
+      setSession(stored);
+      await loadProfile(stored);
       setLoading(false);
     });
 

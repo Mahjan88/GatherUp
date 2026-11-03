@@ -1,0 +1,150 @@
+<style>
+#erd { overflow-x: auto; }
+#erd svg.erDiagram .divider path { stroke-opacity: 0.5; }
+#erd svg.erDiagram .row-rect-odd path,
+#erd svg.erDiagram .row-rect-odd rect,
+#erd svg.erDiagram .row-rect-even path,
+#erd svg.erDiagram .row-rect-even rect { stroke: none !important; }
+</style>
+<div id="erd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+const { svg } = await mermaid.render('erd-svg', `erDiagram
+  users ||--o{ event : hosts
+  users ||--o{ event_member : joins
+  users ||--o{ event_message : sends
+  users ||--o{ private_message : "sends (as sender)"
+  users ||--o{ private_message : "receives (as recipient)"
+  users ||--o{ event_media : uploads
+  users ||--o{ notification : receives
+  event ||--o{ event_member : has
+  event ||--o{ event_message : contains
+  event ||--o{ event_media : contains
+
+  users {
+    uuid id PK
+    text email
+    text phone
+    text first_name
+    text last_name
+    text username UK
+    text tagline
+    text avatar_url
+    text bio
+    text city
+    text state
+    text country
+    bool is_verified
+    jsonb user_data
+    timestamptz created_at
+    timestamptz updated_at
+    timestamptz last_active_at
+  }
+
+  event {
+    uuid id PK
+    uuid host_id FK
+    text title
+    text description
+    timestamptz start_time
+    timestamptz end_time
+    text location
+    jsonb location_coords
+    text address
+    text city_region
+    text visibility
+    text category
+    text cover_image_url
+    int capacity_limit
+    jsonb settings
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  event_member {
+    uuid id PK
+    uuid event_id FK
+    uuid user_id FK
+    text status
+    text role
+    text rsvp_status
+    timestamptz joined_at
+    timestamptz updated_at
+  }
+
+  event_message {
+    uuid id PK
+    uuid event_id FK
+    uuid sender_id FK
+    text content
+    jsonb attachments
+    timestamptz created_at
+  }
+
+  private_message {
+    uuid id PK
+    uuid sender_id FK
+    uuid recipient_id FK
+    text content
+    bool read
+    timestamptz created_at
+  }
+
+  event_media {
+    uuid id PK
+    uuid event_id FK
+    uuid uploader_id FK
+    text media_url
+    text media_type
+    timestamptz created_at
+  }
+
+  notification {
+    uuid id PK
+    uuid user_id FK
+    text type
+    jsonb data
+    bool read
+    timestamptz created_at
+  }
+`);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

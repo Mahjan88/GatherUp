@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ApiError } from '@gatherup/api-client';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import SplashScreen from '../components/SplashScreen';
 import { StatusBar } from 'expo-status-bar';
@@ -11,7 +12,16 @@ import { colors } from '../theme';
 // Prevent the native splash screen from hiding automatically
 ExpoSplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // A 4xx (signed out, bad input, not found) won't change on retry
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && error.statusCode < 500) &&
+        failureCount < 3,
+    },
+  },
+});
 
 // Open on the tabs; useAuthRedirect sends signed-out users to welcome
 export const unstable_settings = { anchor: '(tabs)' };

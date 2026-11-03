@@ -14,6 +14,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
 
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+
+  // Optional: enables importing events from Ticketmaster
+  TICKETMASTER_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

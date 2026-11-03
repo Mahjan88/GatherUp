@@ -71,8 +71,8 @@ export class MediaService {
       where: eq(eventMedia.id, mediaId),
     });
 
-    if (!record) throw new Error('Media not found');
-    if (record.uploaderId !== userId) throw new Error('Not authorized');
+    if (!record) throw Object.assign(new Error('Media not found'), { statusCode: 404 });
+    if (record.uploaderId !== userId) throw Object.assign(new Error('Not authorized'), { statusCode: 403 });
 
     // Delete from storage
     const supabase = this.getSupabaseAdmin();

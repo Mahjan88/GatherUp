@@ -7,9 +7,15 @@ import {
   TouchableOpacity,
   Switch,
   ImageBackground,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import type {
+  ImportedTicketmasterEvent,
+  TicketmasterEvent,
+} from '@gatherup/types';
 import PeopleSelector from '../../components/PeopleSelector';
+import TicketmasterSearch from '../../components/TicketmasterSearch';
 import {
   Button,
   Chip,
@@ -35,6 +41,27 @@ import {
 } from '../../types/event';
 
 type FormPage = 1 | 2 | 3;
+type CreateMode = 'manual' | 'ticketmaster';
+
+const CREATE_MODES: {
+  value: CreateMode;
+  title: string;
+  hint: string;
+  icon: IconName;
+}[] = [
+  {
+    value: 'manual',
+    title: 'Create manually',
+    hint: 'Start from a blank form',
+    icon: 'create-outline',
+  },
+  {
+    value: 'ticketmaster',
+    title: 'Import from Ticketmaster',
+    hint: 'Meet up at a concert, game or show',
+    icon: 'ticket-outline',
+  },
+];
 
 /** Ionicons names stored on AgendaItem.icon */
 const AGENDA_ICONS: IconName[] = [
@@ -244,6 +271,12 @@ export default function CreateEventScreen() {
   const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState<FormPage>(1);
+  // Start screen picks manual vs. Ticketmaster before the 3-step form
+  const [started, setStarted] = useState(false);
+  const [mode, setMode] = useState<CreateMode>('manual');
+  const [source, setSource] = useState<TicketmasterEvent | null>(null);
+  // TODO: send as external_event_id once submit is wired
+  const [externalEventId, setExternalEventId] = useState<string | null>(null);
 
   // A. Event Basics
   const [title, setTitle] = useState('');
@@ -364,6 +397,35 @@ export default function CreateEventScreen() {
     setAgendaItems(agendaItems.filter((item) => item.id !== id));
   };
 
+  const applyTicketmasterEvent = ({
+    externalEventId,
+    event: e,
+  }: ImportedTicketmasterEvent) => {
+    setSource(e);
+    setExternalEventId(externalEventId);
+    setTitle(e.name);
+    setDescription(
+      e.info ?? `Who's coming to ${e.name}? Let's meet up and go together.`
+    );
+    setCategory(e.category);
+    setCoverImage(e.imageUrl);
+    if (e.localDate) {
+      const [y, m, d] = e.localDate.split('-');
+      setStartDate(`${m}/${d}/${y}`);
+    }
+    setStartTime(e.localTime ? e.localTime.slice(0, 5) : '');
+    setEndDate('');
+    setEndTime('');
+    if (e.timezone) setTimezone(e.timezone);
+    setIsOnline(false);
+    setLocation(e.venueName ?? '');
+    setAddress(e.address ?? '');
+    setCityRegion(e.cityRegion ?? '');
+    setMode('manual');
+    setCurrentPage(1);
+    setStarted(true);
+  };
+
   const handleNext = () => {
     if (currentPage < 3) {
       setCurrentPage((currentPage + 1) as FormPage);
@@ -396,8 +458,41 @@ export default function CreateEventScreen() {
     </View>
   );
 
+  const renderModePicker = () => (
+    <>
+      <SectionTitle>How do you want to start?</SectionTitle>
+      <OptionCards options={CREATE_MODES} value={mode} onChange={setMode} />
+    </>
+  );
+
+  const renderSourceBanner = () =>
+    source && (
+      <View style={styles.sourceBanner}>
+        <Ionicons name="ticket-outline" size={18} color={colors.primaryDark} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sourceBannerText} numberOfLines={2}>
+            Imported from Ticketmaster: {source.name}
+          </Text>
+          <TouchableOpacity onPress={() => Linking.openURL(source.url)}>
+            <Text style={styles.sourceBannerLink}>View tickets</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          onPress={() => {
+            setSource(null);
+            setExternalEventId(null);
+          }}
+          hitSlop={8}
+        >
+          <Ionicons name="close" size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+    );
+
   const renderPage1 = () => (
     <>
+      {renderSourceBanner()}
+
       <SectionTitle>Event Basics</SectionTitle>
 
       {/* TODO: Hook up image picker to set coverImage */}
@@ -1012,10 +1107,12 @@ export default function CreateEventScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="Create Event"
-        leftLabel="Cancel"
-        onLeftPress={() => router.back()}
+        leftLabel={started && currentPage === 1 ? 'Back' : 'Cancel'}
+        onLeftPress={() =>
+          started && currentPage === 1 ? setStarted(false) : router.back()
+        }
       >
-        {renderStepper()}
+        {started && renderStepper()}
       </ScreenHeader>
 
       <ScrollView
@@ -1024,19 +1121,43 @@ export default function CreateEventScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {currentPage === 1 && renderPage1()}
-        {currentPage === 2 && renderPage2()}
-        {currentPage === 3 && renderPage3()}
+        {!started && (
+          <>
+            {renderModePicker()}
+            {mode === 'ticketmaster' && (
+              <View style={{ marginTop: spacing.lg }}>
+                <TicketmasterSearch onSelect={applyTicketmasterEvent} />
+              </View>
+            )}
+          </>
+        )}
+        {started && currentPage === 1 && renderPage1()}
+        {started && currentPage === 2 && renderPage2()}
+        {started && currentPage === 3 && renderPage3()}
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      <View style={styles.bottomBar}>
-        <Button
-          label={currentPage === 3 ? 'Create Event' : 'Next'}
-          onPress={handleNext}
-          fullWidth
-        />
-      </View>
+      {!started && mode === 'manual' && (
+        <View style={styles.bottomBar}>
+          <Button
+            label="Continue"
+            onPress={() => {
+              setCurrentPage(1);
+              setStarted(true);
+            }}
+            fullWidth
+          />
+        </View>
+      )}
+      {started && (
+        <View style={styles.bottomBar}>
+          <Button
+            label={currentPage === 3 ? 'Create Event' : 'Next'}
+            onPress={handleNext}
+            fullWidth
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -1098,6 +1219,24 @@ const styles = StyleSheet.create({
   },
   noMargin: {
     marginBottom: 0,
+  },
+  sourceBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    marginTop: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+  sourceBannerText: {
+    ...typography.label,
+  },
+  sourceBannerLink: {
+    ...typography.caption,
+    color: colors.primaryDark,
+    textDecorationLine: 'underline',
+    marginTop: 2,
   },
   coverPhotoBox: {
     height: 180,
